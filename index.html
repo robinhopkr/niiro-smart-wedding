@@ -1273,12 +1273,8 @@
       color: #d0d0d0;
     }
 
-    @media (max-width: 480px) {
-      body { padding: 12px 8px 40px; }
-      .header-card,
-      .question-card { padding: 20px 18px 22px; }
-      .scale-label-side { font-size: 0.7rem; min-width: 40px; }
-      .scale-option { padding: 6px 3px; }
+    /* ── Tablet ────────────────────────────────────────────── */
+    @media (max-width: 768px) {
       .summary-bar { flex-direction: column; }
       .summary-item { padding: 14px; }
       .summary-num { font-size: 1.5rem; }
@@ -1286,10 +1282,80 @@
       .admin-tabs { flex-direction: column; }
       .admin-tab { border-bottom: none; border-left: 3px solid transparent; }
       .admin-tab.active { border-left-color: var(--purple); border-bottom: none; }
-      .photo-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
-      .dropzone { padding: 32px 16px; }
-      .legal-card { padding: 20px 18px; }
-      .cookie-banner { padding: 16px; }
+      .photo-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+      .cookie-banner { flex-direction: column; text-align: center; }
+      .cookie-banner p { min-width: unset; }
+      .submit-area { flex-direction: column-reverse; gap: 8px; align-items: stretch; }
+      .submit-area .btn-submit,
+      .submit-area .btn-clear { width: 100%; text-align: center; }
+      .btn-bar { flex-direction: column; }
+      .btn-bar .btn-submit,
+      .btn-bar .btn-outline { width: 100%; text-align: center; }
+      .lightbox img { max-width: 98vw; max-height: 75vh; }
+      .lightbox-actions { flex-direction: column; width: 80%; }
+      .lightbox-btn { justify-content: center; }
+    }
+
+    /* ── Mobile ────────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      body { padding: 10px 6px 40px; }
+
+      .header-card { padding: 20px 16px 16px; }
+      .header-card h1 { font-size: 1.35rem; }
+      .header-card .desc { font-size: 0.82rem; }
+
+      .question-card { padding: 18px 16px 20px; }
+      .consent-card { padding: 16px; }
+
+      /* Inputs mindestens 16px → verhindert iOS-Zoom */
+      .gf-input,
+      .gf-number,
+      .gf-select,
+      textarea.gf-input { font-size: 16px; }
+
+      /* Skala: kompakter */
+      .scale-label-side { font-size: 0.65rem; min-width: 32px; padding: 0 2px; }
+      .scale-option { padding: 6px 2px; }
+      .scale-option .num { font-size: 0.7rem; }
+      .scale-option input[type="radio"] { width: 18px; height: 18px; }
+
+      /* Radio-Optionen: größere Tap-Targets */
+      .radio-option { padding: 10px 6px; gap: 10px; }
+      .radio-option span { font-size: 0.85rem; }
+
+      /* Fotos */
+      .photo-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+      .photo-info { padding: 8px 10px; }
+      .photo-name { font-size: 0.7rem; }
+      .dropzone { padding: 28px 14px; }
+      .dropzone p { font-size: 0.85rem; }
+
+      /* Erfolgs-Card */
+      .success-card { padding: 28px 18px; }
+      .success-card h2 { font-size: 1.2rem; }
+
+      /* Legal */
+      .legal-card { padding: 18px 14px; }
+      .legal-card h2 { font-size: 1rem; }
+
+      /* Footer */
+      .legal-footer { font-size: 0.7rem; line-height: 2; }
+      .legal-footer a { margin: 0 4px; }
+
+      /* Cookie-Banner */
+      .cookie-banner { padding: 14px 12px; gap: 12px; }
+      .cookie-banner .cookie-btns { width: 100%; }
+      .cookie-banner .btn-cookie { flex: 1; }
+
+      /* Lightbox */
+      .lightbox { padding: 10px; }
+      .lightbox img { max-width: 100vw; max-height: 80vh; border-radius: 0; }
+      .lightbox-close { top: 6px; right: 10px; font-size: 2rem; }
+
+      /* Admin Settings-Actions */
+      .settings-actions { flex-direction: column; align-items: stretch; }
+      .settings-actions .btn-submit { width: 100%; text-align: center; }
+      .settings-actions .save-notice { text-align: center; }
     }
   </style>
 </head>
@@ -1327,6 +1393,7 @@
 
   <div class="admin-tabs">
     <button class="admin-tab active" data-tab="settings">Einstellungen</button>
+    <button class="admin-tab" data-tab="texte">Texte</button>
     <button class="admin-tab" data-tab="answers">Antworten / Datenbank</button>
   </div>
 
@@ -1359,6 +1426,40 @@
     <div class="settings-actions">
       <button class="btn-submit" id="btnSaveSettings">Einstellungen speichern</button>
       <span id="saveNotice" class="save-notice" style="display:none">✓ Gespeichert!</span>
+    </div>
+  </div>
+
+  <div id="tabTexte" class="tab-content" style="display:none">
+    <div class="question-card">
+      <p class="q-label">Formular-Titel</p>
+      <input type="text" class="gf-input" id="txtFormTitle" placeholder="z. B. Hochzeit von Anina & Robin – Antwortformular (RSVP)" />
+      <p style="font-size:0.75rem;color:var(--text-sec);margin-top:6px;">Leer lassen = automatisch aus Brautpaar-Name generiert</p>
+    </div>
+    <div class="question-card">
+      <p class="q-label">Formular-Beschreibung</p>
+      <textarea class="gf-input" id="txtFormDesc" rows="3" style="resize:vertical;border:1px solid var(--border);border-radius:4px;padding:10px;" placeholder="Bitte teilen Sie uns bis zum … mit, ob Sie an unserer Hochzeit teilnehmen werden."></textarea>
+      <p style="font-size:0.75rem;color:var(--text-sec);margin-top:6px;">Leer lassen = Standard-Beschreibung mit Deadline</p>
+    </div>
+    <div class="question-card">
+      <p class="q-label">Erfolgs-Titel (nach dem Absenden)</p>
+      <input type="text" class="gf-input" id="txtSuccessTitle" placeholder="z. B. Ihre Antwort wurde gespeichert." />
+    </div>
+    <div class="question-card">
+      <p class="q-label">Erfolgs-Text</p>
+      <textarea class="gf-input" id="txtSuccessDesc" rows="2" style="resize:vertical;border:1px solid var(--border);border-radius:4px;padding:10px;" placeholder="z. B. Vielen Dank für Ihre Rückmeldung! Wir freuen uns sehr."></textarea>
+    </div>
+    <div class="question-card">
+      <p class="q-label">Galerie-Titel</p>
+      <input type="text" class="gf-input" id="txtGalerieTitle" placeholder="z. B. Hochzeitsfotos – Anina & Robin" />
+      <p style="font-size:0.75rem;color:var(--text-sec);margin-top:6px;">Leer lassen = automatisch aus Brautpaar-Name generiert</p>
+    </div>
+    <div class="question-card">
+      <p class="q-label">Galerie-Beschreibung</p>
+      <textarea class="gf-input" id="txtGalerieDesc" rows="2" style="resize:vertical;border:1px solid var(--border);border-radius:4px;padding:10px;" placeholder="Hier finden Sie alle Fotos unserer Hochzeit."></textarea>
+    </div>
+    <div class="settings-actions">
+      <button class="btn-submit" id="btnSaveTexte">Texte speichern</button>
+      <span id="saveTexteNotice" class="save-notice" style="display:none">✓ Gespeichert!</span>
     </div>
   </div>
 
@@ -1833,6 +1934,7 @@
         deadline: data.rsvp_deadline || '',
         disabledQuestions: data.fragen?.disabledQuestions || [],
         customQuestions: data.fragen?.customQuestions || [],
+        texte: data.texte || {},
       };
     } catch { return {}; }
   }
@@ -1847,6 +1949,7 @@
         disabledQuestions: s.disabledQuestions || [],
         customQuestions: s.customQuestions || [],
       },
+      texte: s.texte || {},
     };
     await db.from('app_einstellungen').upsert(row);
   }
@@ -1968,8 +2071,10 @@
       tab.classList.add('active');
       const target = tab.dataset.tab;
       document.getElementById('tabSettings').style.display = target === 'settings' ? '' : 'none';
+      document.getElementById('tabTexte').style.display    = target === 'texte'    ? '' : 'none';
       document.getElementById('tabAnswers').style.display  = target === 'answers'  ? '' : 'none';
       if (target === 'answers') loadAnswers();
+      if (target === 'texte') loadTexteTab();
     });
   });
 
@@ -2070,6 +2175,36 @@
   });
 
   /* ══════════════════════════════════════════════════════════
+     TAB – TEXTE
+     ══════════════════════════════════════════════════════════ */
+  async function loadTexteTab() {
+    const s = await loadSettings();
+    const t = s.texte || {};
+    document.getElementById('txtFormTitle').value     = t.formTitle || '';
+    document.getElementById('txtFormDesc').value      = t.formDesc || '';
+    document.getElementById('txtSuccessTitle').value  = t.successTitle || '';
+    document.getElementById('txtSuccessDesc').value   = t.successDesc || '';
+    document.getElementById('txtGalerieTitle').value  = t.galerieTitle || '';
+    document.getElementById('txtGalerieDesc').value   = t.galerieDesc || '';
+  }
+
+  document.getElementById('btnSaveTexte').addEventListener('click', async () => {
+    const s = await loadSettings();
+    s.texte = {
+      formTitle:     document.getElementById('txtFormTitle').value.trim(),
+      formDesc:      document.getElementById('txtFormDesc').value.trim(),
+      successTitle:  document.getElementById('txtSuccessTitle').value.trim(),
+      successDesc:   document.getElementById('txtSuccessDesc').value.trim(),
+      galerieTitle:  document.getElementById('txtGalerieTitle').value.trim(),
+      galerieDesc:   document.getElementById('txtGalerieDesc').value.trim(),
+    };
+    await saveSettingsData(s);
+    const notice = document.getElementById('saveTexteNotice');
+    notice.style.display = 'inline-block';
+    setTimeout(() => { notice.style.display = 'none'; }, 2500);
+  });
+
+  /* ══════════════════════════════════════════════════════════
      TAB 2 – ANTWORTEN / DATENBANK
      ══════════════════════════════════════════════════════════ */
   let answersData = [];
@@ -2143,8 +2278,26 @@
      ══════════════════════════════════════════════════════════ */
   async function applySettingsToForm() {
     const s = await loadSettings();
-    if (s.coupleName)  document.getElementById('formTitle').textContent = `Hochzeit von ${s.coupleName} – Antwortformular (RSVP)`;
-    if (s.deadline)    document.getElementById('formDeadline').textContent = s.deadline;
+    const t = s.texte || {};
+
+    // Titel: custom > auto aus Brautpaar > Standard
+    if (t.formTitle) {
+      document.getElementById('formTitle').textContent = t.formTitle;
+    } else if (s.coupleName) {
+      document.getElementById('formTitle').textContent = `Hochzeit von ${s.coupleName} – Antwortformular (RSVP)`;
+    }
+
+    // Beschreibung: custom > Standard mit Deadline
+    if (t.formDesc) {
+      document.getElementById('formDesc').innerHTML = escHtml(t.formDesc).replace(/\n/g, '<br>');
+    } else if (s.deadline) {
+      document.getElementById('formDeadline').textContent = s.deadline;
+    }
+
+    // Erfolgs-Texte
+    if (t.successTitle) document.querySelector('#successCard h2').textContent = t.successTitle;
+    if (t.successDesc)  document.querySelector('#successCard p').innerHTML = escHtml(t.successDesc).replace(/\n/g, '<br>');
+
     if (s.weddingDate) document.getElementById('labelTeilnahme').innerHTML = `Werde ich an der Hochzeit am ${escHtml(s.weddingDate)} teilnehmen? <span class="req">*</span>`;
 
     const disabled = s.disabledQuestions || [];
@@ -2488,8 +2641,14 @@
      ══════════════════════════════════════════════════════════ */
   async function initGalerie() {
     const s = await loadSettings();
-    if (s.coupleName) {
+    const t = s.texte || {};
+    if (t.galerieTitle) {
+      document.getElementById('galerieTitle').textContent = t.galerieTitle;
+    } else if (s.coupleName) {
       document.getElementById('galerieTitle').textContent = `Hochzeitsfotos – ${s.coupleName}`;
+    }
+    if (t.galerieDesc) {
+      document.getElementById('galerieDesc').innerHTML = escHtml(t.galerieDesc).replace(/\n/g, '<br>');
     }
 
     const grid    = document.getElementById('galerieGrid');
