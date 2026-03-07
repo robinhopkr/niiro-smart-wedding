@@ -1404,37 +1404,27 @@
 <body>
 
 <!-- ══════════════════════════════════════════════════════════════
-     LANDING PAGE
+     LANDING PAGE (Code-Eingabe direkt)
      ══════════════════════════════════════════════════════════════ -->
 <div id="landingView" class="form-container" style="display:none">
   <div class="header-card" style="text-align:center;">
     <h1>Hochzeits-RSVP</h1>
-    <p class="desc" style="border:none;padding-top:8px;">Willkommen! Bitte waehlen Sie eine Option.</p>
-  </div>
-  <div class="question-card">
-    <div class="landing-choices">
-      <button class="btn-submit" id="btnGuest">Ich bin Gast</button>
-      <button class="btn-outline" id="btnCouple">Ich bin Brautpaar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════════════════════
-     GUEST CODE ENTRY
-     ══════════════════════════════════════════════════════════════ -->
-<div id="guestCodeView" class="form-container" style="display:none">
-  <div class="header-card">
-    <h1>Gast-Anmeldung</h1>
-    <p class="desc">Bitte geben Sie den Einladungscode ein, den Sie von Ihrem Brautpaar erhalten haben.</p>
+    <p class="desc" style="border:none;padding-top:8px;">Bitte geben Sie den Einladungscode ein, den Sie von Ihrem Brautpaar erhalten haben.</p>
   </div>
   <div class="question-card">
     <p class="q-label">Einladungscode <span class="req">*</span></p>
     <input type="text" class="gf-input" id="guestCode" placeholder="z. B. ANINA-ROBIN-A1B2" style="text-transform:uppercase;" />
     <p class="validation-msg" id="codeError" style="display:none">Code nicht gefunden.</p>
-    <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center;">
-      <button class="btn-submit" id="btnCheckCode">Weiter</button>
-      <a href="?" class="btn-clear" style="text-decoration:none;">Zurueck</a>
+    <div style="margin-top: 20px;">
+      <button class="btn-submit" id="btnCheckCode" style="width:100%;">Weiter zum Formular</button>
     </div>
+  </div>
+  <div class="legal-footer" style="margin-top:24px;">
+    <a href="?login">Brautpaar? Hier anmelden</a>
+    <span class="sep">|</span>
+    <a href="?datenschutz">Datenschutz</a>
+    <span class="sep">|</span>
+    <a href="?impressum">Impressum</a>
   </div>
 </div>
 
@@ -2104,7 +2094,7 @@
      ROUTING
      ══════════════════════════════════════════════════════════ */
   const ALL_VIEWS = [
-    'landingView','guestCodeView','coupleLoginView','dashboardView',
+    'landingView','coupleLoginView','dashboardView',
     'adminPanel','fotoLogin','fotoPanel','galerieView',
     'datenschutzView','impressumView','guestView'
   ];
@@ -2144,8 +2134,9 @@
         applySettingsToForm();
         updateGuestLinks();
       } else {
-        showView('guestCodeView');
+        showView('landingView');
         document.getElementById('guestCode').value = code;
+        document.getElementById('codeError').textContent = 'Code nicht gefunden. Bitte ueberpruefen Sie Ihre Eingabe.';
         document.getElementById('codeError').style.display = 'block';
       }
     } else if (p.has('login')) {
@@ -2181,19 +2172,7 @@
   })();
 
   /* ══════════════════════════════════════════════════════════
-     LANDING PAGE
-     ══════════════════════════════════════════════════════════ */
-  document.getElementById('btnGuest').addEventListener('click', () => {
-    showView('guestCodeView');
-    document.getElementById('guestCode').focus();
-  });
-
-  document.getElementById('btnCouple').addEventListener('click', () => {
-    window.location.search = 'login';
-  });
-
-  /* ══════════════════════════════════════════════════════════
-     GUEST CODE ENTRY
+     GUEST CODE ENTRY (on landing page)
      ══════════════════════════════════════════════════════════ */
   document.getElementById('btnCheckCode').addEventListener('click', async () => {
     const code = document.getElementById('guestCode').value.trim().toUpperCase();
