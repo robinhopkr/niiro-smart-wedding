@@ -1273,6 +1273,48 @@
       color: #d0d0d0;
     }
 
+    /* ── Landing Page ───────────────────────────────────────── */
+    .landing-choices {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 8px 0;
+    }
+
+    .landing-choices .btn-submit,
+    .landing-choices .btn-outline {
+      width: 100%;
+      padding: 14px 24px;
+      font-size: 0.95rem;
+      text-align: center;
+    }
+
+    .gastcode-display {
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: var(--purple);
+      background: var(--purple-light);
+      padding: 10px 18px;
+      border-radius: 4px;
+      letter-spacing: 0.06em;
+      font-family: monospace;
+    }
+
+    .dash-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .dash-actions a,
+    .dash-actions button {
+      width: 100%;
+      text-align: center;
+      text-decoration: none;
+      box-sizing: border-box;
+    }
+
     /* ── Tablet ────────────────────────────────────────────── */
     @media (max-width: 768px) {
       .summary-bar { flex-direction: column; }
@@ -1362,20 +1404,110 @@
 <body>
 
 <!-- ══════════════════════════════════════════════════════════════
-     ADMIN LOGIN
+     LANDING PAGE
      ══════════════════════════════════════════════════════════════ -->
-<div id="adminLogin" class="form-container" style="display:none">
+<div id="landingView" class="form-container" style="display:none">
+  <div class="header-card" style="text-align:center;">
+    <h1>Hochzeits-RSVP</h1>
+    <p class="desc" style="border:none;padding-top:8px;">Willkommen! Bitte waehlen Sie eine Option.</p>
+  </div>
+  <div class="question-card">
+    <div class="landing-choices">
+      <button class="btn-submit" id="btnGuest">Ich bin Gast</button>
+      <button class="btn-outline" id="btnCouple">Ich bin Brautpaar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     GUEST CODE ENTRY
+     ══════════════════════════════════════════════════════════════ -->
+<div id="guestCodeView" class="form-container" style="display:none">
   <div class="header-card">
-    <h1>Admin-Bereich</h1>
-    <p class="desc">Bitte melden Sie sich an, um auf die Verwaltung zuzugreifen.</p>
+    <h1>Gast-Anmeldung</h1>
+    <p class="desc">Bitte geben Sie den Einladungscode ein, den Sie von Ihrem Brautpaar erhalten haben.</p>
+  </div>
+  <div class="question-card">
+    <p class="q-label">Einladungscode <span class="req">*</span></p>
+    <input type="text" class="gf-input" id="guestCode" placeholder="z. B. ANINA-ROBIN-A1B2" style="text-transform:uppercase;" />
+    <p class="validation-msg" id="codeError" style="display:none">Code nicht gefunden.</p>
+    <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center;">
+      <button class="btn-submit" id="btnCheckCode">Weiter</button>
+      <a href="?" class="btn-clear" style="text-decoration:none;">Zurueck</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     COUPLE LOGIN / REGISTER
+     ══════════════════════════════════════════════════════════════ -->
+<div id="coupleLoginView" class="form-container" style="display:none">
+  <div class="header-card">
+    <h1>Brautpaar-Anmeldung</h1>
+    <p class="desc">Melden Sie sich an oder erstellen Sie ein neues Konto, um Ihre Hochzeit zu verwalten.</p>
+  </div>
+  <div class="question-card">
+    <p class="q-label">E-Mail-Adresse <span class="req">*</span></p>
+    <input type="email" class="gf-input" id="coupleEmail" placeholder="ihre@email.de" />
   </div>
   <div class="question-card">
     <p class="q-label">Passwort <span class="req">*</span></p>
-    <input type="password" class="gf-input" id="adminPw" placeholder="Passwort eingeben" />
-    <p class="validation-msg" id="pwError">Falsches Passwort. Bitte versuchen Sie es erneut.</p>
-    <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center;">
-      <button class="btn-submit" id="btnAdminLogin">Anmelden</button>
-      <a href="?" class="btn-clear" style="text-decoration:none;">Zurück zum Formular</a>
+    <input type="password" class="gf-input" id="couplePw" placeholder="Mindestens 6 Zeichen" />
+    <p class="validation-msg" id="coupleError"></p>
+  </div>
+  <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;">
+    <button class="btn-submit" id="btnCoupleLogin">Anmelden</button>
+    <button class="btn-outline" id="btnCoupleRegister">Konto erstellen</button>
+    <a href="?" class="btn-clear" style="text-decoration:none;">Zurueck</a>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     COUPLE DASHBOARD
+     ══════════════════════════════════════════════════════════════ -->
+<div id="dashboardView" class="form-container" style="display:none">
+  <div class="header-card">
+    <h1>Brautpaar-Dashboard</h1>
+    <p class="desc" id="dashDesc">Verwalten Sie Ihre Hochzeit.</p>
+  </div>
+
+  <!-- Create wedding (if none exists) -->
+  <div id="createWeddingSection">
+    <div class="question-card">
+      <p class="q-label">Name des Brautpaares <span class="req">*</span></p>
+      <input type="text" class="gf-input" id="createCouple" placeholder="z. B. Anina &amp; Robin" />
+    </div>
+    <div class="question-card">
+      <p class="q-label">Hochzeitsdatum</p>
+      <input type="text" class="gf-input" id="createDate" placeholder="z. B. 03.11.2026" />
+    </div>
+    <div class="question-card">
+      <p class="q-label">RSVP-Deadline</p>
+      <input type="text" class="gf-input" id="createDeadline" placeholder="z. B. 01.09.2026" />
+    </div>
+    <div class="question-card">
+      <p class="q-label">Fotografen-Passwort</p>
+      <input type="text" class="gf-input" id="createFotoPw" placeholder="Passwort fuer den Fotografen-Upload" />
+    </div>
+    <button class="btn-submit" id="btnCreateWedding" style="width:100%;">Hochzeit anlegen</button>
+  </div>
+
+  <!-- Existing wedding summary -->
+  <div id="existingWeddingSection" style="display:none">
+    <div class="question-card">
+      <p class="q-label">Einladungscode fuer Ihre Gaeste</p>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <code class="gastcode-display" id="dashGastcode"></code>
+        <button class="btn-outline btn-small" id="btnCopyCode">Kopieren</button>
+      </div>
+      <p style="font-size:0.75rem;color:var(--text-sec);margin-top:8px;">Teilen Sie diesen Code mit Ihren Gaesten.</p>
+    </div>
+    <div class="summary-bar" id="dashSummary"></div>
+    <div class="dash-actions">
+      <a class="btn-submit" id="dashAdminLink" href="?admin">Einstellungen &amp; Antworten verwalten</a>
+      <a class="btn-outline" id="dashGalerieLink" href="">Fotogalerie ansehen</a>
+      <a class="btn-outline" id="dashTestLink" href="" target="_blank">Gastansicht testen</a>
+      <button class="btn-clear" id="btnLogout">Abmelden</button>
     </div>
   </div>
 </div>
@@ -1384,11 +1516,11 @@
      ADMIN PANEL
      ══════════════════════════════════════════════════════════════ -->
 <div id="adminPanel" class="admin-container" style="display:none">
-  <a href="?" class="back-link">← Zurück zum Formular</a>
+  <a href="?dashboard" class="back-link" id="adminBackLink">&larr; Zurueck zum Dashboard</a>
 
   <div class="header-card">
-    <h1>Admin-Bereich</h1>
-    <p class="desc">Einstellungen verwalten und eingesendete Antworten einsehen.</p>
+    <h1>Hochzeit verwalten</h1>
+    <p class="desc">Einstellungen, Texte und Antworten Ihrer Hochzeit verwalten.</p>
   </div>
 
   <div class="admin-tabs">
@@ -1409,6 +1541,15 @@
     <div class="question-card">
       <p class="q-label">RSVP-Deadline (bis wann sollen Gäste antworten)</p>
       <input type="text" class="gf-input" id="settDeadline" placeholder="z. B. 01.09.2026" />
+    </div>
+    <div class="question-card">
+      <p class="q-label">Einladungscode (Gastcode)</p>
+      <input type="text" class="gf-input" id="settGastcode" style="text-transform:uppercase;" placeholder="z. B. ANINA-ROBIN-A1B2" />
+      <p style="font-size:0.75rem;color:var(--text-sec);margin-top:6px;">Diesen Code geben Sie Ihren Gaesten. Aendern Sie ihn nur, wenn noetig.</p>
+    </div>
+    <div class="question-card">
+      <p class="q-label">Fotografen-Passwort</p>
+      <input type="text" class="gf-input" id="settFotoPw" placeholder="Passwort fuer den Fotografen-Upload" />
     </div>
     <div class="question-card">
       <p class="q-label">Eigene Fragen verwalten</p>
@@ -1504,15 +1645,15 @@
 <div id="fotoLogin" class="form-container" style="display:none">
   <div class="header-card">
     <h1>Fotografen-Bereich</h1>
-    <p class="desc">Bitte melden Sie sich an, um Fotos hochzuladen und zu verwalten.</p>
+    <p class="desc">Bitte geben Sie das Fotografen-Passwort ein, um Fotos hochzuladen.</p>
   </div>
   <div class="question-card">
-    <p class="q-label">Passwort <span class="req">*</span></p>
+    <p class="q-label">Fotografen-Passwort <span class="req">*</span></p>
     <input type="password" class="gf-input" id="fotoPw" placeholder="Passwort eingeben" />
-    <p class="validation-msg">Falsches Passwort. Bitte versuchen Sie es erneut.</p>
+    <p class="validation-msg" id="fotoPwError">Falsches Passwort.</p>
     <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center;">
       <button class="btn-submit" id="btnFotoLogin">Anmelden</button>
-      <a href="?" class="btn-clear" style="text-decoration:none;">Zurück zum Formular</a>
+      <a href="?" class="btn-clear" style="text-decoration:none;">Zurueck</a>
     </div>
   </div>
 </div>
@@ -1521,7 +1662,7 @@
      PHOTOGRAPHER PANEL
      ══════════════════════════════════════════════════════════════ -->
 <div id="fotoPanel" class="foto-container" style="display:none">
-  <a href="?" class="back-link">← Zurück zum Formular</a>
+  <a href="?" class="back-link" id="fotoBackLink">&larr; Zurueck</a>
 
   <div class="header-card">
     <h1>Fotografen-Bereich</h1>
@@ -1570,7 +1711,7 @@
   <p class="loading-text" id="fotoLoading">Fotos werden geladen…</p>
 
   <div class="legal-footer">
-    <a href="?galerie">Zur öffentlichen Galerie</a>
+    <a href="" id="fotoGalerieLink">Zur oeffentlichen Galerie</a>
     <span class="sep">|</span>
     <a href="?datenschutz">Datenschutz</a>
     <span class="sep">|</span>
@@ -1582,7 +1723,7 @@
      PUBLIC GALLERY
      ══════════════════════════════════════════════════════════════ -->
 <div id="galerieView" class="galerie-container" style="display:none">
-  <a href="?" class="back-link">← Zurück zum Formular</a>
+  <a href="?" class="back-link" id="galerieBackLink">&larr; Zurueck</a>
 
   <div class="header-card" style="text-align:center;">
     <h1 id="galerieTitle">Hochzeitsfotos</h1>
@@ -1748,7 +1889,7 @@
 <!-- ══════════════════════════════════════════════════════════════
      GUEST VIEW (Formular)
      ══════════════════════════════════════════════════════════════ -->
-<div id="guestView" class="form-container">
+<div id="guestView" class="form-container" style="display:none">
 
   <div class="header-card">
     <h1 id="formTitle">Hochzeit von [Name des Brautpaares] – Antwortformular (RSVP)</h1>
@@ -1866,16 +2007,12 @@
     <button class="btn-new" id="btnNew">Weitere Antwort senden</button>
   </div>
 
-  <div class="legal-footer">
+  <div class="legal-footer" id="guestFooter">
     <a href="?datenschutz">Datenschutz</a>
     <span class="sep">|</span>
     <a href="?impressum">Impressum</a>
     <span class="sep">|</span>
-    <a href="?galerie">Fotogalerie</a>
-    <span class="sep">|</span>
-    <a href="?fotograf">Fotografen</a>
-    <span class="sep">|</span>
-    <a href="?admin">Admin</a>
+    <a href="" id="guestGalerieLink">Fotogalerie</a>
   </div>
 
 </div>
@@ -1901,8 +2038,6 @@
      ══════════════════════════════════════════════════════════ */
   const SUPABASE_URL  = 'https://jecxkfpsqfznyydvrrut.supabase.co';
   const SUPABASE_KEY  = 'sb_publishable_qLhhtoZca8lDHgtdGSVNxw_r437hhfp';
-  const ADMIN_PW      = 'Alcanada!23AR';
-  const FOTO_PW       = 'Fotograf!031126';
   const BUCKET        = 'hochzeitsfotos';
   const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
@@ -1915,83 +2050,13 @@
     { id: 'anzahl',     label: 'Anzahl Personen',                   type: 'text',  required: true  },
     { id: 'zeremonie',  label: 'Teilnahme Zeremonie',               type: 'yesno', required: true  },
     { id: 'abendfeier', label: 'Teilnahme Abendfeier',              type: 'yesno', required: true  },
-    { id: 'ernaehrung', label: 'Ernährungsbedürfnisse / Allergien', type: 'text',  required: false },
-    { id: 'lied',       label: 'Liedwunsch für die Playlist',       type: 'text',  required: false },
-    { id: 'vorfreude',  label: 'Vorfreude-Skala (1–7)',             type: 'scale', required: true  },
+    { id: 'ernaehrung', label: 'Ernaehrungsbeduerfnisse / Allergien', type: 'text',  required: false },
+    { id: 'lied',       label: 'Liedwunsch fuer die Playlist',       type: 'text',  required: false },
+    { id: 'vorfreude',  label: 'Vorfreude-Skala (1-7)',             type: 'scale', required: true  },
   ];
 
-  /* ══════════════════════════════════════════════════════════
-     SETTINGS (Supabase: app_einstellungen)
-     ══════════════════════════════════════════════════════════ */
-  async function loadSettings() {
-    try {
-      const { data, error } = await db
-        .from('app_einstellungen').select('*').eq('id', 1).single();
-      if (error || !data) return {};
-      return {
-        coupleName: data.brautpaar || '',
-        weddingDate: data.hochzeitsdatum || '',
-        deadline: data.rsvp_deadline || '',
-        disabledQuestions: data.fragen?.disabledQuestions || [],
-        customQuestions: data.fragen?.customQuestions || [],
-        texte: data.texte || {},
-      };
-    } catch { return {}; }
-  }
-
-  async function saveSettingsData(s) {
-    const row = {
-      id: 1,
-      brautpaar: s.coupleName || '',
-      hochzeitsdatum: s.weddingDate || '',
-      rsvp_deadline: s.deadline || '',
-      fragen: {
-        disabledQuestions: s.disabledQuestions || [],
-        customQuestions: s.customQuestions || [],
-      },
-      texte: s.texte || {},
-    };
-    await db.from('app_einstellungen').upsert(row);
-  }
-
-  /* ══════════════════════════════════════════════════════════
-     ROUTING
-     ══════════════════════════════════════════════════════════ */
-  const ALL_VIEWS = ['adminLogin','adminPanel','fotoLogin','fotoPanel','galerieView','datenschutzView','impressumView','guestView'];
-  const urlParams = new URLSearchParams(window.location.search);
-
-  function showView(activeId) {
-    ALL_VIEWS.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = id === activeId ? '' : 'none';
-    });
-  }
-
-  if (urlParams.has('admin')) {
-    if (sessionStorage.getItem('rsvp_admin_auth') === '1') {
-      showView('adminPanel');
-      initAdminPanel();
-    } else {
-      showView('adminLogin');
-    }
-  } else if (urlParams.has('fotograf')) {
-    if (sessionStorage.getItem('rsvp_foto_auth') === '1') {
-      showView('fotoPanel');
-      initFotoPanel();
-    } else {
-      showView('fotoLogin');
-    }
-  } else if (urlParams.has('galerie')) {
-    showView('galerieView');
-    initGalerie();
-  } else if (urlParams.has('datenschutz')) {
-    showView('datenschutzView');
-  } else if (urlParams.has('impressum')) {
-    showView('impressumView');
-  } else {
-    showView('guestView');
-    applySettingsToForm();
-  }
+  let currentWedding = null;
+  let currentSession = null;
 
   /* ══════════════════════════════════════════════════════════
      HELPERS
@@ -2018,29 +2083,247 @@
   }
 
   function getPublicUrl(fileName) {
-    const { data } = db.storage.from(BUCKET).getPublicUrl(fileName);
+    if (!currentWedding) return '';
+    const { data } = db.storage.from(BUCKET).getPublicUrl(currentWedding.id + '/' + fileName);
     return data.publicUrl;
   }
 
+  function generateGastcode(name) {
+    const base = name
+      .toUpperCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^A-Z0-9\s&]/g, '')
+      .replace(/\s*&\s*/g, '-')
+      .replace(/\s+/g, '-')
+      .substring(0, 20);
+    const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return base ? base + '-' + suffix : suffix;
+  }
+
   /* ══════════════════════════════════════════════════════════
-     ADMIN LOGIN
+     ROUTING
      ══════════════════════════════════════════════════════════ */
-  document.getElementById('btnAdminLogin').addEventListener('click', attemptAdminLogin);
-  document.getElementById('adminPw').addEventListener('keydown', e => {
-    if (e.key === 'Enter') attemptAdminLogin();
+  const ALL_VIEWS = [
+    'landingView','guestCodeView','coupleLoginView','dashboardView',
+    'adminPanel','fotoLogin','fotoPanel','galerieView',
+    'datenschutzView','impressumView','guestView'
+  ];
+
+  function showView(activeId) {
+    ALL_VIEWS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = id === activeId ? '' : 'none';
+    });
+  }
+
+  async function loadWeddingByCode(code) {
+    const { data } = await db.from('hochzeiten').select('*')
+      .eq('gastcode', code.toUpperCase()).single();
+    if (data) currentWedding = data;
+    return data;
+  }
+
+  async function loadWeddingForCouple() {
+    if (!currentSession) return null;
+    const { data } = await db.from('hochzeiten').select('*')
+      .eq('user_id', currentSession.user.id).maybeSingle();
+    if (data) currentWedding = data;
+    return data;
+  }
+
+  (async function initRouter() {
+    const { data: { session } } = await db.auth.getSession();
+    currentSession = session;
+    const p = new URLSearchParams(window.location.search);
+
+    if (p.get('code')) {
+      const code = p.get('code').toUpperCase();
+      await loadWeddingByCode(code);
+      if (currentWedding) {
+        showView('guestView');
+        applySettingsToForm();
+        updateGuestLinks();
+      } else {
+        showView('guestCodeView');
+        document.getElementById('guestCode').value = code;
+        document.getElementById('codeError').style.display = 'block';
+      }
+    } else if (p.has('login')) {
+      if (session) { showView('dashboardView'); initDashboard(); }
+      else showView('coupleLoginView');
+    } else if (p.has('dashboard')) {
+      if (session) { showView('dashboardView'); initDashboard(); }
+      else window.location.search = 'login';
+    } else if (p.has('admin')) {
+      if (session) { showView('adminPanel'); initAdminPanel(); }
+      else window.location.search = 'login';
+    } else if (p.get('galerie')) {
+      await loadWeddingByCode(p.get('galerie'));
+      if (currentWedding) { showView('galerieView'); initGalerie(); }
+      else showView('landingView');
+    } else if (p.get('fotograf')) {
+      await loadWeddingByCode(p.get('fotograf'));
+      if (currentWedding) {
+        if (sessionStorage.getItem('foto_auth_' + currentWedding.id) === '1') {
+          showView('fotoPanel'); initFotoPanel();
+        } else {
+          showView('fotoLogin');
+        }
+        updateFotoLinks();
+      } else showView('landingView');
+    } else if (p.has('datenschutz')) {
+      showView('datenschutzView');
+    } else if (p.has('impressum')) {
+      showView('impressumView');
+    } else {
+      showView('landingView');
+    }
+  })();
+
+  /* ══════════════════════════════════════════════════════════
+     LANDING PAGE
+     ══════════════════════════════════════════════════════════ */
+  document.getElementById('btnGuest').addEventListener('click', () => {
+    showView('guestCodeView');
+    document.getElementById('guestCode').focus();
   });
 
-  function attemptAdminLogin() {
-    const pw = document.getElementById('adminPw').value;
-    if (pw === ADMIN_PW) {
-      sessionStorage.setItem('rsvp_admin_auth', '1');
-      document.getElementById('adminPw').parentElement.classList.remove('invalid');
-      showView('adminPanel');
-      initAdminPanel();
+  document.getElementById('btnCouple').addEventListener('click', () => {
+    window.location.search = 'login';
+  });
+
+  /* ══════════════════════════════════════════════════════════
+     GUEST CODE ENTRY
+     ══════════════════════════════════════════════════════════ */
+  document.getElementById('btnCheckCode').addEventListener('click', async () => {
+    const code = document.getElementById('guestCode').value.trim().toUpperCase();
+    if (!code) {
+      document.getElementById('codeError').textContent = 'Bitte geben Sie einen Code ein.';
+      document.getElementById('codeError').style.display = 'block';
+      return;
+    }
+    document.getElementById('codeError').style.display = 'none';
+    await loadWeddingByCode(code);
+    if (currentWedding) {
+      window.location.search = 'code=' + code;
     } else {
-      document.getElementById('adminPw').parentElement.classList.add('invalid');
+      document.getElementById('codeError').textContent = 'Code nicht gefunden. Bitte ueberpruefen Sie Ihre Eingabe.';
+      document.getElementById('codeError').style.display = 'block';
+    }
+  });
+
+  document.getElementById('guestCode').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btnCheckCode').click();
+  });
+
+  /* ══════════════════════════════════════════════════════════
+     COUPLE AUTH
+     ══════════════════════════════════════════════════════════ */
+  function showCoupleError(msg) {
+    const el = document.getElementById('coupleError');
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.parentElement.classList.add('invalid');
+  }
+
+  function clearCoupleError() {
+    const el = document.getElementById('coupleError');
+    el.textContent = '';
+    el.style.display = 'none';
+    el.parentElement.classList.remove('invalid');
+  }
+
+  document.getElementById('btnCoupleLogin').addEventListener('click', async () => {
+    clearCoupleError();
+    const email = document.getElementById('coupleEmail').value.trim();
+    const pw = document.getElementById('couplePw').value;
+    if (!email || !pw) { showCoupleError('Bitte E-Mail und Passwort eingeben.'); return; }
+    const { error } = await db.auth.signInWithPassword({ email, password: pw });
+    if (error) {
+      showCoupleError(error.message === 'Invalid login credentials'
+        ? 'Unguelltige Anmeldedaten. Bitte ueberpruefen Sie E-Mail und Passwort.'
+        : error.message);
+    } else {
+      window.location.search = 'dashboard';
+    }
+  });
+
+  document.getElementById('btnCoupleRegister').addEventListener('click', async () => {
+    clearCoupleError();
+    const email = document.getElementById('coupleEmail').value.trim();
+    const pw = document.getElementById('couplePw').value;
+    if (!email || !pw) { showCoupleError('Bitte E-Mail und Passwort eingeben.'); return; }
+    if (pw.length < 6) { showCoupleError('Das Passwort muss mindestens 6 Zeichen lang sein.'); return; }
+    const { error } = await db.auth.signUp({ email, password: pw });
+    if (error) { showCoupleError(error.message); return; }
+    const { error: loginErr } = await db.auth.signInWithPassword({ email, password: pw });
+    if (loginErr) {
+      showCoupleError('Konto erstellt! Bitte bestaetigen Sie Ihre E-Mail und melden Sie sich dann an.');
+    } else {
+      window.location.search = 'dashboard';
+    }
+  });
+
+  document.getElementById('coupleEmail').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('couplePw').focus();
+  });
+  document.getElementById('couplePw').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btnCoupleLogin').click();
+  });
+
+  /* ══════════════════════════════════════════════════════════
+     DASHBOARD
+     ══════════════════════════════════════════════════════════ */
+  async function initDashboard() {
+    const wedding = await loadWeddingForCouple();
+    document.getElementById('createWeddingSection').style.display = wedding ? 'none' : '';
+    document.getElementById('existingWeddingSection').style.display = wedding ? '' : 'none';
+    if (wedding) {
+      document.getElementById('dashGastcode').textContent = wedding.gastcode;
+      document.getElementById('dashAdminLink').href = '?admin';
+      document.getElementById('dashGalerieLink').href = '?galerie=' + wedding.gastcode;
+      document.getElementById('dashTestLink').href = '?code=' + wedding.gastcode;
+      const { count } = await db.from('rsvp_antworten')
+        .select('*', { count: 'exact', head: true })
+        .eq('hochzeit_id', wedding.id);
+      document.getElementById('dashSummary').innerHTML =
+        '<div class="summary-item"><span class="summary-num">' + (count || 0) + '</span><span class="summary-label">Antworten</span></div>' +
+        '<div class="summary-item"><span class="summary-num">' + escHtml(wedding.brautpaar_name || '–') + '</span><span class="summary-label">Brautpaar</span></div>' +
+        '<div class="summary-item"><span class="summary-num">' + escHtml(wedding.hochzeitsdatum || '–') + '</span><span class="summary-label">Datum</span></div>';
     }
   }
+
+  document.getElementById('btnCreateWedding').addEventListener('click', async () => {
+    const name = document.getElementById('createCouple').value.trim();
+    if (!name) { alert('Bitte geben Sie den Namen des Brautpaares ein.'); return; }
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) { window.location.search = 'login'; return; }
+    const gastcode = generateGastcode(name);
+    const { error } = await db.from('hochzeiten').insert({
+      user_id: session.user.id,
+      gastcode: gastcode,
+      brautpaar_name: name,
+      hochzeitsdatum: document.getElementById('createDate').value.trim(),
+      rsvp_deadline: document.getElementById('createDeadline').value.trim(),
+      foto_passwort: document.getElementById('createFotoPw').value.trim(),
+    });
+    if (error) { alert('Fehler: ' + error.message); return; }
+    initDashboard();
+  });
+
+  document.getElementById('btnCopyCode').addEventListener('click', () => {
+    const code = document.getElementById('dashGastcode').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+      const btn = document.getElementById('btnCopyCode');
+      btn.textContent = 'Kopiert!';
+      setTimeout(() => { btn.textContent = 'Kopieren'; }, 2000);
+    });
+  });
+
+  document.getElementById('btnLogout').addEventListener('click', async () => {
+    await db.auth.signOut();
+    window.location.search = '';
+  });
 
   /* ══════════════════════════════════════════════════════════
      PHOTOGRAPHER LOGIN
@@ -2051,19 +2334,37 @@
   });
 
   function attemptFotoLogin() {
+    if (!currentWedding) return;
     const pw = document.getElementById('fotoPw').value;
-    if (pw === FOTO_PW) {
-      sessionStorage.setItem('rsvp_foto_auth', '1');
+    if (pw === currentWedding.foto_passwort) {
+      sessionStorage.setItem('foto_auth_' + currentWedding.id, '1');
       document.getElementById('fotoPw').parentElement.classList.remove('invalid');
       showView('fotoPanel');
       initFotoPanel();
+      updateFotoLinks();
     } else {
       document.getElementById('fotoPw').parentElement.classList.add('invalid');
     }
   }
 
+  function updateFotoLinks() {
+    if (!currentWedding) return;
+    const code = currentWedding.gastcode;
+    const fl = document.getElementById('fotoGalerieLink');
+    if (fl) fl.href = '?galerie=' + code;
+    const bl = document.getElementById('fotoBackLink');
+    if (bl) bl.href = '?code=' + code;
+  }
+
+  function updateGuestLinks() {
+    if (!currentWedding) return;
+    const code = currentWedding.gastcode;
+    const gl = document.getElementById('guestGalerieLink');
+    if (gl) gl.href = '?galerie=' + code;
+  }
+
   /* ══════════════════════════════════════════════════════════
-     ADMIN PANEL – Tabs
+     ADMIN PANEL - Tabs
      ══════════════════════════════════════════════════════════ */
   document.querySelectorAll('.admin-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -2079,65 +2380,57 @@
   });
 
   /* ══════════════════════════════════════════════════════════
-     TAB 1 – EINSTELLUNGEN
+     TAB 1 - EINSTELLUNGEN
      ══════════════════════════════════════════════════════════ */
   async function initAdminPanel() {
-    const s = await loadSettings();
-    document.getElementById('settCouple').value   = s.coupleName || '';
-    document.getElementById('settDate').value      = s.weddingDate || '';
-    document.getElementById('settDeadline').value  = s.deadline || '';
-    renderQuestionsList(s);
+    const wedding = await loadWeddingForCouple();
+    if (!wedding) { window.location.search = 'dashboard'; return; }
+    document.getElementById('settCouple').value   = wedding.brautpaar_name || '';
+    document.getElementById('settDate').value      = wedding.hochzeitsdatum || '';
+    document.getElementById('settDeadline').value  = wedding.rsvp_deadline || '';
+    document.getElementById('settGastcode').value  = wedding.gastcode || '';
+    document.getElementById('settFotoPw').value    = wedding.foto_passwort || '';
+    renderQuestionsList(wedding);
   }
 
-  function renderQuestionsList(settings) {
+  function renderQuestionsList(wedding) {
     const container = document.getElementById('questionsList');
-    const disabled  = settings.disabledQuestions || [];
-    const custom    = settings.customQuestions   || [];
+    const disabled  = wedding.fragen?.disabledQuestions || [];
+    const custom    = wedding.fragen?.customQuestions   || [];
 
     let html = '<p style="font-size:0.78rem;color:var(--text-sec);margin-bottom:8px;">Standard-Fragen</p>';
-
     DEFAULT_QUESTIONS.forEach(q => {
       const active = !disabled.includes(q.id);
-      const typeLabel = q.type === 'yesno' ? 'Ja/Nein' : q.type === 'scale' ? 'Skala 1–7' : 'Textfeld';
-      html += `
-        <div class="question-row">
-          <span class="q-text">${q.label}</span>
-          <span class="q-type-badge">${typeLabel}</span>
-          <label class="toggle">
-            <input type="checkbox" data-default-id="${q.id}" ${active ? 'checked' : ''} />
-            <span class="toggle-slider"></span>
-          </label>
-        </div>`;
+      const typeLabel = q.type === 'yesno' ? 'Ja/Nein' : q.type === 'scale' ? 'Skala 1-7' : 'Textfeld';
+      html += '<div class="question-row"><span class="q-text">' + q.label + '</span>' +
+        '<span class="q-type-badge">' + typeLabel + '</span>' +
+        '<label class="toggle"><input type="checkbox" data-default-id="' + q.id + '"' + (active ? ' checked' : '') + ' />' +
+        '<span class="toggle-slider"></span></label></div>';
     });
 
     if (custom.length) {
       html += '<p style="font-size:0.78rem;color:var(--text-sec);margin:16px 0 8px;">Eigene Fragen</p>';
       custom.forEach((q, i) => {
-        const typeLabel = q.type === 'yesno' ? 'Ja/Nein' : q.type === 'scale' ? 'Skala 1–7' : 'Textfeld';
+        const typeLabel = q.type === 'yesno' ? 'Ja/Nein' : q.type === 'scale' ? 'Skala 1-7' : 'Textfeld';
         const active = q.active !== false;
-        html += `
-          <div class="question-row">
-            <span class="q-text">${escHtml(q.text)}</span>
-            <span class="q-type-badge">${typeLabel}</span>
-            <label class="toggle">
-              <input type="checkbox" data-custom-idx="${i}" ${active ? 'checked' : ''} />
-              <span class="toggle-slider"></span>
-            </label>
-            <button type="button" class="btn-remove" data-remove-idx="${i}" title="Frage entfernen">✕</button>
-          </div>`;
+        html += '<div class="question-row"><span class="q-text">' + escHtml(q.text) + '</span>' +
+          '<span class="q-type-badge">' + typeLabel + '</span>' +
+          '<label class="toggle"><input type="checkbox" data-custom-idx="' + i + '"' + (active ? ' checked' : '') + ' />' +
+          '<span class="toggle-slider"></span></label>' +
+          '<button type="button" class="btn-remove" data-remove-idx="' + i + '" title="Frage entfernen">✕</button></div>';
       });
     }
-
     container.innerHTML = html;
 
     container.querySelectorAll('.btn-remove').forEach(btn => {
       btn.addEventListener('click', async () => {
         const idx = parseInt(btn.dataset.removeIdx);
-        const s = await loadSettings();
-        s.customQuestions = s.customQuestions || [];
-        s.customQuestions.splice(idx, 1);
-        await saveSettingsData(s);
-        renderQuestionsList(s);
+        const custom = currentWedding.fragen?.customQuestions || [];
+        custom.splice(idx, 1);
+        const fragen = { ...currentWedding.fragen, customQuestions: custom };
+        await db.from('hochzeiten').update({ fragen }).eq('id', currentWedding.id);
+        currentWedding.fragen = fragen;
+        renderQuestionsList(currentWedding);
       });
     });
   }
@@ -2145,41 +2438,49 @@
   document.getElementById('btnAddQ').addEventListener('click', async () => {
     const text = document.getElementById('newQText').value.trim();
     const type = document.getElementById('newQType').value;
-    if (!text) return;
-    const s = await loadSettings();
-    s.customQuestions = s.customQuestions || [];
-    s.customQuestions.push({ text, type, active: true });
-    await saveSettingsData(s);
-    renderQuestionsList(s);
+    if (!text || !currentWedding) return;
+    const custom = currentWedding.fragen?.customQuestions || [];
+    custom.push({ text, type, active: true });
+    const fragen = { ...currentWedding.fragen, customQuestions: custom };
+    await db.from('hochzeiten').update({ fragen }).eq('id', currentWedding.id);
+    currentWedding.fragen = fragen;
+    renderQuestionsList(currentWedding);
     document.getElementById('newQText').value = '';
   });
 
   document.getElementById('btnSaveSettings').addEventListener('click', async () => {
-    const s = await loadSettings();
-    s.coupleName  = document.getElementById('settCouple').value.trim();
-    s.weddingDate = document.getElementById('settDate').value.trim();
-    s.deadline    = document.getElementById('settDeadline').value.trim();
-    s.disabledQuestions = [];
+    if (!currentWedding) return;
+    const disabledQuestions = [];
     document.querySelectorAll('[data-default-id]').forEach(cb => {
-      if (!cb.checked) s.disabledQuestions.push(cb.dataset.defaultId);
+      if (!cb.checked) disabledQuestions.push(cb.dataset.defaultId);
     });
-    s.customQuestions = s.customQuestions || [];
+    const custom = currentWedding.fragen?.customQuestions || [];
     document.querySelectorAll('[data-custom-idx]').forEach(cb => {
       const idx = parseInt(cb.dataset.customIdx);
-      if (s.customQuestions[idx]) s.customQuestions[idx].active = cb.checked;
+      if (custom[idx]) custom[idx].active = cb.checked;
     });
-    await saveSettingsData(s);
+    const updates = {
+      brautpaar_name: document.getElementById('settCouple').value.trim(),
+      hochzeitsdatum: document.getElementById('settDate').value.trim(),
+      rsvp_deadline: document.getElementById('settDeadline').value.trim(),
+      gastcode: document.getElementById('settGastcode').value.trim().toUpperCase() || currentWedding.gastcode,
+      foto_passwort: document.getElementById('settFotoPw').value.trim(),
+      fragen: { disabledQuestions, customQuestions: custom },
+    };
+    const { error } = await db.from('hochzeiten').update(updates).eq('id', currentWedding.id);
+    if (error) { alert('Fehler: ' + error.message); return; }
+    Object.assign(currentWedding, updates);
     const notice = document.getElementById('saveNotice');
     notice.style.display = 'inline-block';
     setTimeout(() => { notice.style.display = 'none'; }, 2500);
   });
 
   /* ══════════════════════════════════════════════════════════
-     TAB – TEXTE
+     TAB - TEXTE
      ══════════════════════════════════════════════════════════ */
-  async function loadTexteTab() {
-    const s = await loadSettings();
-    const t = s.texte || {};
+  function loadTexteTab() {
+    if (!currentWedding) return;
+    const t = currentWedding.texte || {};
     document.getElementById('txtFormTitle').value     = t.formTitle || '';
     document.getElementById('txtFormDesc').value      = t.formDesc || '';
     document.getElementById('txtSuccessTitle').value  = t.successTitle || '';
@@ -2189,8 +2490,8 @@
   }
 
   document.getElementById('btnSaveTexte').addEventListener('click', async () => {
-    const s = await loadSettings();
-    s.texte = {
+    if (!currentWedding) return;
+    const texte = {
       formTitle:     document.getElementById('txtFormTitle').value.trim(),
       formDesc:      document.getElementById('txtFormDesc').value.trim(),
       successTitle:  document.getElementById('txtSuccessTitle').value.trim(),
@@ -2198,24 +2499,28 @@
       galerieTitle:  document.getElementById('txtGalerieTitle').value.trim(),
       galerieDesc:   document.getElementById('txtGalerieDesc').value.trim(),
     };
-    await saveSettingsData(s);
+    await db.from('hochzeiten').update({ texte }).eq('id', currentWedding.id);
+    currentWedding.texte = texte;
     const notice = document.getElementById('saveTexteNotice');
     notice.style.display = 'inline-block';
     setTimeout(() => { notice.style.display = 'none'; }, 2500);
   });
 
   /* ══════════════════════════════════════════════════════════
-     TAB 2 – ANTWORTEN / DATENBANK
+     TAB 2 - ANTWORTEN / DATENBANK
      ══════════════════════════════════════════════════════════ */
   let answersData = [];
 
   async function loadAnswers() {
+    if (!currentWedding) return;
     const tbody = document.getElementById('answersBody');
-    tbody.innerHTML = '<tr><td colspan="9" class="loading-text">Daten werden geladen…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="loading-text">Daten werden geladen...</td></tr>';
     const { data, error } = await db
-      .from('rsvp_antworten').select('*').order('created_at', { ascending: false });
+      .from('rsvp_antworten').select('*')
+      .eq('hochzeit_id', currentWedding.id)
+      .order('created_at', { ascending: false });
     if (error) {
-      tbody.innerHTML = `<tr><td colspan="9" class="no-data">Fehler: ${escHtml(error.message)}</td></tr>`;
+      tbody.innerHTML = '<tr><td colspan="9" class="no-data">Fehler: ' + escHtml(error.message) + '</td></tr>';
       return;
     }
     answersData = data || [];
@@ -2232,12 +2537,10 @@
     tbody.innerHTML = answersData.map(r => {
       const isJa = (r.teilnahme || '').toLowerCase().includes('ja');
       const badge = isJa ? '<span class="badge-ja">Zusage</span>' : '<span class="badge-nein">Absage</span>';
-      return `<tr>
-        <td>${escHtml(r.name || '–')}</td><td>${badge}</td><td>${r.anzahl_personen ?? '–'}</td>
-        <td>${escHtml(r.zeremonie || '–')}</td><td>${escHtml(r.abendfeier || '–')}</td>
-        <td>${escHtml(r.ernaehrung || '–')}</td><td>${escHtml(r.liedwunsch || '–')}</td>
-        <td>${r.vorfreude ?? '–'}</td><td>${fmtDate(r.created_at)}</td>
-      </tr>`;
+      return '<tr><td>' + escHtml(r.name || '–') + '</td><td>' + badge + '</td><td>' + (r.anzahl_personen ?? '–') + '</td>' +
+        '<td>' + escHtml(r.zeremonie || '–') + '</td><td>' + escHtml(r.abendfeier || '–') + '</td>' +
+        '<td>' + escHtml(r.ernaehrung || '–') + '</td><td>' + escHtml(r.liedwunsch || '–') + '</td>' +
+        '<td>' + (r.vorfreude ?? '–') + '</td><td>' + fmtDate(r.created_at) + '</td></tr>';
     }).join('');
   }
 
@@ -2257,80 +2560,81 @@
 
   document.getElementById('btnCSV').addEventListener('click', () => {
     if (!answersData.length) return alert('Keine Daten vorhanden.');
-    const headers = ['Name','Teilnahme','Personen','Zeremonie','Abendfeier','Ernährung','Liedwunsch','Vorfreude','Datum'];
+    const headers = ['Name','Teilnahme','Personen','Zeremonie','Abendfeier','Ernaehrung','Liedwunsch','Vorfreude','Datum'];
     const rows = answersData.map(r => [
       r.name || '', r.teilnahme || '', r.anzahl_personen ?? '', r.zeremonie || '',
       r.abendfeier || '', r.ernaehrung || '', r.liedwunsch || '', r.vorfreude ?? '',
       r.created_at ? new Date(r.created_at).toLocaleDateString('de-DE') : ''
-    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'));
+    ].map(v => '"' + String(v).replace(/"/g, '""') + '"').join(';'));
     const csv = '\uFEFF' + headers.join(';') + '\n' + rows.join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `rsvp_antworten_${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = 'rsvp_antworten_' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
     URL.revokeObjectURL(url);
   });
 
   /* ══════════════════════════════════════════════════════════
-     GUEST VIEW – Settings auf Formular anwenden
+     GUEST VIEW - Settings auf Formular anwenden
      ══════════════════════════════════════════════════════════ */
-  async function applySettingsToForm() {
-    const s = await loadSettings();
-    const t = s.texte || {};
+  function applySettingsToForm() {
+    if (!currentWedding) return;
+    const w = currentWedding;
+    const t = w.texte || {};
 
-    // Titel: custom > auto aus Brautpaar > Standard
     if (t.formTitle) {
       document.getElementById('formTitle').textContent = t.formTitle;
-    } else if (s.coupleName) {
-      document.getElementById('formTitle').textContent = `Hochzeit von ${s.coupleName} – Antwortformular (RSVP)`;
+    } else if (w.brautpaar_name) {
+      document.getElementById('formTitle').textContent = 'Hochzeit von ' + w.brautpaar_name + ' – Antwortformular (RSVP)';
     }
 
-    // Beschreibung: custom > Standard mit Deadline
     if (t.formDesc) {
       document.getElementById('formDesc').innerHTML = escHtml(t.formDesc).replace(/\n/g, '<br>');
-    } else if (s.deadline) {
-      document.getElementById('formDeadline').textContent = s.deadline;
+    } else if (w.rsvp_deadline) {
+      document.getElementById('formDeadline').textContent = w.rsvp_deadline;
     }
 
-    // Erfolgs-Texte
     if (t.successTitle) document.querySelector('#successCard h2').textContent = t.successTitle;
-    if (t.successDesc)  document.querySelector('#successCard p').innerHTML = escHtml(t.successDesc).replace(/\n/g, '<br>');
+    if (t.successDesc) document.querySelector('#successCard p').innerHTML = escHtml(t.successDesc).replace(/\n/g, '<br>');
 
-    if (s.weddingDate) document.getElementById('labelTeilnahme').innerHTML = `Werde ich an der Hochzeit am ${escHtml(s.weddingDate)} teilnehmen? <span class="req">*</span>`;
+    if (w.hochzeitsdatum) {
+      document.getElementById('labelTeilnahme').innerHTML =
+        'Werde ich an der Hochzeit am ' + escHtml(w.hochzeitsdatum) + ' teilnehmen? <span class="req">*</span>';
+    }
 
-    const disabled = s.disabledQuestions || [];
+    const disabled = w.fragen?.disabledQuestions || [];
     disabled.forEach(qid => {
-      const el = document.querySelector(`[data-qid="${qid}"]`);
+      const el = document.querySelector('[data-qid="' + qid + '"]');
       if (el) el.classList.add('question-hidden');
     });
 
-    const custom = (s.customQuestions || []).filter(q => q.active !== false);
+    const custom = (w.fragen?.customQuestions || []).filter(q => q.active !== false);
     const container = document.getElementById('customQuestionsContainer');
     container.innerHTML = '';
     custom.forEach((q, i) => {
       const card = document.createElement('div');
       card.className = 'question-card';
-      card.id = `q-custom-${i}`;
-      card.dataset.qid = `custom-${i}`;
+      card.id = 'q-custom-' + i;
+      card.dataset.qid = 'custom-' + i;
       let inputHtml = '';
       if (q.type === 'text') {
-        inputHtml = `<input type="text" class="gf-input" data-custom-input="${i}" placeholder="Ihre Antwort" />`;
+        inputHtml = '<input type="text" class="gf-input" data-custom-input="' + i + '" placeholder="Ihre Antwort" />';
       } else if (q.type === 'yesno') {
-        inputHtml = `<div class="radio-group"><label class="radio-option"><input type="radio" name="custom_${i}" value="Ja" /><span>Ja</span></label><label class="radio-option"><input type="radio" name="custom_${i}" value="Nein" /><span>Nein</span></label></div>`;
+        inputHtml = '<div class="radio-group"><label class="radio-option"><input type="radio" name="custom_' + i + '" value="Ja" /><span>Ja</span></label><label class="radio-option"><input type="radio" name="custom_' + i + '" value="Nein" /><span>Nein</span></label></div>';
       } else if (q.type === 'scale') {
         let opts = '';
-        for (let n = 1; n <= 7; n++) opts += `<label class="scale-option"><span class="num">${n}</span><input type="radio" name="custom_${i}" value="${n}" /></label>`;
-        inputHtml = `<div class="scale-container"><div class="scale-row"><span class="scale-label-side left">1</span><div class="scale-options">${opts}</div><span class="scale-label-side right">7</span></div></div>`;
+        for (let n = 1; n <= 7; n++) opts += '<label class="scale-option"><span class="num">' + n + '</span><input type="radio" name="custom_' + i + '" value="' + n + '" /></label>';
+        inputHtml = '<div class="scale-container"><div class="scale-row"><span class="scale-label-side left">1</span><div class="scale-options">' + opts + '</div><span class="scale-label-side right">7</span></div></div>';
       }
-      card.innerHTML = `<p class="q-label">${escHtml(q.text)}</p>${inputHtml}`;
+      card.innerHTML = '<p class="q-label">' + escHtml(q.text) + '</p>' + inputHtml;
       container.appendChild(card);
     });
   }
 
   /* ══════════════════════════════════════════════════════════
-     GUEST VIEW – Form Logic
+     GUEST VIEW - Form Logic
      ══════════════════════════════════════════════════════════ */
   const form        = document.getElementById('rsvpForm');
   const submitBtn   = document.getElementById('submitBtn');
@@ -2340,8 +2644,8 @@
   const btnNew      = document.getElementById('btnNew');
 
   function getVal(id)     { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
-  function getRadio(name) { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : null; }
-  function isVisible(qid) { const el = document.querySelector(`[data-qid="${qid}"]`); return el && !el.classList.contains('question-hidden'); }
+  function getRadio(name) { const el = document.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : null; }
+  function isVisible(qid) { const el = document.querySelector('[data-qid="' + qid + '"]'); return el && !el.classList.contains('question-hidden'); }
 
   function clearInvalid() {
     document.querySelectorAll('.question-card.invalid, .consent-card.invalid').forEach(c => c.classList.remove('invalid'));
@@ -2352,15 +2656,15 @@
   function validate() {
     clearInvalid();
     let ok = true, firstBad = null;
-    if (isVisible('name') && !getVal('guestName'))         { markInvalid('q-name');       ok = false; firstBad ??= 'q-name'; }
-    if (isVisible('teilnahme') && !getRadio('teilnahme'))   { markInvalid('q-teilnahme');  ok = false; firstBad ??= 'q-teilnahme'; }
-    if (isVisible('anzahl')) { const c = getVal('personCount'); if (!c || parseInt(c) < 1) { markInvalid('q-anzahl'); ok = false; firstBad ??= 'q-anzahl'; } }
-    if (isVisible('zeremonie') && !getRadio('zeremonie'))   { markInvalid('q-zeremonie');  ok = false; firstBad ??= 'q-zeremonie'; }
-    if (isVisible('abendfeier') && !getRadio('abendfeier')) { markInvalid('q-abendfeier'); ok = false; firstBad ??= 'q-abendfeier'; }
-    if (isVisible('vorfreude') && !getRadio('vorfreude'))   { markInvalid('q-vorfreude');  ok = false; firstBad ??= 'q-vorfreude'; }
+    if (isVisible('name') && !getVal('guestName'))         { markInvalid('q-name');       ok = false; firstBad = firstBad || 'q-name'; }
+    if (isVisible('teilnahme') && !getRadio('teilnahme'))   { markInvalid('q-teilnahme');  ok = false; firstBad = firstBad || 'q-teilnahme'; }
+    if (isVisible('anzahl')) { const c = getVal('personCount'); if (!c || parseInt(c) < 1) { markInvalid('q-anzahl'); ok = false; firstBad = firstBad || 'q-anzahl'; } }
+    if (isVisible('zeremonie') && !getRadio('zeremonie'))   { markInvalid('q-zeremonie');  ok = false; firstBad = firstBad || 'q-zeremonie'; }
+    if (isVisible('abendfeier') && !getRadio('abendfeier')) { markInvalid('q-abendfeier'); ok = false; firstBad = firstBad || 'q-abendfeier'; }
+    if (isVisible('vorfreude') && !getRadio('vorfreude'))   { markInvalid('q-vorfreude');  ok = false; firstBad = firstBad || 'q-vorfreude'; }
     if (!document.getElementById('consentCheck').checked) {
       document.getElementById('q-consent').classList.add('invalid');
-      ok = false; firstBad ??= 'q-consent';
+      ok = false; firstBad = firstBad || 'q-consent';
     }
     if (firstBad) document.getElementById(firstBad).scrollIntoView({ behavior: 'smooth', block: 'center' });
     return ok;
@@ -2370,12 +2674,12 @@
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate() || !currentWedding) return;
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Wird gesendet…';
+    submitBtn.textContent = 'Wird gesendet...';
     errorToast.classList.remove('visible');
 
-    const row = {};
+    const row = { hochzeit_id: currentWedding.id };
     if (isVisible('name'))       row.name            = getVal('guestName');
     if (isVisible('teilnahme'))  row.teilnahme       = getRadio('teilnahme');
     if (isVisible('anzahl'))     row.anzahl_personen = parseInt(getVal('personCount'), 10);
@@ -2419,13 +2723,10 @@
     setupDragDrop();
   }
 
-  /* ── Drag & Drop + File Input ───────────────────────────── */
   function setupDragDrop() {
     const dz    = document.getElementById('dropzone');
     const input = document.getElementById('fileInput');
-
     dz.addEventListener('click', () => input.click());
-
     dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });
     dz.addEventListener('dragleave', ()  => { dz.classList.remove('dragover'); });
     dz.addEventListener('drop', (e) => {
@@ -2434,7 +2735,6 @@
       const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/') || f.name.toLowerCase().endsWith('.heic'));
       if (files.length) handleUpload(files);
     });
-
     input.addEventListener('change', () => {
       const files = [...input.files];
       if (files.length) handleUpload(files);
@@ -2442,25 +2742,21 @@
     });
   }
 
-  /* ── Upload with Progress ───────────────────────────────── */
   async function handleUpload(files) {
     const tooLarge = files.filter(f => f.size > MAX_FILE_SIZE);
     if (tooLarge.length) {
-      alert(`${tooLarge.length} Datei(en) überschreiten 50 MB und werden übersprungen.`);
+      alert(tooLarge.length + ' Datei(en) ueberschreiten 50 MB und werden uebersprungen.');
       files = files.filter(f => f.size <= MAX_FILE_SIZE);
     }
     if (!files.length) return;
-
     const progressEl = document.getElementById('uploadProgress');
     const fillEl     = document.getElementById('progressFill');
     const textEl     = document.getElementById('progressText');
     progressEl.style.display = '';
-
     let completed = 0;
     const total = files.length;
-
     for (const file of files) {
-      textEl.textContent = `${completed + 1} von ${total}: ${file.name}`;
+      textEl.textContent = (completed + 1) + ' von ' + total + ': ' + file.name;
       try {
         await uploadFileXHR(file, (pct) => {
           const overall = ((completed + pct) / total) * 100;
@@ -2469,114 +2765,100 @@
         completed++;
       } catch (err) {
         console.error('Upload error:', err);
-        textEl.textContent = `Fehler bei ${file.name}: ${err.message}`;
+        textEl.textContent = 'Fehler bei ' + file.name + ': ' + err.message;
         await new Promise(r => setTimeout(r, 2000));
         completed++;
       }
     }
-
     fillEl.style.width = '100%';
-    textEl.textContent = `${completed} von ${total} Fotos hochgeladen!`;
+    textEl.textContent = completed + ' von ' + total + ' Fotos hochgeladen!';
     setTimeout(() => { progressEl.style.display = 'none'; fillEl.style.width = '0%'; }, 3000);
-
     loadFotos();
   }
 
   function uploadFileXHR(file, onProgress) {
     return new Promise((resolve, reject) => {
-      const path = `${Date.now()}_${safeName(file.name)}`;
+      if (!currentWedding) { reject(new Error('Keine Hochzeit')); return; }
+      const path = currentWedding.id + '/' + Date.now() + '_' + safeName(file.name);
       const xhr  = new XMLHttpRequest();
-
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) onProgress(e.loaded / e.total);
       });
-
       xhr.addEventListener('load', () => {
         if (xhr.status >= 200 && xhr.status < 300) resolve(path);
-        else reject(new Error(`HTTP ${xhr.status}`));
+        else reject(new Error('HTTP ' + xhr.status));
       });
-
       xhr.addEventListener('error', () => reject(new Error('Netzwerkfehler')));
-
-      xhr.open('POST', `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`);
-      xhr.setRequestHeader('Authorization', `Bearer ${SUPABASE_KEY}`);
+      xhr.open('POST', SUPABASE_URL + '/storage/v1/object/' + BUCKET + '/' + path);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
       xhr.setRequestHeader('apikey', SUPABASE_KEY);
       xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
       xhr.send(file);
     });
   }
 
-  /* ── Load & Display Photos ──────────────────────────────── */
   async function loadFotos() {
+    if (!currentWedding) return;
     const grid    = document.getElementById('fotoGrid');
     const loading = document.getElementById('fotoLoading');
     const actions = document.getElementById('fotoActions');
     loading.style.display = '';
     grid.innerHTML = '';
-
-    const { data, error } = await db.storage.from(BUCKET).list('', {
+    const { data, error } = await db.storage.from(BUCKET).list(currentWedding.id, {
       limit: 1000,
       sortBy: { column: 'created_at', order: 'desc' }
     });
-
     loading.style.display = 'none';
-
     if (error) {
-      grid.innerHTML = `<p class="no-data">Fehler: ${escHtml(error.message)}</p>`;
+      grid.innerHTML = '<p class="no-data">Fehler: ' + escHtml(error.message) + '</p>';
       return;
     }
-
     fotoFiles = (data || []).filter(f => f.id);
-    document.getElementById('fotoCount').textContent = `${fotoFiles.length} Foto${fotoFiles.length !== 1 ? 's' : ''}`;
+    document.getElementById('fotoCount').textContent = fotoFiles.length + ' Foto' + (fotoFiles.length !== 1 ? 's' : '');
     actions.style.display = fotoFiles.length ? '' : 'none';
 
     fotoFiles.forEach(f => {
       const url  = getPublicUrl(f.name);
       const card = document.createElement('div');
       card.className = 'photo-card';
-      card.innerHTML = `
-        <div class="photo-thumb" data-url="${escHtml(url)}" data-name="${escHtml(f.name)}">
-          <img src="${url}" alt="${escHtml(displayName(f.name))}" loading="lazy" />
-          <div class="photo-overlay">
-            <button class="photo-btn" title="Herunterladen" data-dl="${escHtml(url)}" data-dlname="${escHtml(displayName(f.name))}">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </button>
-            <button class="photo-btn delete-btn" title="Löschen" data-del="${escHtml(f.name)}">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-            </button>
-          </div>
-        </div>
-        <div class="photo-info">
-          <span class="photo-name" title="${escHtml(displayName(f.name))}">${escHtml(displayName(f.name))}</span>
-          <span class="photo-date">${fmtDate(f.created_at)}</span>
-        </div>`;
+      card.innerHTML =
+        '<div class="photo-thumb" data-url="' + escHtml(url) + '" data-name="' + escHtml(f.name) + '">' +
+          '<img src="' + url + '" alt="' + escHtml(displayName(f.name)) + '" loading="lazy" />' +
+          '<div class="photo-overlay">' +
+            '<button class="photo-btn" title="Herunterladen" data-dl="' + escHtml(url) + '" data-dlname="' + escHtml(displayName(f.name)) + '">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+            '</button>' +
+            '<button class="photo-btn delete-btn" title="Loeschen" data-del="' + escHtml(currentWedding.id + '/' + f.name) + '">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="photo-info">' +
+          '<span class="photo-name" title="' + escHtml(displayName(f.name)) + '">' + escHtml(displayName(f.name)) + '</span>' +
+          '<span class="photo-date">' + fmtDate(f.created_at) + '</span>' +
+        '</div>';
       grid.appendChild(card);
     });
 
-    // Lightbox click
     grid.querySelectorAll('.photo-thumb').forEach(thumb => {
       thumb.addEventListener('click', (e) => {
         if (e.target.closest('.photo-btn')) return;
         openLightbox(thumb.dataset.url, thumb.dataset.name);
       });
     });
-
-    // Download click
     grid.querySelectorAll('[data-dl]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         downloadSinglePhoto(btn.dataset.dl, btn.dataset.dlname);
       });
     });
-
-    // Delete click
     grid.querySelectorAll('[data-del]').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        const name = btn.dataset.del;
-        if (!confirm(`"${displayName(name)}" wirklich löschen?`)) return;
-        const { error } = await db.storage.from(BUCKET).remove([name]);
-        if (error) alert('Fehler beim Löschen: ' + error.message);
+        const fullPath = btn.dataset.del;
+        if (!confirm('"' + displayName(fullPath.split('/').pop()) + '" wirklich loeschen?')) return;
+        const { error } = await db.storage.from(BUCKET).remove([fullPath]);
+        if (error) alert('Fehler beim Loeschen: ' + error.message);
         else loadFotos();
       });
     });
@@ -2584,53 +2866,43 @@
 
   document.getElementById('btnFotoRefresh').addEventListener('click', loadFotos);
 
-  /* ── ZIP Download ───────────────────────────────────────── */
   document.getElementById('btnZipDownload').addEventListener('click', async () => {
     if (!fotoFiles.length) return alert('Keine Fotos vorhanden.');
-
     const btn = document.getElementById('btnZipDownload');
     btn.disabled = true;
-    btn.textContent = 'ZIP wird erstellt…';
-
+    btn.textContent = 'ZIP wird erstellt...';
     const progressEl = document.getElementById('uploadProgress');
     const fillEl     = document.getElementById('progressFill');
     const textEl     = document.getElementById('progressText');
     progressEl.style.display = '';
     fillEl.style.width = '0%';
-
     try {
       const zip = new JSZip();
       for (let i = 0; i < fotoFiles.length; i++) {
         const f   = fotoFiles[i];
         const url = getPublicUrl(f.name);
-        textEl.textContent = `Lade ${i + 1} von ${fotoFiles.length}: ${displayName(f.name)}`;
+        textEl.textContent = 'Lade ' + (i + 1) + ' von ' + fotoFiles.length + ': ' + displayName(f.name);
         fillEl.style.width = ((i / fotoFiles.length) * 80) + '%';
-
         const resp = await fetch(url);
         const blob = await resp.blob();
         zip.file(displayName(f.name), blob);
       }
-
-      textEl.textContent = 'ZIP wird komprimiert…';
+      textEl.textContent = 'ZIP wird komprimiert...';
       fillEl.style.width = '85%';
-
       const content = await zip.generateAsync({ type: 'blob' }, (meta) => {
         fillEl.style.width = (85 + meta.percent * 0.15) + '%';
       });
-
       fillEl.style.width = '100%';
-      textEl.textContent = 'Download startet…';
-
+      textEl.textContent = 'Download startet...';
       const url = URL.createObjectURL(content);
       const a   = document.createElement('a');
       a.href     = url;
-      a.download = `hochzeitsfotos_${new Date().toISOString().slice(0,10)}.zip`;
+      a.download = 'hochzeitsfotos_' + new Date().toISOString().slice(0,10) + '.zip';
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
       alert('ZIP-Erstellung fehlgeschlagen: ' + err.message);
     }
-
     setTimeout(() => { progressEl.style.display = 'none'; fillEl.style.width = '0%'; }, 2000);
     btn.disabled = false;
     btn.textContent = 'Alle Fotos als ZIP herunterladen';
@@ -2640,12 +2912,13 @@
      PUBLIC GALLERY
      ══════════════════════════════════════════════════════════ */
   async function initGalerie() {
-    const s = await loadSettings();
-    const t = s.texte || {};
+    if (!currentWedding) return;
+    const w = currentWedding;
+    const t = w.texte || {};
     if (t.galerieTitle) {
       document.getElementById('galerieTitle').textContent = t.galerieTitle;
-    } else if (s.coupleName) {
-      document.getElementById('galerieTitle').textContent = `Hochzeitsfotos – ${s.coupleName}`;
+    } else if (w.brautpaar_name) {
+      document.getElementById('galerieTitle').textContent = 'Hochzeitsfotos – ' + w.brautpaar_name;
     }
     if (t.galerieDesc) {
       document.getElementById('galerieDesc').innerHTML = escHtml(t.galerieDesc).replace(/\n/g, '<br>');
@@ -2658,43 +2931,36 @@
     grid.innerHTML = '';
     empty.style.display = 'none';
 
-    const { data, error } = await db.storage.from(BUCKET).list('', {
+    const { data, error } = await db.storage.from(BUCKET).list(w.id, {
       limit: 1000,
       sortBy: { column: 'created_at', order: 'desc' }
     });
-
     loading.style.display = 'none';
-
     if (error) {
-      grid.innerHTML = `<p class="no-data">Fehler beim Laden der Fotos.</p>`;
+      grid.innerHTML = '<p class="no-data">Fehler beim Laden der Fotos.</p>';
       return;
     }
-
     const files = (data || []).filter(f => f.id);
-    if (!files.length) {
-      empty.style.display = '';
-      return;
-    }
-
-    document.getElementById('galerieCount').textContent = `${files.length} Foto${files.length !== 1 ? 's' : ''}`;
+    if (!files.length) { empty.style.display = ''; return; }
+    document.getElementById('galerieCount').textContent = files.length + ' Foto' + (files.length !== 1 ? 's' : '');
 
     files.forEach(f => {
       const url  = getPublicUrl(f.name);
       const card = document.createElement('div');
       card.className = 'photo-card';
-      card.innerHTML = `
-        <div class="photo-thumb" data-url="${escHtml(url)}" data-name="${escHtml(f.name)}">
-          <img src="${url}" alt="${escHtml(displayName(f.name))}" loading="lazy" />
-          <div class="photo-overlay">
-            <button class="photo-btn" title="Herunterladen" data-dl="${escHtml(url)}" data-dlname="${escHtml(displayName(f.name))}">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </button>
-          </div>
-        </div>
-        <div class="photo-info">
-          <span class="photo-name" title="${escHtml(displayName(f.name))}">${escHtml(displayName(f.name))}</span>
-          <span class="photo-date">${fmtDate(f.created_at)}</span>
-        </div>`;
+      card.innerHTML =
+        '<div class="photo-thumb" data-url="' + escHtml(url) + '" data-name="' + escHtml(f.name) + '">' +
+          '<img src="' + url + '" alt="' + escHtml(displayName(f.name)) + '" loading="lazy" />' +
+          '<div class="photo-overlay">' +
+            '<button class="photo-btn" title="Herunterladen" data-dl="' + escHtml(url) + '" data-dlname="' + escHtml(displayName(f.name)) + '">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="photo-info">' +
+          '<span class="photo-name" title="' + escHtml(displayName(f.name)) + '">' + escHtml(displayName(f.name)) + '</span>' +
+          '<span class="photo-date">' + fmtDate(f.created_at) + '</span>' +
+        '</div>';
       grid.appendChild(card);
     });
 
@@ -2704,7 +2970,6 @@
         openLightbox(thumb.dataset.url, thumb.dataset.name);
       });
     });
-
     grid.querySelectorAll('[data-dl]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -2769,20 +3034,18 @@
   (function initCookieBanner() {
     const consent = localStorage.getItem('rsvp_cookie_consent');
     if (consent) return;
-
     const banner = document.getElementById('cookieBanner');
     banner.style.display = '';
-
     document.getElementById('cookieAccept').addEventListener('click', () => {
       localStorage.setItem('rsvp_cookie_consent', 'all');
       banner.style.display = 'none';
     });
-
     document.getElementById('cookieNecessary').addEventListener('click', () => {
       localStorage.setItem('rsvp_cookie_consent', 'necessary');
       banner.style.display = 'none';
     });
   })();
+
 </script>
 
 </body>
