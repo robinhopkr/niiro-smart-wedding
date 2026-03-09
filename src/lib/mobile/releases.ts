@@ -2,7 +2,6 @@ import { versionFromReleaseTag } from '@/lib/mobile/versioning'
 
 const DEFAULT_RELEASE_REPO = 'robinhopkr/hochzeits-rsvp'
 const DEFAULT_RELEASE_TAG_PREFIX = 'mobile-v'
-const RELEASE_CACHE_SECONDS = 60
 
 interface GitHubReleaseAsset {
   browser_download_url: string
@@ -53,12 +52,10 @@ function readReleaseRepo() {
 export async function fetchLatestMobileRelease(): Promise<MobileReleaseInfo | null> {
   const repository = readReleaseRepo()
   const response = await fetch(`https://api.github.com/repos/${repository}/releases/latest`, {
+    cache: 'no-store',
     headers: {
       Accept: 'application/vnd.github+json',
       'User-Agent': 'myWed by NiiRo AI',
-    },
-    next: {
-      revalidate: RELEASE_CACHE_SECONDS,
     },
   })
 
