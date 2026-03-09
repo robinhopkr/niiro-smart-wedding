@@ -516,6 +516,24 @@ export function WeddingEditorForm({ values }: WeddingEditorFormProps) {
         />
       </div>
 
+      <div className="space-y-4">
+        <h3 className="font-display text-card text-charcoal-900">Optionale Gästefunktionen</h3>
+        <label className="flex items-start gap-3 rounded-[1.5rem] border border-cream-300 bg-white px-5 py-4 text-sm text-charcoal-700">
+          <input
+            className="mt-1 h-4 w-4 accent-gold-500"
+            type="checkbox"
+            {...form.register('musicWishlistEnabled')}
+          />
+          <span className="space-y-1">
+            <span className="block font-semibold text-charcoal-900">Musikwunschliste aktivieren</span>
+            <span className="block">
+              Wenn aktiv, sehen Gäste im Gästebereich eine öffentliche Musikwunschliste, können Songs
+              hinzufügen, per Daumen hoch voten und die Top 10 werden hervorgehoben.
+            </span>
+          </span>
+        </label>
+      </div>
+
       <WeddingDesignSection
         selectedTemplateId={selectedTemplateId}
         selectedFontPresetId={selectedFontPresetId}

@@ -16,6 +16,7 @@ import { FaqSection } from '@/components/sections/FaqSection'
 import { GallerySection } from '@/components/sections/GallerySection'
 import { HeroSection } from '@/components/sections/HeroSection'
 import { LocationSection } from '@/components/sections/LocationSection'
+import { MusicWishlistSection } from '@/components/sections/MusicWishlistSection'
 import { ProgramSection } from '@/components/sections/ProgramSection'
 import { RsvpSection } from '@/components/sections/RsvpSection'
 import { SeatingPlanSection } from '@/components/sections/SeatingPlanSection'
@@ -30,6 +31,7 @@ import { createClient } from '@/lib/supabase/server'
 import {
   getAdminWeddingConfig,
   getFaqItems,
+  getMusicWishlistData,
   getProgramItems,
   getSeatingPlanData,
   getWeddingEditorValues,
@@ -46,13 +48,14 @@ export default async function AdminPage() {
   if (!user || billingAccess.requiresPayment) {
     redirect('/admin/login')
   }
-  const [rsvps, programItems, faqItems, galleryPhotos, editorValues, seatingPlanData] = await Promise.all([
+  const [rsvps, programItems, faqItems, galleryPhotos, editorValues, seatingPlanData, musicWishlistData] = await Promise.all([
     listRsvps(supabase, config),
     getProgramItems(supabase, config),
     getFaqItems(supabase, config),
     listGalleryPhotos(supabase, config),
     getWeddingEditorValues(supabase, config),
     getSeatingPlanData(supabase, config),
+    getMusicWishlistData(supabase, config),
   ])
 
   const galleryHref = config.guestCode ? `/galerie/${config.guestCode}` : null
@@ -321,6 +324,7 @@ export default async function AdminPage() {
           config={config}
           images={config.sectionImages.filter((image) => image.section === 'rsvp')}
         />
+        <MusicWishlistSection initialData={musicWishlistData} interactive={false} />
         <SeatingPlanSection
           guestNamesById={new Map(seatingPlanData.guests.map((guest) => [guest.id, guest.name]))}
           plan={seatingPlanData}

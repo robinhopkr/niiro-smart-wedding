@@ -22,6 +22,8 @@ import type {
   EditableSectionImage,
   FaqItem,
   GalleryPhoto,
+  MusicRequestEntry,
+  MusicWishlistData,
   PlanningGuest,
   ProgramItem,
   RsvpFormValues,
@@ -139,6 +141,7 @@ interface AppSettingsTexts extends LegacyTexts {
   dressCodeColors?: string[]
   templateId?: WeddingTemplateId
   fontPresetId?: WeddingFontPresetId
+  musicWishlistEnabled?: boolean
   billingStatus?: 'paid' | 'unpaid'
   billingEmail?: string | null
   billingPaidAt?: string | null
@@ -159,6 +162,14 @@ interface AppSettingsTexts extends LegacyTexts {
     seatAssignments?: Array<string | null>
   }>
   publishSeatingPlan?: boolean
+  musicRequests?: Array<{
+    id?: string
+    title?: string
+    artist?: string | null
+    requestedBy?: string | null
+    createdAt?: string | null
+    voterTokens?: string[]
+  }>
   probe?: string | null
 }
 
@@ -168,6 +179,15 @@ export interface StoredBillingRecord {
   paidAt: string | null
   stripeCheckoutSessionId: string | null
   stripePaymentIntentId: string | null
+}
+
+interface StoredMusicRequest {
+  id: string
+  title: string
+  artist: string | null
+  requestedBy: string | null
+  createdAt: string
+  voterTokens: string[]
 }
 
 function isObject(value: Json | null): value is Record<string, Json | undefined> {
@@ -518,6 +538,76 @@ function parseSeatingTables(texts: AppSettingsTexts): SeatingTable[] {
     .filter((item) => item.name)
 }
 
+function parseStoredMusicRequests(texts: AppSettingsTexts): StoredMusicRequest[] {
+  const items = texts.musicRequests
+
+  if (!Array.isArray(items)) {
+    return []
+  }
+
+  return items
+    .map((item, index) => ({
+      id: item.id?.trim() || `music-request-${index + 1}`,
+      title: item.title?.trim() ?? '',
+      artist: item.artist?.trim() || null,
+      requestedBy: item.requestedBy?.trim() || null,
+      createdAt: item.createdAt?.trim() || new Date(Math.max(index, 1) * 1_000).toISOString(),
+      voterTokens: Array.isArray(item.voterTokens)
+        ? item.voterTokens
+            .map((token) => token.trim())
+            .filter(Boolean)
+        : [],
+    }))
+    .filter((item) => item.title)
+}
+
+function sortStoredMusicRequests(entries: StoredMusicRequest[]): StoredMusicRequest[] {
+  return entries
+    .slice()
+    .sort((left, right) => {
+      const voteDelta = right.voterTokens.length - left.voterTokens.length
+      if (voteDelta !== 0) {
+        return voteDelta
+      }
+
+      const createdAtDelta =
+        new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime()
+      if (createdAtDelta !== 0) {
+        return createdAtDelta
+      }
+
+      const titleDelta = left.title.localeCompare(right.title, 'de')
+      if (titleDelta !== 0) {
+        return titleDelta
+      }
+
+      return left.id.localeCompare(right.id, 'de')
+    })
+}
+
+function mapMusicWishlistData(
+  texts: AppSettingsTexts,
+  visitorToken?: string | null,
+): MusicWishlistData {
+  const storedRequests = sortStoredMusicRequests(parseStoredMusicRequests(texts))
+  const requests: MusicRequestEntry[] = storedRequests.map((entry, index) => ({
+    id: entry.id,
+    title: entry.title,
+    artist: entry.artist,
+    requestedBy: entry.requestedBy,
+    votes: entry.voterTokens.length,
+    createdAt: entry.createdAt,
+    hasVoted: visitorToken ? entry.voterTokens.includes(visitorToken) : false,
+    isTopTen: index < 10,
+    rank: index + 1,
+  }))
+
+  return {
+    enabled: texts.musicWishlistEnabled === true,
+    requests,
+  }
+}
+
 function createFallbackConfig(): WeddingConfig {
   return {
     id: 'fallback-config',
@@ -548,6 +638,7 @@ function createFallbackConfig(): WeddingConfig {
     dressCodeColors: getDefaultDressCodeColors(),
     templateId: DEFAULT_WEDDING_TEMPLATE_ID,
     fontPresetId: DEFAULT_WEDDING_FONT_PRESET_ID,
+    musicWishlistEnabled: false,
     rsvpDeadline: ENV.rsvpDeadline,
     heroImageUrl: null,
     couplePhotos: [],
@@ -588,6 +679,7 @@ function mapModernConfig(row: Database['public']['Tables']['wedding_config']['Ro
     dressCodeColors: getDefaultDressCodeColors(),
     templateId: DEFAULT_WEDDING_TEMPLATE_ID,
     fontPresetId: DEFAULT_WEDDING_FONT_PRESET_ID,
+    musicWishlistEnabled: false,
     rsvpDeadline: row.rsvp_deadline,
     heroImageUrl: null,
     couplePhotos: [],
@@ -638,6 +730,7 @@ function mapLegacyConfig(row: LegacyWeddingRow): WeddingConfig {
     dressCodeColors,
     templateId: getNormalizedTemplateId(appTexts.templateId),
     fontPresetId: getNormalizedFontPresetId(appTexts.fontPresetId),
+    musicWishlistEnabled: appTexts.musicWishlistEnabled === true,
     rsvpDeadline: normaliseDateInput(row.rsvp_deadline) ?? ENV.rsvpDeadline,
     heroImageUrl: texts.einladungCover ?? null,
     couplePhotos: parseCouplePhotos(appTexts),
@@ -1026,6 +1119,204 @@ export async function saveSeatingPlanData(
   }
 }
 
+function buildMusicWishlistTexts(
+  existingTexts: AppSettingsTexts,
+  input: {
+    enabled?: boolean
+    requests?: StoredMusicRequest[]
+  },
+): Json {
+  const currentRequests = input.requests ?? parseStoredMusicRequests(existingTexts)
+
+  return {
+    ...existingTexts,
+    musicWishlistEnabled:
+      input.enabled ?? existingTexts.musicWishlistEnabled ?? false,
+    musicRequests: currentRequests.map((entry) => ({
+      id: entry.id,
+      title: entry.title,
+      artist: entry.artist,
+      requestedBy: entry.requestedBy,
+      createdAt: entry.createdAt,
+      voterTokens: entry.voterTokens,
+    })),
+    probe: undefined,
+  }
+}
+
+async function saveMusicWishlistTexts(
+  supabase: DbClient,
+  config: WeddingConfig,
+  input: {
+    enabled?: boolean
+    requests?: StoredMusicRequest[]
+  },
+): Promise<AppSettingsTexts> {
+  if (config.source === 'modern' && config.sourceId) {
+    const currentContentRow = await getWeddingContentRow(supabase, config.sourceId)
+    const compatibilityRow = await getCompatibilityAppSettingsRow(supabase, config)
+    const existingTexts = {
+      ...parseSettingsTexts(compatibilityRow),
+      ...parseSettingsTexts(buildContentOverlayRow(currentContentRow)),
+    }
+
+    try {
+      const { data, error } = (await query(supabase, 'wedding_content')
+        .upsert(
+          buildWeddingContentPayload(config.sourceId, {
+            fragen: currentContentRow?.fragen ?? compatibilityRow?.fragen ?? null,
+            texte: buildMusicWishlistTexts(existingTexts, input),
+          }),
+        )
+        .select('*')
+        .single()) as QueryResult<Database['public']['Tables']['wedding_content']['Row']>
+
+      if (error) {
+        throw error
+      }
+
+      return parseSettingsTexts(buildContentOverlayRow(data))
+    } catch (error) {
+      if (!isMissingRelationError(error)) {
+        throw error
+      }
+    }
+  }
+
+  if (config.source === 'legacy' && config.sourceId) {
+    const currentRow = await getLegacyWeddingRowById(supabase, config.sourceId)
+
+    if (!currentRow) {
+      throw new Error('Die aktive Hochzeit konnte nicht geladen werden.')
+    }
+
+    const compatibilityRow = await getCompatibilityAppSettingsRow(supabase, mapLegacyConfig(currentRow))
+    const existingTexts = {
+      ...parseSettingsTexts(compatibilityRow),
+      ...(parseLegacyTexts(currentRow) as AppSettingsTexts),
+    }
+
+    const { data, error } = (await query(supabase, 'hochzeiten')
+      .update({
+        texte: buildMusicWishlistTexts(existingTexts, input),
+      })
+      .eq('id', config.sourceId)
+      .select('*')
+      .single()) as QueryResult<Database['public']['Tables']['hochzeiten']['Row']>
+
+    if (error) {
+      throw error
+    }
+
+    if (!data) {
+      throw new Error('Die Musikwunschliste konnte nicht gespeichert werden.')
+    }
+
+    return parseLegacyTexts(data) as AppSettingsTexts
+  }
+
+  const compatibilityRow = await getCompatibilityAppSettingsRow(supabase, config)
+  const existingTexts = parseSettingsTexts(compatibilityRow)
+  const data = await saveCompatibilityAppSettingsRow(supabase, {
+    id: APP_SETTINGS_ID,
+    brautpaar: compatibilityRow?.brautpaar ?? config.coupleLabel,
+    hochzeitsdatum: compatibilityRow?.hochzeitsdatum ?? config.weddingDate,
+    rsvp_deadline: compatibilityRow?.rsvp_deadline ?? config.rsvpDeadline,
+    fragen: compatibilityRow?.fragen ?? null,
+    texte: buildMusicWishlistTexts(existingTexts, input),
+  })
+
+  return parseSettingsTexts(data)
+}
+
+function createMusicRequestId(): string {
+  return `music-request-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+export async function getMusicWishlistData(
+  supabase: DbClient,
+  config: WeddingConfig,
+  visitorToken?: string | null,
+): Promise<MusicWishlistData> {
+  const row = await getConfigOverlayRow(supabase, config)
+  const texts = parseSettingsTexts(row)
+
+  return mapMusicWishlistData(texts, visitorToken)
+}
+
+export async function addMusicRequest(
+  supabase: DbClient,
+  config: WeddingConfig,
+  input: {
+    title: string
+    artist?: string | null
+    requestedBy?: string | null
+  },
+  visitorToken?: string | null,
+): Promise<MusicWishlistData> {
+  if (!config.musicWishlistEnabled) {
+    throw new Error('Die Musikwunschliste ist aktuell nicht freigeschaltet.')
+  }
+
+  const row = await getConfigOverlayRow(supabase, config)
+  const texts = parseSettingsTexts(row)
+  const currentRequests = parseStoredMusicRequests(texts)
+  const nextTexts = await saveMusicWishlistTexts(supabase, config, {
+    requests: [
+      ...currentRequests,
+      {
+        id: createMusicRequestId(),
+        title: input.title.trim(),
+        artist: input.artist?.trim() || null,
+        requestedBy: input.requestedBy?.trim() || null,
+        createdAt: new Date().toISOString(),
+        voterTokens: [],
+      },
+    ],
+  })
+
+  return mapMusicWishlistData(nextTexts, visitorToken)
+}
+
+export async function voteForMusicRequest(
+  supabase: DbClient,
+  config: WeddingConfig,
+  input: {
+    requestId: string
+    visitorToken: string
+  },
+): Promise<MusicWishlistData> {
+  if (!config.musicWishlistEnabled) {
+    throw new Error('Die Musikwunschliste ist aktuell nicht freigeschaltet.')
+  }
+
+  const row = await getConfigOverlayRow(supabase, config)
+  const texts = parseSettingsTexts(row)
+  const currentRequests = parseStoredMusicRequests(texts)
+  const hasMatchingRequest = currentRequests.some((entry) => entry.id === input.requestId)
+
+  if (!hasMatchingRequest) {
+    throw new Error('Dieser Musikwunsch wurde nicht gefunden.')
+  }
+
+  const nextRequests = currentRequests.map((entry) => {
+    if (entry.id !== input.requestId || entry.voterTokens.includes(input.visitorToken)) {
+      return entry
+    }
+
+    return {
+      ...entry,
+      voterTokens: [...entry.voterTokens, input.visitorToken],
+    }
+  })
+
+  const nextTexts = await saveMusicWishlistTexts(supabase, config, {
+    requests: nextRequests,
+  })
+
+  return mapMusicWishlistData(nextTexts, input.visitorToken)
+}
+
 function applyConfigOverlayToConfig(baseConfig: WeddingConfig, row: ConfigOverlayRow | null): WeddingConfig {
   if (!row) {
     return baseConfig
@@ -1073,6 +1364,8 @@ function applyConfigOverlayToConfig(baseConfig: WeddingConfig, row: ConfigOverla
     dressCodeColors,
     templateId: getNormalizedTemplateId(texts.templateId ?? baseConfig.templateId),
     fontPresetId: getNormalizedFontPresetId(texts.fontPresetId ?? baseConfig.fontPresetId),
+    musicWishlistEnabled:
+      texts.musicWishlistEnabled === true || baseConfig.musicWishlistEnabled === true,
     heroImageUrl: texts.einladungCover?.trim() || baseConfig.heroImageUrl,
     couplePhotos: hasCouplePhotos ? parseCouplePhotos(texts) : baseConfig.couplePhotos,
     sectionImages: hasSectionImages ? parseSectionImages(texts) : baseConfig.sectionImages,
@@ -1183,6 +1476,7 @@ function mapLegacyWeddingEditorValues(
     dressCodeColors: config.dressCodeColors,
     templateId: config.templateId,
     fontPresetId: config.fontPresetId,
+    musicWishlistEnabled: config.musicWishlistEnabled,
     coverImageUrl: config.heroImageUrl ?? '',
     couplePhotos: mapEditableCouplePhotos(config.couplePhotos),
     sectionImages: mapEditableSectionImages(config.sectionImages),
@@ -1432,6 +1726,7 @@ export async function getWeddingEditorValues(
     dressCodeColors: config.dressCodeColors,
     templateId: config.templateId,
     fontPresetId: config.fontPresetId,
+    musicWishlistEnabled: config.musicWishlistEnabled,
     coverImageUrl: config.heroImageUrl ?? '',
     couplePhotos: mapEditableCouplePhotos(config.couplePhotos),
     sectionImages: mapEditableSectionImages(config.sectionImages),
@@ -1594,6 +1889,7 @@ export async function saveWeddingEditorValues(
     dressCodeColors: values.dressCodeColors,
     templateId: values.templateId,
     fontPresetId: values.fontPresetId,
+    musicWishlistEnabled: values.musicWishlistEnabled,
     couplePhotos: values.couplePhotos.map((item) => ({
       id: item.id,
       url: item.imageUrl,

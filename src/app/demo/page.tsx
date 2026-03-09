@@ -12,6 +12,10 @@ export default function DemoPage() {
       config={DEMO_WEDDING_CONFIG}
       faqItems={DEMO_FAQ_ITEMS}
       galleryPhotos={DEMO_GALLERY_PHOTOS}
+      musicWishlistData={{
+        enabled: false,
+        requests: [],
+      }}
       mode="demo"
       programItems={DEMO_PROGRAM_ITEMS}
       seatingPlanData={{

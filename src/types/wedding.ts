@@ -59,6 +59,7 @@ export interface WeddingConfig {
   dressCodeColors: string[]
   templateId: WeddingTemplateId
   fontPresetId: WeddingFontPresetId
+  musicWishlistEnabled: boolean
   rsvpDeadline: string
   heroImageUrl: string | null
   couplePhotos: CouplePhoto[]
@@ -117,6 +118,23 @@ export interface AdminSummary {
   attending: number
   declined: number
   guestCount: number
+}
+
+export interface MusicRequestEntry {
+  id: string
+  title: string
+  artist: string | null
+  requestedBy: string | null
+  votes: number
+  createdAt: string
+  hasVoted: boolean
+  isTopTen: boolean
+  rank: number
+}
+
+export interface MusicWishlistData {
+  enabled: boolean
+  requests: MusicRequestEntry[]
 }
 
 export interface PlanningGuest {
@@ -206,6 +224,7 @@ export interface WeddingEditorValues {
   dressCodeColors: string[]
   templateId: WeddingTemplateId
   fontPresetId: WeddingFontPresetId
+  musicWishlistEnabled: boolean
   coverImageUrl: string
   couplePhotos: EditableCouplePhoto[]
   sectionImages: EditableSectionImage[]

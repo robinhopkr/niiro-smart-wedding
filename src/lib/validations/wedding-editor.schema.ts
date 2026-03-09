@@ -76,6 +76,7 @@ export const weddingEditorSchema = z.object({
   dressCodeColors: z.array(z.string().trim().min(1).max(50)).max(DRESSCODE_COLOR_OPTIONS.length),
   templateId: z.enum(weddingTemplateIds),
   fontPresetId: z.enum(weddingFontPresetIds),
+  musicWishlistEnabled: z.boolean().default(false),
   coverImageUrl: z.string().trim().max(2_000_000),
   couplePhotos: z.array(editableCouplePhotoSchema).max(8),
   sectionImages: z.array(editableSectionImageSchema).max(24),

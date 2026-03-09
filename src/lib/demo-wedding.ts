@@ -36,6 +36,7 @@ export const DEMO_WEDDING_CONFIG: WeddingConfig = {
   dressCodeColors: ['pearl', 'champagner', 'sage', 'dusty-rose', 'powder-blue', 'navy'],
   templateId: 'rose-garden',
   fontPresetId: 'cormorant-nunito',
+  musicWishlistEnabled: false,
   rsvpDeadline: '2027-05-15T23:59:59+02:00',
   heroImageUrl: '/images/demo/cover-couple.svg',
   couplePhotos: [
