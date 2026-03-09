@@ -78,6 +78,8 @@
   html {
     scroll-behavior: smooth;
     background-color: theme('colors.cream.50');
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
