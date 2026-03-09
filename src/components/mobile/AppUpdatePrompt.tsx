@@ -87,10 +87,7 @@ export function AppUpdatePrompt() {
           return
         }
 
-        const [appInfo, response] = await Promise.all([
-          App.getInfo(),
-          fetch('/api/mobile-update', { cache: 'no-store' }),
-        ])
+        const response = await fetch('/api/mobile-update', { cache: 'no-store' })
 
         if (!response.ok) {
           return
@@ -109,8 +106,30 @@ export function AppUpdatePrompt() {
         }
 
         const downloadUrl = resolveDownloadUrl(platform, release)
+        const hasAppPlugin = Capacitor.isPluginAvailable('App')
 
-        if (!downloadUrl || compareVersions(latestVersion, appInfo.version) <= 0) {
+        if (!downloadUrl) {
+          if (isMounted) {
+            setAvailableUpdate(null)
+          }
+
+          return
+        }
+
+        let currentVersion = 'Legacy-Build'
+
+        if (hasAppPlugin) {
+          const appInfo = await App.getInfo()
+          currentVersion = appInfo.version
+
+          if (compareVersions(latestVersion, appInfo.version) <= 0) {
+            if (isMounted) {
+              setAvailableUpdate(null)
+            }
+
+            return
+          }
+        } else if (platform !== 'android') {
           if (isMounted) {
             setAvailableUpdate(null)
           }
@@ -124,7 +143,7 @@ export function AppUpdatePrompt() {
 
         if (isMounted) {
           setAvailableUpdate({
-            currentVersion: appInfo.version,
+            currentVersion,
             downloadUrl,
             latestVersion,
             releaseUrl: release.releaseUrl,
@@ -162,7 +181,7 @@ export function AppUpdatePrompt() {
     setIsOpening(true)
 
     try {
-      if (Capacitor.isNativePlatform()) {
+      if (Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('Browser')) {
         await Browser.open({ url })
       } else {
         window.open(url, '_blank', 'noopener,noreferrer')
