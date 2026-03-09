@@ -2,6 +2,10 @@
 
 Diese Pipeline stellt Mobile-Builds online ueber GitHub Actions und GitHub Releases bereit.
 
+## CI-Toolchain
+
+- GitHub Actions nutzt Node 22, weil `@capacitor/cli@8` das fuer den Build erwartet.
+
 ## Was sofort funktioniert
 
 - Android: Debug-APK als GitHub-Artifact und bei Tags auch als Release-Download
