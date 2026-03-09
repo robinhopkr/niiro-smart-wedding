@@ -36,6 +36,7 @@ export const ADMIN_HELP_KNOWLEDGE_SECTIONS: AdminHelpKnowledgeSection[] = [
       'Die Teilnehmerliste ist bewusst getrennt von den echten RSVP-Antworten und dient nur der internen Planung.',
       'RSVP-Antworten lassen sich in die Teilnehmerliste übernehmen.',
       'Ihr könnt Anzahl der Gästetische und Sitzplätze pro Gästetisch zentral festlegen und danach einzelne Tische feinjustieren.',
+      'Zusätzlich sind Brautpaartische und Dienstleistertische als eigene Tischtypen möglich.',
       'Ein Dienstleistertisch ist separat möglich und wird von der smarten Verteilung bevorzugt für Dienstleister genutzt.',
       'Der Sitzplan ist standardmäßig privat und nur optional für Gäste veröffentlichbar.',
       'Es gibt eine visuelle Vorschau des Tischplans direkt im Paarbereich.',
@@ -50,6 +51,7 @@ export const ADMIN_HELP_KNOWLEDGE_SECTIONS: AdminHelpKnowledgeSection[] = [
       'sitzplätze',
       'stühle',
       'dienstleistertisch',
+      'brautpaartisch',
       'automatisch',
       'smarte',
     ],
@@ -167,6 +169,7 @@ export const ADMIN_HELP_KNOWLEDGE_SECTIONS: AdminHelpKnowledgeSection[] = [
       'Die Hilfeseite erklärt die wichtigsten Bereiche und enthält den Assistenten für Fragen rund um die App.',
     bullets: [
       'Der Assistent beantwortet Fragen zur aktuellen App-Struktur und verweist auf die passende Unterseite.',
+      'Im Paarbereich ist er zusätzlich als schwebender Helfer direkt auf jeder Unterseite sichtbar.',
       'Ohne OpenAI-Key antwortet er aus der eingebauten Wissensbasis.',
       'Mit OpenAI-Key nutzt er standardmäßig das konfigurierbare GPT-5.2-Modell über die OpenAI Responses API.',
     ],

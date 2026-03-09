@@ -531,7 +531,7 @@ function isGuestCategory(
 }
 
 function isSeatingTableKind(value: string | null | undefined): value is SeatingTable['kind'] {
-  return value === 'guest' || value === 'service'
+  return value === 'guest' || value === 'service' || value === 'couple'
 }
 
 function parsePlanningGuests(texts: AppSettingsTexts): PlanningGuest[] {

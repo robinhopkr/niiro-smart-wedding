@@ -23,7 +23,7 @@ const planningGuestSchema = z.object({
 const seatingTableSchema = z.object({
   id: z.string().trim().min(1).max(120),
   name: z.string().trim().min(1, 'Bitte gib einen Tischnamen ein.').max(120),
-  kind: z.enum(['guest', 'service']),
+  kind: z.enum(['guest', 'service', 'couple']),
   seatCount: z.number().int().min(1).max(24),
   seatAssignments: z.array(z.string().trim().min(1).nullable()).max(24),
 })

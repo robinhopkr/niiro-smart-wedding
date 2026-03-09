@@ -1,6 +1,6 @@
 'use client'
 
-import { Building2, Plus, Save, Sparkles, Trash2, Users, WandSparkles } from 'lucide-react'
+import { Building2, Heart, Minus, Plus, Save, Sparkles, Trash2, Users, WandSparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { startTransition, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -22,6 +22,37 @@ const CATEGORY_PRIORITY: Record<GuestCategory, number> = {
   children: 2,
   single: 1,
   other: 0,
+}
+
+const TABLE_KIND_LABELS: Record<SeatingTable['kind'], string> = {
+  guest: 'Gästetisch',
+  service: 'Dienstleistertisch',
+  couple: 'Brautpaartisch',
+}
+
+function getDefaultSeatCountForKind(kind: SeatingTable['kind']): number {
+  if (kind === 'couple') {
+    return 2
+  }
+
+  return kind === 'service' ? 6 : 8
+}
+
+function getDefaultTableName(kind: SeatingTable['kind'], index: number): string {
+  if (kind === 'guest') {
+    return `Tisch ${index}`
+  }
+
+  const baseLabel = TABLE_KIND_LABELS[kind]
+  return index > 1 ? `${baseLabel} ${index}` : baseLabel
+}
+
+function getTableBadgeVariant(kind: SeatingTable['kind']): 'attending' | 'declined' | 'neutral' {
+  if (kind === 'service') {
+    return 'attending'
+  }
+
+  return kind === 'couple' ? 'declined' : 'neutral'
 }
 
 function createId(prefix: string): string {
@@ -52,12 +83,11 @@ function normalizeSeatAssignments(seatAssignments: Array<string | null>, seatCou
 function createTable(
   index: number,
   kind: SeatingTable['kind'] = 'guest',
-  seatCount = kind === 'service' ? 6 : 8,
+  seatCount = getDefaultSeatCountForKind(kind),
 ): SeatingTable {
-
   return {
     id: createId('table'),
-    name: kind === 'service' ? 'Dienstleistertisch' : `Tisch ${index}`,
+    name: getDefaultTableName(kind, index),
     kind,
     seatCount,
     seatAssignments: Array.from({ length: seatCount }, () => null),
@@ -166,6 +196,10 @@ function assignGroupToTable(table: SeatingTable, guestIds: string[]): SeatingTab
 }
 
 function scoreTable(table: SeatingTable, group: SeatingGroup, guestById: Map<string, PlanningGuest>): number {
+  if (table.kind === 'couple') {
+    return Number.NEGATIVE_INFINITY
+  }
+
   const assignedGuests = getAssignedGuests(table, guestById)
   const remainingSeats = table.seatAssignments.filter((entry) => !entry).length
 
@@ -199,19 +233,48 @@ function createAutomaticAssignments(
   guests: PlanningGuest[],
   tables: SeatingTable[],
 ): SeatingTable[] {
-  const totalSeats = tables.reduce((count, table) => count + table.seatCount, 0)
+  const guestById = new Map(guests.map((guest) => [guest.id, guest]))
+  const preservedAssignments = new Set(
+    tables
+      .filter((table) => table.kind === 'couple')
+      .flatMap((table) =>
+        normalizeSeatAssignments(table.seatAssignments, table.seatCount).filter(
+          (guestId): guestId is string => {
+            if (!guestId) {
+              return false
+            }
 
-  if (totalSeats < guests.length) {
+            return guestById.has(guestId)
+          },
+        ),
+      ),
+  )
+  const guestsToAssign = guests.filter((guest) => !preservedAssignments.has(guest.id))
+  const totalSeats = tables
+    .filter((table) => table.kind !== 'couple')
+    .reduce((count, table) => count + table.seatCount, 0)
+
+  if (totalSeats < guestsToAssign.length) {
     throw new Error('Es gibt zu wenig Sitzplätze für alle Gäste.')
   }
 
-  const guestById = new Map(guests.map((guest) => [guest.id, guest]))
-  const emptyTables: SeatingTable[] = tables.map((table) => ({
-    ...table,
-    seatAssignments: Array.from({ length: table.seatCount }, () => null),
-  }))
+  const emptyTables: SeatingTable[] = tables.map((table) => {
+    if (table.kind === 'couple') {
+      return {
+        ...table,
+        seatAssignments: normalizeSeatAssignments(table.seatAssignments, table.seatCount).map((guestId) =>
+          guestId && guestById.has(guestId) ? guestId : null,
+        ),
+      }
+    }
 
-  const groups = buildSeatingGroups(guests)
+    return {
+      ...table,
+      seatAssignments: Array.from({ length: table.seatCount }, () => null),
+    }
+  })
+
+  const groups = buildSeatingGroups(guestsToAssign)
   const serviceGroups = groups.filter((group) => group.category === 'vendors')
   const singleGroups = groups.filter((group) => group.category === 'single')
   const coreGroups = groups
@@ -308,16 +371,16 @@ function SeatingPreview({
       {tables.map((table) => {
         const occupiedSeats = table.seatAssignments.filter(Boolean).length
 
-        return (
+      return (
           <article key={table.id} className="surface-card px-5 py-5">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h4 className="font-display text-card text-charcoal-900">{table.name}</h4>
                 <p className="mt-1 text-sm text-charcoal-500">
-                  {table.kind === 'service' ? 'Dienstleistertisch' : 'Gästetisch'}
+                  {TABLE_KIND_LABELS[table.kind]}
                 </p>
               </div>
-              <Badge variant={table.kind === 'service' ? 'attending' : 'neutral'}>
+              <Badge variant={getTableBadgeVariant(table.kind)}>
                 {occupiedSeats}/{table.seatCount} belegt
               </Badge>
             </div>
@@ -451,7 +514,36 @@ export function GuestPlanningSection({
   function addTable(kind: SeatingTable['kind']) {
     setPlan((current) => ({
       ...current,
-      tables: [...current.tables, createTable(current.tables.length + 1, kind)],
+      tables: [
+        ...current.tables,
+        createTable(
+          current.tables.filter((table) => table.kind === kind).length + 1,
+          kind,
+        ),
+      ],
+    }))
+  }
+
+  function adjustTableSeatCount(tableId: string, delta: number) {
+    setPlan((current) => ({
+      ...current,
+      tables: current.tables.map((table) => {
+        if (table.id !== tableId) {
+          return table
+        }
+
+        const nextSeatCount = Math.min(24, Math.max(1, table.seatCount + delta))
+
+        if (nextSeatCount === table.seatCount) {
+          return table
+        }
+
+        return {
+          ...table,
+          seatCount: nextSeatCount,
+          seatAssignments: normalizeSeatAssignments(table.seatAssignments, nextSeatCount),
+        }
+      }),
     }))
   }
 
@@ -461,7 +553,7 @@ export function GuestPlanningSection({
 
     setPlan((current) => {
       const guestTables = current.tables.filter((table) => table.kind === 'guest')
-      const serviceTables = current.tables.filter((table) => table.kind === 'service')
+      const nonGuestTables = current.tables.filter((table) => table.kind !== 'guest')
       const nextGuestTables = guestTables.slice(0, nextGuestTableCount).map((table) => ({
         ...table,
         seatCount: nextSeatCount,
@@ -474,7 +566,7 @@ export function GuestPlanningSection({
 
       return {
         ...current,
-        tables: [...nextGuestTables, ...serviceTables],
+        tables: [...nextGuestTables, ...nonGuestTables],
       }
     })
 
@@ -683,6 +775,10 @@ export function GuestPlanningSection({
               <Plus className="h-4 w-4" />
               Tisch hinzufügen
             </Button>
+            <Button type="button" variant="secondary" onClick={() => addTable('couple')}>
+              <Heart className="h-4 w-4" />
+              Brautpaartisch
+            </Button>
             <Button type="button" variant="secondary" onClick={() => addTable('service')}>
               <Building2 className="h-4 w-4" />
               Dienstleistertisch
@@ -731,7 +827,7 @@ export function GuestPlanningSection({
 
         {plan.tables.length ? (
           <div className="grid gap-5 xl:grid-cols-2">
-            {plan.tables.map((table, tableIndex) => {
+            {plan.tables.map((table) => {
               const assignedElsewhere = new Set(
                 plan.tables.flatMap((entry) =>
                   entry.id === table.id
@@ -759,6 +855,7 @@ export function GuestPlanningSection({
                           }
                         >
                           <option value="guest">Gästetisch</option>
+                          <option value="couple">Brautpaartisch</option>
                           <option value="service">Dienstleistertisch</option>
                         </select>
                       </label>
@@ -775,10 +872,30 @@ export function GuestPlanningSection({
                           })
                         }
                       />
+                      <div className="flex flex-wrap items-end gap-2 sm:col-span-2">
+                        <Button
+                          disabled={table.seatCount <= 1}
+                          type="button"
+                          variant="secondary"
+                          onClick={() => adjustTableSeatCount(table.id, -1)}
+                        >
+                          <Minus className="h-4 w-4" />
+                          Platz entfernen
+                        </Button>
+                        <Button
+                          disabled={table.seatCount >= 24}
+                          type="button"
+                          variant="secondary"
+                          onClick={() => adjustTableSeatCount(table.id, 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                          Platz hinzufügen
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                      <Badge variant={table.kind === 'service' ? 'attending' : 'neutral'}>
-                        {table.kind === 'service' ? 'Dienstleister' : 'Gäste'}
+                      <Badge variant={getTableBadgeVariant(table.kind)}>
+                        {TABLE_KIND_LABELS[table.kind]}
                       </Badge>
                       <Button type="button" variant="ghost" onClick={() => removeTable(table.id)}>
                         <Trash2 className="h-4 w-4" />
@@ -821,7 +938,9 @@ export function GuestPlanningSection({
                   <div className="mt-5 rounded-[1.4rem] bg-cream-50 px-4 py-4 text-sm text-charcoal-600">
                     {table.kind === 'service'
                       ? 'Dieser Tisch ist ideal für Fotografen, DJ, Band, Videografen oder weitere Dienstleister.'
-                      : `Tisch ${tableIndex + 1} hat ${table.seatAssignments.filter(Boolean).length} von ${table.seatCount} Plätzen belegt.`}
+                      : table.kind === 'couple'
+                        ? 'Der Brautpaartisch wird von der smarten Sitzverteilung bewusst nicht automatisch belegt. Ihr könnt ihn bei Bedarf manuell bestücken.'
+                        : `Dieser Gästetisch hat ${table.seatAssignments.filter(Boolean).length} von ${table.seatCount} Plätzen belegt. Einzelne Plätze könnt ihr hier direkt hinzufügen oder entfernen.`}
                   </div>
                 </article>
               )
@@ -829,7 +948,7 @@ export function GuestPlanningSection({
           </div>
         ) : (
           <div className="rounded-[1.75rem] border border-dashed border-cream-300 bg-cream-50 px-5 py-6 text-sm text-charcoal-600">
-            Noch keine Tische angelegt. Ihr könnt normale Gästetische und zusätzlich einen Dienstleistertisch erstellen.
+            Noch keine Tische angelegt. Ihr könnt normale Gästetische, einen Brautpaartisch und zusätzlich einen Dienstleistertisch erstellen.
           </div>
         )}
 

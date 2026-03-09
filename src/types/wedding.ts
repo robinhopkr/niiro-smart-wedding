@@ -15,7 +15,7 @@ export type GuestCategory =
   | 'vendors'
   | 'other'
 
-export type SeatingTableKind = 'guest' | 'service'
+export type SeatingTableKind = 'guest' | 'service' | 'couple'
 
 export interface CouplePhoto {
   id: string

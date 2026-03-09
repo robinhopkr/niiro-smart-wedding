@@ -4,13 +4,19 @@ import { Section } from '@/components/ui/Section'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import type { SeatingPlanData } from '@/types/wedding'
 
+const PUBLIC_TABLE_KIND_LABELS = {
+  couple: 'Brautpaartisch',
+  guest: 'Tisch',
+  service: 'Dienstleistertisch',
+} as const
+
 function getVisibleTables(plan: SeatingPlanData) {
   if (!plan.isPublished) {
     return []
   }
 
   return plan.tables
-    .filter((table) => table.kind === 'guest')
+    .filter((table) => table.kind !== 'service')
     .map((table) => ({
       ...table,
       guests: table.seatAssignments.filter((guestName): guestName is string => Boolean(guestName)),
@@ -49,7 +55,9 @@ export function SeatingPlanSection({
           <article key={table.id} className="surface-card px-6 py-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm uppercase tracking-[0.18em] text-gold-600">Tisch</p>
+                <p className="text-sm uppercase tracking-[0.18em] text-gold-600">
+                  {PUBLIC_TABLE_KIND_LABELS[table.kind]}
+                </p>
                 <h3 className="mt-3 font-display text-card text-charcoal-900">{table.name}</h3>
               </div>
               <div className="inline-flex items-center gap-2 rounded-full bg-cream-100 px-3 py-2 text-sm font-medium text-charcoal-700">

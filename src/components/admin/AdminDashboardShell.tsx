@@ -6,6 +6,7 @@ import { APP_BRAND_NAME } from '@/lib/constants'
 import type { WeddingConfig } from '@/types/wedding'
 
 import { AdminSidebarNav } from './AdminSidebarNav'
+import { AdminHelpWidget } from './AdminHelpWidget'
 import { LogoutButton } from './LogoutButton'
 
 interface AdminDashboardShellProps {
@@ -90,6 +91,8 @@ export function AdminDashboardShell({
 
         <div className="min-w-0 space-y-6">{children}</div>
       </div>
+
+      <AdminHelpWidget />
     </main>
   )
 }
