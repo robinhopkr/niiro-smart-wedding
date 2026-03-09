@@ -21,6 +21,7 @@ import { MusicWishlistSection } from '@/components/sections/MusicWishlistSection
 import { ProgramSection } from '@/components/sections/ProgramSection'
 import { RsvpSection } from '@/components/sections/RsvpSection'
 import { SeatingPlanSection } from '@/components/sections/SeatingPlanSection'
+import { VendorSection } from '@/components/sections/VendorSection'
 import { WeddingThemeFrame } from '@/components/theme/WeddingThemeFrame'
 import { Section } from '@/components/ui/Section'
 import { SectionHeading } from '@/components/ui/SectionHeading'
@@ -192,8 +193,8 @@ export default async function AdminPage() {
         <div className="max-w-3xl">
           <SectionHeading>Inhalte und variable Daten</SectionHeading>
           <p className="mt-4 text-charcoal-600">
-            Hier pflegt ihr Namen, Zeiten, Texte, Fotos, FAQ, Galerie-Texte und den Fotografen-Zugang.
-            So bleibt die Einladung für eure Gäste klar, persönlich und vollständig.
+            Hier pflegt ihr Namen, Zeiten, Texte, Fotos, Dienstleister, FAQ, Galerie-Texte und den
+            Fotografen-Zugang. So bleibt die Einladung für eure Gäste klar, persönlich und vollständig.
           </p>
         </div>
         {editorValues ? (
@@ -370,6 +371,7 @@ export default async function AdminPage() {
           config={config}
           images={config.sectionImages.filter((image) => image.section === 'dresscode')}
         />
+        <VendorSection vendors={config.vendorProfiles} />
         <GallerySection
           config={config}
           photos={galleryPhotos}

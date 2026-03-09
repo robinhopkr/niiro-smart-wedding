@@ -20,6 +20,7 @@ import type {
   EditableFaqItem,
   EditableProgramItem,
   EditableSectionImage,
+  EditableVendorProfile,
   FaqItem,
   GalleryCollections,
   GalleryPhoto,
@@ -33,6 +34,7 @@ import type {
   SeatingPlanData,
   SeatingTable,
   SectionImage,
+  VendorProfile,
   WeddingConfig,
   WeddingEditorValues,
 } from '@/types/wedding'
@@ -147,6 +149,14 @@ interface AppSettingsTexts extends LegacyTexts {
   fontPresetId?: WeddingFontPresetId
   musicWishlistEnabled?: boolean
   sharePrivateGalleryWithGuests?: boolean
+  vendorProfiles?: Array<{
+    id?: string
+    name?: string
+    role?: string
+    websiteUrl?: string | null
+    instagramUrl?: string | null
+    imageUrl?: string | null
+  }>
   billingStatus?: 'paid' | 'unpaid'
   billingEmail?: string | null
   billingPaidAt?: string | null
@@ -407,6 +417,17 @@ function mapEditableSectionImages(items: SectionImage[]): EditableSectionImage[]
   }))
 }
 
+function mapEditableVendorProfiles(items: VendorProfile[]): EditableVendorProfile[] {
+  return items.map((item) => ({
+    id: item.id,
+    name: item.name,
+    role: item.role,
+    websiteUrl: item.websiteUrl ?? '',
+    instagramUrl: item.instagramUrl ?? '',
+    imageUrl: item.imageUrl ?? '',
+  }))
+}
+
 function getDefaultDressCodeColors(): string[] {
   return ['pearl', 'champagner', 'sage', 'dusty-rose', 'navy']
 }
@@ -471,6 +492,25 @@ function parseSectionImages(texts: AppSettingsTexts): SectionImage[] {
         altText: string | null
       } => Boolean(item.imageUrl) && isContentImageSection(item.section),
     )
+}
+
+function parseVendorProfiles(texts: AppSettingsTexts): VendorProfile[] {
+  const items = texts.vendorProfiles
+
+  if (!Array.isArray(items)) {
+    return []
+  }
+
+  return items
+    .map((item, index) => ({
+      id: item.id?.trim() || `vendor-profile-${index + 1}`,
+      name: item.name?.trim() ?? '',
+      role: item.role?.trim() ?? '',
+      websiteUrl: normalizeOptionalString(item.websiteUrl),
+      instagramUrl: normalizeOptionalString(item.instagramUrl),
+      imageUrl: normalizeOptionalString(item.imageUrl),
+    }))
+    .filter((item) => item.name && item.role)
 }
 
 function isGuestCategory(
@@ -649,6 +689,7 @@ function createFallbackConfig(): WeddingConfig {
     heroImageUrl: null,
     couplePhotos: [],
     sectionImages: [],
+    vendorProfiles: [],
     menuOptions: ['meat', 'fish', 'vegetarian', 'vegan'],
     isActive: true,
   }
@@ -691,6 +732,7 @@ function mapModernConfig(row: Database['public']['Tables']['wedding_config']['Ro
     heroImageUrl: null,
     couplePhotos: [],
     sectionImages: [],
+    vendorProfiles: [],
     menuOptions: ['meat', 'fish', 'vegetarian', 'vegan'],
     isActive: row.is_active,
   }
@@ -743,6 +785,7 @@ function mapLegacyConfig(row: LegacyWeddingRow): WeddingConfig {
     heroImageUrl: texts.einladungCover ?? null,
     couplePhotos: parseCouplePhotos(appTexts),
     sectionImages: parseSectionImages(appTexts),
+    vendorProfiles: parseVendorProfiles(appTexts),
     menuOptions: texts.menuoptionen?.filter(Boolean) ?? ['meat', 'fish', 'vegetarian', 'vegan'],
     isActive: true,
   }
@@ -1341,6 +1384,7 @@ function applyConfigOverlayToConfig(baseConfig: WeddingConfig, row: ConfigOverla
         : getDefaultDressCodeColors()
   const hasCouplePhotos = Array.isArray(texts.couplePhotos)
   const hasSectionImages = Array.isArray(texts.sectionImages)
+  const hasVendorProfiles = Array.isArray(texts.vendorProfiles)
 
   return {
     ...baseConfig,
@@ -1380,6 +1424,7 @@ function applyConfigOverlayToConfig(baseConfig: WeddingConfig, row: ConfigOverla
     heroImageUrl: texts.einladungCover?.trim() || baseConfig.heroImageUrl,
     couplePhotos: hasCouplePhotos ? parseCouplePhotos(texts) : baseConfig.couplePhotos,
     sectionImages: hasSectionImages ? parseSectionImages(texts) : baseConfig.sectionImages,
+    vendorProfiles: hasVendorProfiles ? parseVendorProfiles(texts) : baseConfig.vendorProfiles,
   }
 }
 
@@ -1492,6 +1537,7 @@ function mapLegacyWeddingEditorValues(
     coverImageUrl: config.heroImageUrl ?? '',
     couplePhotos: mapEditableCouplePhotos(config.couplePhotos),
     sectionImages: mapEditableSectionImages(config.sectionImages),
+    vendorProfiles: mapEditableVendorProfiles(config.vendorProfiles),
     programItems: mapEditableProgramItems(programItems),
     faqItems: mapEditableFaqItems(faqItems),
   }
@@ -1743,6 +1789,7 @@ export async function getWeddingEditorValues(
     coverImageUrl: config.heroImageUrl ?? '',
     couplePhotos: mapEditableCouplePhotos(config.couplePhotos),
     sectionImages: mapEditableSectionImages(config.sectionImages),
+    vendorProfiles: mapEditableVendorProfiles(config.vendorProfiles),
     programItems: mapEditableProgramItems(programItems),
     faqItems: mapEditableFaqItems(faqItems),
   }
@@ -1882,7 +1929,7 @@ export async function uploadContentImageFile(
     name: string
     contentType: string
     body: Uint8Array
-    folder: 'cover' | 'couple' | 'section'
+    folder: 'cover' | 'couple' | 'section' | 'vendor'
   },
 ): Promise<{ path: string; publicUrl: string }> {
   if (!config.sourceId || !supabase.storage) {
@@ -1964,6 +2011,14 @@ export async function saveWeddingEditorValues(
     fontPresetId: values.fontPresetId,
     musicWishlistEnabled: values.musicWishlistEnabled,
     sharePrivateGalleryWithGuests: values.sharePrivateGalleryWithGuests,
+    vendorProfiles: values.vendorProfiles.map((item) => ({
+      id: item.id,
+      name: item.name,
+      role: item.role,
+      websiteUrl: normalizeOptionalString(item.websiteUrl),
+      instagramUrl: normalizeOptionalString(item.instagramUrl),
+      imageUrl: normalizeOptionalString(item.imageUrl),
+    })),
     couplePhotos: values.couplePhotos.map((item) => ({
       id: item.id,
       url: item.imageUrl,

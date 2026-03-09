@@ -29,11 +29,13 @@ type UploadFieldPath =
   | 'coverImageUrl'
   | `couplePhotos.${number}.imageUrl`
   | `sectionImages.${number}.imageUrl`
+  | `vendorProfiles.${number}.imageUrl`
 
-const MAX_IMAGE_DIMENSIONS: Record<'cover' | 'couple' | 'section', number> = {
+const MAX_IMAGE_DIMENSIONS: Record<'cover' | 'couple' | 'section' | 'vendor', number> = {
   cover: 2400,
   couple: 1800,
   section: 1800,
+  vendor: 1400,
 }
 
 const OPTIMIZED_IMAGE_QUALITY = 0.84
@@ -140,6 +142,7 @@ export function WeddingEditorForm({ values }: WeddingEditorFormProps) {
   const watchedCoverImage = watch('coverImageUrl')
   const watchedCouplePhotos = watch('couplePhotos') ?? []
   const watchedSectionImages = watch('sectionImages') ?? []
+  const watchedVendorProfiles = watch('vendorProfiles') ?? []
   const sourceId = watch('sourceId') || values.sourceId
 
   const couplePhotos = useFieldArray({
@@ -150,6 +153,11 @@ export function WeddingEditorForm({ values }: WeddingEditorFormProps) {
   const sectionImages = useFieldArray({
     control,
     name: 'sectionImages',
+  })
+
+  const vendorProfiles = useFieldArray({
+    control,
+    name: 'vendorProfiles',
   })
 
   const programItems = useFieldArray({
@@ -270,7 +278,7 @@ export function WeddingEditorForm({ values }: WeddingEditorFormProps) {
 
   async function buildOptimizedImageAsset(
     file: File,
-    folder: 'cover' | 'couple' | 'section',
+    folder: 'cover' | 'couple' | 'section' | 'vendor',
   ): Promise<{ dataUrl: string; file: File }> {
     const imageUrl = URL.createObjectURL(file)
 
@@ -328,7 +336,7 @@ export function WeddingEditorForm({ values }: WeddingEditorFormProps) {
 
   async function createEmbeddedImageDataUrl(
     file: File,
-    folder: 'cover' | 'couple' | 'section',
+    folder: 'cover' | 'couple' | 'section' | 'vendor',
   ): Promise<string> {
     const asset = await buildOptimizedImageAsset(file, folder)
     return asset.dataUrl
@@ -348,6 +356,11 @@ export function WeddingEditorForm({ values }: WeddingEditorFormProps) {
         imageUrl:
           pendingEmbeddedImages[`sectionImages.${index}.imageUrl` as UploadFieldPath] ?? item.imageUrl,
       })),
+      vendorProfiles: nextValues.vendorProfiles.map((item, index) => ({
+        ...item,
+        imageUrl:
+          pendingEmbeddedImages[`vendorProfiles.${index}.imageUrl` as UploadFieldPath] ?? item.imageUrl,
+      })),
     }
   }
 
@@ -355,7 +368,7 @@ export function WeddingEditorForm({ values }: WeddingEditorFormProps) {
     file: File
     targetKey: string
     targetPath: UploadFieldPath
-    folder: 'cover' | 'couple' | 'section'
+    folder: 'cover' | 'couple' | 'section' | 'vendor'
   }) {
     setUploadingTargets((current) => ({
       ...current,
@@ -434,7 +447,7 @@ export function WeddingEditorForm({ values }: WeddingEditorFormProps) {
     input: {
       targetKey: string
       targetPath: UploadFieldPath
-      folder: 'cover' | 'couple' | 'section'
+      folder: 'cover' | 'couple' | 'section' | 'vendor'
     },
   ) {
     const file = event.target.files?.[0]
@@ -847,6 +860,140 @@ export function WeddingEditorForm({ values }: WeddingEditorFormProps) {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h3 className="font-display text-card text-charcoal-900">Dienstleister</h3>
+            <p className="mt-2 max-w-3xl text-sm text-charcoal-600">
+              Optional. Hier könnt ihr euren Gästen die Menschen hinter Catering, Musik, Trauung,
+              Fotos oder Dekoration vorstellen. Wenn keine Einträge hinterlegt sind, erscheint im
+              Gästebereich auch kein Navigationspunkt.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() =>
+              vendorProfiles.append({
+                id: `vendor-${Date.now()}`,
+                name: '',
+                role: '',
+                websiteUrl: '',
+                instagramUrl: '',
+                imageUrl: '',
+              })
+            }
+          >
+            <Plus className="h-4 w-4" />
+            Dienstleister hinzufügen
+          </Button>
+        </div>
+
+        {vendorProfiles.fields.length ? (
+          <div className="space-y-4">
+            {vendorProfiles.fields.map((field, index) => (
+              <div key={field.id} className="rounded-[1.75rem] border border-cream-200 bg-white px-5 py-5">
+                <div className="mb-4 flex justify-end">
+                  <Button type="button" variant="ghost" onClick={() => vendorProfiles.remove(index)}>
+                    <Trash2 className="h-4 w-4" />
+                    Entfernen
+                  </Button>
+                </div>
+                <div className="grid gap-4 lg:grid-cols-[1fr_240px]">
+                  <div className="space-y-4">
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      <Input
+                        label="Name"
+                        error={errors.vendorProfiles?.[index]?.name?.message}
+                        helperText="Zum Beispiel: Studio Elara oder DJ Nox."
+                        {...form.register(`vendorProfiles.${index}.name`)}
+                      />
+                      <Input
+                        label="Funktion"
+                        error={errors.vendorProfiles?.[index]?.role?.message}
+                        helperText="Zum Beispiel: Caterer, Fotograf, DJ oder Trauredner."
+                        {...form.register(`vendorProfiles.${index}.role`)}
+                      />
+                    </div>
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      <Input
+                        label="Website"
+                        error={errors.vendorProfiles?.[index]?.websiteUrl?.message}
+                        helperText="Optional. Bitte als vollständige URL mit https:// angeben."
+                        {...form.register(`vendorProfiles.${index}.websiteUrl`)}
+                      />
+                      <Input
+                        label="Instagram"
+                        error={errors.vendorProfiles?.[index]?.instagramUrl?.message}
+                        helperText="Optional. Bitte als vollständige URL mit https:// angeben."
+                        {...form.register(`vendorProfiles.${index}.instagramUrl`)}
+                      />
+                    </div>
+                    {isEmbeddedImage(
+                      getPreviewValue(
+                        `vendorProfiles.${index}.imageUrl`,
+                        watchedVendorProfiles[index]?.imageUrl,
+                      ),
+                    ) ? (
+                      <div className="space-y-3">
+                        <input type="hidden" {...form.register(`vendorProfiles.${index}.imageUrl`)} />
+                        <div className="rounded-[1.5rem] border border-cream-200 bg-cream-50 px-4 py-4 text-sm text-charcoal-600">
+                          {pendingEmbeddedImages[`vendorProfiles.${index}.imageUrl`]
+                            ? 'Dieses Profilbild wird beim Speichern direkt mit eurer Hochzeit gespeichert.'
+                            : 'Für dieses Profilbild ist bereits eine eingebettete Datei gespeichert.'}
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => clearImageValue(`vendorProfiles.${index}.imageUrl`)}
+                          >
+                            Bild entfernen
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Input
+                        label="Profilbild-URL"
+                        error={errors.vendorProfiles?.[index]?.imageUrl?.message}
+                        helperText="Optional. Ein Portrait oder Logo macht den Bereich persönlicher."
+                        {...form.register(`vendorProfiles.${index}.imageUrl`)}
+                      />
+                    )}
+                    <div className="flex flex-wrap gap-3">
+                      <UploadFileControl
+                        isLoading={Boolean(uploadingTargets[`vendor-${index}`])}
+                        label="Profilbild hochladen"
+                        onChange={(event) =>
+                          handleUploadChange(event, {
+                            targetKey: `vendor-${index}`,
+                            targetPath: `vendorProfiles.${index}.imageUrl`,
+                            folder: 'vendor',
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <ImagePreview
+                    altText={watchedVendorProfiles[index]?.name ?? ''}
+                    emptyLabel="Die Vorschau erscheint, sobald ein Profilbild hinterlegt ist."
+                    imageUrl={getPreviewValue(
+                      `vendorProfiles.${index}.imageUrl`,
+                      watchedVendorProfiles[index]?.imageUrl,
+                    )}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-[1.75rem] border border-dashed border-cream-300 bg-cream-50 px-5 py-6 text-sm text-charcoal-600">
+            Noch keine Dienstleister hinterlegt. Wenn ihr diesen Bereich nicht nutzen möchtet, könnt
+            ihr ihn einfach leer lassen.
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">

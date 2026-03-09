@@ -7,9 +7,9 @@ import { getAdminWeddingConfig, uploadContentImageFile } from '@/lib/supabase/re
 import type { ApiResponse } from '@/types/api'
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024
-const ALLOWED_FOLDERS = new Set(['cover', 'couple', 'section'])
+const ALLOWED_FOLDERS = new Set(['cover', 'couple', 'section', 'vendor'])
 
-function isAllowedFolder(value: string): value is 'cover' | 'couple' | 'section' {
+function isAllowedFolder(value: string): value is 'cover' | 'couple' | 'section' | 'vendor' {
   return ALLOWED_FOLDERS.has(value)
 }
 

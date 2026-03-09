@@ -10,6 +10,7 @@ import { MusicWishlistSection } from '@/components/sections/MusicWishlistSection
 import { ProgramSection } from '@/components/sections/ProgramSection'
 import { RsvpSection } from '@/components/sections/RsvpSection'
 import { SeatingPlanSection } from '@/components/sections/SeatingPlanSection'
+import { VendorSection } from '@/components/sections/VendorSection'
 import { WeddingThemeFrame } from '@/components/theme/WeddingThemeFrame'
 import { APP_BRAND_NAME } from '@/lib/constants'
 import type {
@@ -52,6 +53,7 @@ export function WeddingInvitationPage({
     { href: '#programm', label: 'Programm' },
     { href: '#anfahrt', label: 'Anfahrt' },
     { href: '#dresscode', label: 'Dresscode' },
+    ...(config.vendorProfiles.length ? [{ href: '#dienstleister', label: 'Dienstleister' }] : []),
     { href: '#galerie', label: 'Galerie' },
     { href: '#rsvp', label: 'RSVP' },
     ...(musicWishlistData.enabled ? [{ href: '#musik', label: 'Musik' }] : []),
@@ -101,6 +103,7 @@ export function WeddingInvitationPage({
         config={config}
         images={config.sectionImages.filter((image) => image.section === 'dresscode')}
       />
+      <VendorSection vendors={config.vendorProfiles} />
       <GallerySection
         config={config}
         photos={galleryPhotos}

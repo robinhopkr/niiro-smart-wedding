@@ -32,6 +32,15 @@ export interface SectionImage {
   altText: string | null
 }
 
+export interface VendorProfile {
+  id: string
+  name: string
+  role: string
+  websiteUrl: string | null
+  instagramUrl: string | null
+  imageUrl: string | null
+}
+
 export interface WeddingConfig {
   id: string
   source: DataSource
@@ -66,6 +75,7 @@ export interface WeddingConfig {
   heroImageUrl: string | null
   couplePhotos: CouplePhoto[]
   sectionImages: SectionImage[]
+  vendorProfiles: VendorProfile[]
   menuOptions: string[]
   isActive: boolean
 }
@@ -207,6 +217,15 @@ export interface EditableSectionImage {
   altText: string
 }
 
+export interface EditableVendorProfile {
+  id: string
+  name: string
+  role: string
+  websiteUrl: string
+  instagramUrl: string
+  imageUrl: string
+}
+
 export interface WeddingEditorValues {
   source: Exclude<DataSource, 'fallback'>
   sourceId: string
@@ -237,6 +256,7 @@ export interface WeddingEditorValues {
   coverImageUrl: string
   couplePhotos: EditableCouplePhoto[]
   sectionImages: EditableSectionImage[]
+  vendorProfiles: EditableVendorProfile[]
   programItems: EditableProgramItem[]
   faqItems: EditableFaqItem[]
 }

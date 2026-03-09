@@ -1,0 +1,17 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="900" fill="#F3EEE7"/>
+  <rect x="92" y="92" width="1016" height="716" rx="56" fill="#FFFDF9"/>
+  <rect x="226" y="206" width="748" height="392" rx="44" fill="#171717"/>
+  <circle cx="422" cy="402" r="122" fill="#2D4364"/>
+  <circle cx="422" cy="402" r="64" fill="#F6F0E8"/>
+  <circle cx="778" cy="402" r="122" fill="#7D2E3A"/>
+  <circle cx="778" cy="402" r="64" fill="#F6F0E8"/>
+  <rect x="532" y="258" width="136" height="36" rx="18" fill="#D4AF37"/>
+  <rect x="532" y="314" width="136" height="18" rx="9" fill="#D4AF37" fill-opacity="0.45"/>
+  <rect x="532" y="352" width="136" height="18" rx="9" fill="#D4AF37" fill-opacity="0.45"/>
+  <rect x="532" y="390" width="136" height="18" rx="9" fill="#D4AF37" fill-opacity="0.45"/>
+  <path d="M410 666C478 614 554 588 640 588C726 588 800 615 868 666" stroke="#D4AF37" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="396" cy="670" r="20" fill="#D4AF37"/>
+  <circle cx="884" cy="670" r="20" fill="#D4AF37"/>
+  <text x="600" y="792" text-anchor="middle" fill="#5C4A3A" font-family="Georgia, serif" font-size="54">Noir Notes</text>
+</svg>

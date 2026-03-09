@@ -61,6 +61,32 @@ export const DEMO_WEDDING_CONFIG: WeddingConfig = {
     },
   ],
   sectionImages: [],
+  vendorProfiles: [
+    {
+      id: 'demo-vendor-photography',
+      name: 'Studio Elara',
+      role: 'Fotografie',
+      websiteUrl: 'https://example.com/studio-elara',
+      instagramUrl: 'https://instagram.com/studio.elara',
+      imageUrl: '/images/demo/vendor-photography.svg',
+    },
+    {
+      id: 'demo-vendor-dj',
+      name: 'Noir Notes',
+      role: 'DJ & Live-Sets',
+      websiteUrl: 'https://example.com/noir-notes',
+      instagramUrl: 'https://instagram.com/noirnotes.music',
+      imageUrl: '/images/demo/vendor-dj.svg',
+    },
+    {
+      id: 'demo-vendor-catering',
+      name: 'Atelier Table',
+      role: 'Catering & Dinner',
+      websiteUrl: 'https://example.com/atelier-table',
+      instagramUrl: 'https://instagram.com/ateliertable.events',
+      imageUrl: '/images/demo/vendor-catering.svg',
+    },
+  ],
   menuOptions: ['meat', 'fish', 'vegetarian', 'vegan'],
   isActive: true,
 }

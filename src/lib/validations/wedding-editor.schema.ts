@@ -51,6 +51,28 @@ const editableSectionImageSchema = z.object({
   altText: z.string().trim().max(200),
 })
 
+const optionalUrlSchema = z
+  .string()
+  .trim()
+  .max(2_000_000)
+  .refine((value) => !value || /^https?:\/\//.test(value), 'Bitte gib eine gültige URL ein.')
+
+const editableVendorProfileSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().trim().min(1, 'Bitte gib einen Namen ein.').max(160),
+  role: z.string().trim().min(1, 'Bitte gib eine Funktion ein.').max(160),
+  websiteUrl: optionalUrlSchema,
+  instagramUrl: optionalUrlSchema,
+  imageUrl: z
+    .string()
+    .trim()
+    .max(2_000_000)
+    .refine(
+      (value) => !value || /^(https?:\/\/|\/|data:image\/)/.test(value),
+      'Bitte gib eine gültige Bild-URL ein.',
+    ),
+})
+
 export const weddingEditorSchema = z.object({
   source: z.enum(['modern', 'legacy']),
   sourceId: z.string().min(1),
@@ -81,6 +103,7 @@ export const weddingEditorSchema = z.object({
   coverImageUrl: z.string().trim().max(2_000_000),
   couplePhotos: z.array(editableCouplePhotoSchema).max(8),
   sectionImages: z.array(editableSectionImageSchema).max(24),
+  vendorProfiles: z.array(editableVendorProfileSchema).max(24),
   programItems: z.array(editableProgramItemSchema).max(20),
   faqItems: z.array(editableFaqItemSchema).max(20),
 })
