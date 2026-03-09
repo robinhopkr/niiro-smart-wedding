@@ -480,7 +480,7 @@ export function WeddingEditorForm({ values }: WeddingEditorFormProps) {
               <Input
                 label="Titelbild / Hero-Bild-URL"
                 error={errors.coverImageUrl?.message}
-                helperText="Optional. Dieses Bild erscheint im Hero-Bereich zuerst. Weitere Brautpaarfotos koennen zusaetzlich darunter angezeigt werden."
+                helperText="Optional. Dieses Bild erscheint als grosses Titelmotiv oberhalb eurer Begruessung. Weitere Brautpaarfotos koennen zusaetzlich rechts daneben oder darunter gezeigt werden."
                 {...form.register('coverImageUrl')}
               />
             )}

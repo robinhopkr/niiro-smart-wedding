@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { CalendarDays, Camera, MapPin } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
+import { cn } from '@/lib/utils/cn'
 import { formatGermanDate } from '@/lib/utils/date'
 import type { CouplePhoto, WeddingConfig } from '@/types/wedding'
 
@@ -46,31 +47,14 @@ function buildHeroHighlights(config: WeddingConfig) {
 }
 
 function buildVisibleCouplePhotos(config: WeddingConfig): CouplePhoto[] {
-  const photos: CouplePhoto[] = []
-  const usedUrls = new Set<string>()
+  const heroImageUrl = config.heroImageUrl?.trim()
 
-  if (config.heroImageUrl) {
-    photos.push({
-      id: 'hero-cover',
-      imageUrl: config.heroImageUrl,
-      altText: `${config.coupleLabel} auf dem Titelbild`,
-      caption: 'Titelbild',
-    })
-    usedUrls.add(config.heroImageUrl)
-  }
-
-  config.couplePhotos.forEach((photo) => {
-    if (!usedUrls.has(photo.imageUrl)) {
-      photos.push(photo)
-      usedUrls.add(photo.imageUrl)
-    }
-  })
-
-  return photos
+  return config.couplePhotos.filter((photo) => photo.imageUrl !== heroImageUrl)
 }
 
 export function HeroSection({ config }: { config: WeddingConfig }) {
   const heroHighlights = buildHeroHighlights(config)
+  const heroCoverImage = config.heroImageUrl?.trim() || null
   const visibleCouplePhotos = buildVisibleCouplePhotos(config)
 
   return (
@@ -79,7 +63,32 @@ export function HeroSection({ config }: { config: WeddingConfig }) {
       <div className="wedding-hero-orb-left absolute left-[-5rem] top-12 h-56 w-56 rounded-full blur-3xl" />
       <div className="wedding-hero-orb-right absolute right-[-4rem] top-40 h-64 w-64 rounded-full blur-3xl" />
 
-      <div className="relative mx-auto grid min-h-[60vh] max-w-6xl gap-6 px-6 py-[clamp(3.25rem,7vw,5.5rem)] sm:px-10 lg:min-h-[68vh] lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-center">
+      {heroCoverImage ? (
+        <div className="relative mx-auto max-w-[120rem] px-3 pt-3 sm:px-6 sm:pt-5 lg:px-8">
+          <div className="overflow-hidden rounded-[2.3rem] border border-white/65 bg-white/45 shadow-elegant">
+            <div className="relative h-[clamp(16rem,34vw,33rem)] w-full bg-white/45 px-4 py-4 sm:px-6">
+              <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/55 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent via-cream-50/60 to-cream-50" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                alt={`${config.coupleLabel} Titelmotiv`}
+                className="relative h-full w-full object-contain object-center"
+                loading="eager"
+                src={heroCoverImage}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div
+        className={cn(
+          'relative mx-auto grid max-w-6xl gap-6 px-6 sm:px-10 lg:grid-cols-[minmax(0,1fr)_22rem]',
+          heroCoverImage
+            ? '-mt-8 pb-[clamp(3.25rem,6vw,5.5rem)] sm:-mt-12 lg:-mt-16 lg:items-start'
+            : 'min-h-[60vh] py-[clamp(3.25rem,7vw,5.5rem)] lg:min-h-[68vh] lg:items-center',
+        )}
+      >
         <motion.div
           initial="hidden"
           animate="visible"
@@ -124,7 +133,7 @@ export function HeroSection({ config }: { config: WeddingConfig }) {
         >
           {visibleCouplePhotos.length ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-              {visibleCouplePhotos.slice(0, 3).map((photo) => (
+              {visibleCouplePhotos.slice(0, heroCoverImage ? 2 : 3).map((photo) => (
                 <article key={photo.id} className="surface-card overflow-hidden">
                   <div className="aspect-[4/5] w-full overflow-hidden bg-cream-100">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
