@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { ExportButton } from '@/components/admin/ExportButton'
+import { GuestAccessCard } from '@/components/admin/GuestAccessCard'
 import { LogoutButton } from '@/components/admin/LogoutButton'
 import { RsvpStats } from '@/components/admin/RsvpStats'
 import { RsvpTable } from '@/components/admin/RsvpTable'
@@ -21,7 +22,7 @@ import { Section } from '@/components/ui/Section'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { getServerSession } from '@/lib/auth/get-session'
 import { getBillingAccessState } from '@/lib/billing/access'
-import { ADMIN_NAV_ITEMS } from '@/lib/constants'
+import { ADMIN_NAV_ITEMS, ENV } from '@/lib/constants'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -54,6 +55,7 @@ export default async function AdminPage() {
   const summary = buildAdminSummary(rsvps)
   const galleryHref = config.guestCode ? `/galerie/${config.guestCode}` : null
   const photographerHref = config.guestCode ? `/fotograf/${config.guestCode}` : null
+  const guestInviteUrl = new URL('/einladung', ENV.appUrl).toString()
 
   return (
     <main className="min-h-screen bg-cream-50">
@@ -150,6 +152,8 @@ export default async function AdminPage() {
             </dl>
           </article>
         </div>
+
+        <GuestAccessCard inviteUrl={guestInviteUrl} guestCode={config.guestCode} />
       </Section>
 
       <Section id="inhalte" className="space-y-8 pt-0">
