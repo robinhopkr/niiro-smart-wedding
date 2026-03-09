@@ -95,7 +95,7 @@ export function HeroSection({ config }: { config: WeddingConfig }) {
         className={cn(
           'relative mx-auto grid max-w-6xl gap-6 px-6 sm:px-10 lg:grid-cols-[minmax(0,1fr)_22rem]',
           heroCoverImage
-            ? '-mt-8 pb-[clamp(3.25rem,6vw,5.5rem)] sm:-mt-12 lg:-mt-16 lg:items-start'
+            ? 'pt-6 pb-[clamp(3.25rem,6vw,5.5rem)] sm:pt-8 lg:-mt-16 lg:pt-0 lg:items-start'
             : 'min-h-[60vh] py-[clamp(3.25rem,7vw,5.5rem)] lg:min-h-[68vh] lg:items-center',
         )}
       >
