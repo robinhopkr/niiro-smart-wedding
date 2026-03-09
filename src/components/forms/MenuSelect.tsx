@@ -9,18 +9,32 @@ interface MenuOption {
 interface MenuSelectProps {
   label: string
   options: ReadonlyArray<MenuOption>
-  value: string
-  onChange: (value: string) => void
+  value: string[]
+  onChange: (value: string[]) => void
   error?: string | undefined
+  helperText?: string | undefined
 }
 
-export function MenuSelect({ label, options, value, onChange, error }: MenuSelectProps) {
+export function MenuSelect({ label, options, value, onChange, error, helperText }: MenuSelectProps) {
+  function toggleChoice(nextValue: string) {
+    const currentValues = new Set(value)
+
+    if (currentValues.has(nextValue)) {
+      currentValues.delete(nextValue)
+    } else {
+      currentValues.add(nextValue)
+    }
+
+    onChange(Array.from(currentValues))
+  }
+
   return (
     <fieldset className="space-y-3">
       <legend className="text-sm font-medium text-charcoal-700">{label}</legend>
-      <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label={label}>
+      {helperText ? <p className="text-sm text-charcoal-600">{helperText}</p> : null}
+      <div className="grid gap-3 sm:grid-cols-2" aria-label={label}>
         {options.map((option) => {
-          const checked = option.value === value
+          const checked = value.includes(option.value)
 
           return (
             <label
@@ -35,9 +49,9 @@ export function MenuSelect({ label, options, value, onChange, error }: MenuSelec
               <input
                 checked={checked}
                 className="sr-only"
-                type="radio"
+                type="checkbox"
                 value={option.value}
-                onChange={() => onChange(option.value)}
+                onChange={() => toggleChoice(option.value)}
               />
               <span className="text-2xl">{option.emoji}</span>
               <span className="font-semibold">{option.label}</span>

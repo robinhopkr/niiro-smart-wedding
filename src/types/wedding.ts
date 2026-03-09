@@ -94,8 +94,7 @@ export interface RsvpFormValues {
   plusOne: boolean
   plusOneName: string
   totalGuests: number
-  menuChoice: MenuChoice | ''
-  plusOneMenu: MenuChoice | ''
+  menuChoices: MenuChoice[]
   dietaryNotes: string
   message: string
   honeypot: ''

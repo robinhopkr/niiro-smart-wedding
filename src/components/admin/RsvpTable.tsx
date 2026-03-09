@@ -20,7 +20,7 @@ export function RsvpTable({ rsvps }: { rsvps: RsvpRecord[] }) {
               <th className="px-5 py-4 font-semibold">Gast</th>
               <th className="px-5 py-4 font-semibold">Status</th>
               <th className="px-5 py-4 font-semibold">Personen</th>
-              <th className="px-5 py-4 font-semibold">Menü</th>
+              <th className="px-5 py-4 font-semibold">Essensvarianten</th>
               <th className="px-5 py-4 font-semibold">Nachricht</th>
               <th className="px-5 py-4 font-semibold">Zeitpunkt</th>
             </tr>

@@ -93,32 +93,18 @@ export function RsvpForm({
           />
           <Controller
             control={control}
-            name="menuChoice"
+            name="menuChoices"
             render={({ field }) => (
               <MenuSelect
-                label="Dein Menü"
+                label="Welche Essensvarianten sollen für eure Gruppe eingeplant werden?"
                 options={MENU_CHOICES}
                 value={field.value}
-                error={errors.menuChoice?.message}
+                error={errors.menuChoices?.message}
+                helperText="Bei Buffet dient diese Auswahl nur der Planung. Bitte markiert einfach alle Varianten, die in eurer Gruppe gebraucht werden."
                 onChange={field.onChange}
               />
             )}
           />
-          {plusOne ? (
-            <Controller
-              control={control}
-              name="plusOneMenu"
-              render={({ field }) => (
-                <MenuSelect
-                  label="Menü für die Begleitperson"
-                  options={MENU_CHOICES}
-                  value={field.value}
-                  error={errors.plusOneMenu?.message}
-                  onChange={field.onChange}
-                />
-              )}
-            />
-          ) : null}
         </div>
       ) : null}
 

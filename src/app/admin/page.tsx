@@ -255,7 +255,8 @@ export default async function AdminPage() {
       <Section id="rsvps" className="space-y-8 pt-0">
         <SectionHeading>Rückmeldungen</SectionHeading>
         <p className="max-w-3xl text-charcoal-600">
-          Hier seht ihr alle eingegangenen Antworten inklusive Zusagen, Gästezahl und Menüwünschen.
+          Hier seht ihr alle eingegangenen Antworten inklusive Zusagen, Gästezahl und
+          Essensvarianten.
         </p>
         <RsvpStats summary={summary} />
         <RsvpTable rsvps={rsvps} />

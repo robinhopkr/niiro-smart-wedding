@@ -1,6 +1,6 @@
 import type { PostgrestError } from '@supabase/supabase-js'
 
-import { DEFAULT_FAQ_ITEMS, DEFAULT_PROGRAM_ITEMS, ENV } from '@/lib/constants'
+import { DEFAULT_FAQ_ITEMS, DEFAULT_PROGRAM_ITEMS, ENV, MENU_CHOICE_LABELS } from '@/lib/constants'
 import {
   DEFAULT_WEDDING_FONT_PRESET_ID,
   DEFAULT_WEDDING_TEMPLATE_ID,
@@ -934,6 +934,29 @@ function mapModernFaqItems(rows: Database['public']['Tables']['faq_items']['Row'
   }))
 }
 
+function combineMenuSelectionLabels(
+  primaryChoice: string | null | undefined,
+  secondaryChoice: string | null | undefined,
+): string | null {
+  const values = [primaryChoice, secondaryChoice]
+    .map((entry) => entry?.trim())
+    .filter((entry): entry is string => Boolean(entry))
+
+  if (!values.length) {
+    return null
+  }
+
+  return Array.from(new Set(values)).join(', ')
+}
+
+function formatMenuSelection(menuChoices: RsvpFormValues['menuChoices']): string | null {
+  const labels = menuChoices
+    .map((choice) => MENU_CHOICE_LABELS[choice])
+    .filter((entry, index, array) => Boolean(entry) && array.indexOf(entry) === index)
+
+  return labels.length ? labels.join(', ') : null
+}
+
 function mapModernRsvps(rows: Database['public']['Tables']['rsvps']['Row'][]): RsvpRecord[] {
   return rows.map((row) => ({
     id: row.id,
@@ -943,7 +966,7 @@ function mapModernRsvps(rows: Database['public']['Tables']['rsvps']['Row'][]): R
     plusOne: row.plus_one ?? false,
     plusOneName: row.plus_one_name,
     totalGuests: row.total_guests ?? 1,
-    menuChoice: row.menu_choice,
+    menuChoice: combineMenuSelectionLabels(row.menu_choice, row.plus_one_menu),
     plusOneMenu: row.plus_one_menu,
     dietaryNotes: row.dietary_notes,
     message: row.message,
@@ -1611,6 +1634,7 @@ interface SubmitRsvpInput {
 
 export async function submitRsvp(supabase: DbClient, input: SubmitRsvpInput): Promise<string> {
   const { values, config, ipHash, userAgent } = input
+  const menuSelection = formatMenuSelection(values.menuChoices)
 
   if (config.source === 'modern' && config.sourceId) {
     const modernPayload: Database['public']['Tables']['rsvps']['Insert'] = {
@@ -1621,8 +1645,8 @@ export async function submitRsvp(supabase: DbClient, input: SubmitRsvpInput): Pr
       plus_one: values.plusOne,
       plus_one_name: values.plusOneName || null,
       total_guests: values.totalGuests,
-      menu_choice: values.menuChoice || null,
-      plus_one_menu: values.plusOneMenu || null,
+      menu_choice: menuSelection,
+      plus_one_menu: null,
       dietary_notes: values.dietaryNotes || null,
       message: values.message || null,
       ip_address: ipHash,
@@ -1653,7 +1677,7 @@ export async function submitRsvp(supabase: DbClient, input: SubmitRsvpInput): Pr
       anzahl_personen: values.isAttending === 'yes' ? values.totalGuests : 1,
       zeremonie: values.isAttending === 'yes' ? 'Ja' : 'Nein',
       abendfeier: values.isAttending === 'yes' ? 'Ja' : 'Nein',
-      menuwahl: values.menuChoice || null,
+      menuwahl: menuSelection,
       ernaehrung: values.dietaryNotes || null,
       liedwunsch: values.message || null,
       vorfreude: values.isAttending === 'yes' ? 7 : 1,

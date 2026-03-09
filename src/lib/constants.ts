@@ -1,4 +1,4 @@
-import type { ContentImageSection, FaqItem, ProgramItem } from '@/types/wedding'
+import type { ContentImageSection, FaqItem, MenuChoice, ProgramItem } from '@/types/wedding'
 
 const publicSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const publicSupabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -72,6 +72,13 @@ export const MENU_CHOICES = [
   { value: 'vegetarian', label: 'Vegetarisch', emoji: '🥗' },
   { value: 'vegan', label: 'Vegan', emoji: '🌱' },
 ] as const
+
+export const MENU_CHOICE_LABELS: Record<MenuChoice, string> = {
+  meat: 'Fleisch',
+  fish: 'Fisch',
+  vegetarian: 'Vegetarisch',
+  vegan: 'Vegan',
+}
 
 export const DRESSCODE_COLOR_OPTIONS = [
   { value: 'pearl', label: 'Perlweiß', hex: '#F5EFE6' },

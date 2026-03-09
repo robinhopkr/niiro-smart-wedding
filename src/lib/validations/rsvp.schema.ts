@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+const menuChoiceSchema = z.enum(['meat', 'fish', 'vegetarian', 'vegan'])
+
 export const rsvpSchema = z
   .object({
     guestName: z.string().min(2, 'Bitte gib deinen vollständigen Namen ein.').max(200),
@@ -19,8 +21,7 @@ export const rsvpSchema = z
       })
       .min(1, 'Mindestens eine Person muss angegeben werden.')
       .max(10, 'Maximal 10 Personen können angegeben werden.'),
-    menuChoice: z.enum(['meat', 'fish', 'vegetarian', 'vegan']).or(z.literal('')),
-    plusOneMenu: z.enum(['meat', 'fish', 'vegetarian', 'vegan']).or(z.literal('')),
+    menuChoices: z.array(menuChoiceSchema).max(4).default([]),
     dietaryNotes: z.string().trim().max(500).default(''),
     message: z.string().trim().max(1000).default(''),
     honeypot: z.literal(''),
@@ -39,6 +40,14 @@ export const rsvpSchema = z
         code: z.ZodIssueCode.custom,
         path: ['totalGuests'],
         message: 'Bitte gib an, mit wie vielen Personen du kommst.',
+      })
+    }
+
+    if (data.isAttending === 'yes' && data.menuChoices.length === 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['menuChoices'],
+        message: 'Bitte wähle mindestens eine Essensvariante aus.',
       })
     }
   })
