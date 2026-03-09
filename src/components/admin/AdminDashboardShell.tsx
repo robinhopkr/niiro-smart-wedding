@@ -57,16 +57,16 @@ export function AdminDashboardShell({
               <p className="text-sm uppercase tracking-[0.18em] text-sage-700">Schnellzugriff</p>
               <h2 className="mt-3 font-display text-card text-charcoal-900">Wichtige Links</h2>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="grid gap-3">
               <Link
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-gold-500 px-5 py-3 text-sm font-semibold text-charcoal-900 shadow-gold transition hover:bg-gold-400"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-gold-500 px-5 py-3 text-sm font-semibold text-charcoal-900 shadow-gold transition hover:bg-gold-400"
                 href="/einladung"
               >
                 Gästeseite
               </Link>
               {galleryHref ? (
                 <Link
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
                   href={galleryHref}
                 >
                   Galerie
@@ -74,7 +74,7 @@ export function AdminDashboardShell({
               ) : null}
               {photographerHref ? (
                 <Link
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
                   href={photographerHref}
                 >
                   Fotograf
