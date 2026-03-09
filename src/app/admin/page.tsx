@@ -19,6 +19,7 @@ import { RsvpSection } from '@/components/sections/RsvpSection'
 import { Section } from '@/components/ui/Section'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { getServerSession } from '@/lib/auth/get-session'
+import { getBillingAccessState } from '@/lib/billing/access'
 import { ADMIN_NAV_ITEMS } from '@/lib/constants'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -33,12 +34,13 @@ import {
 
 export default async function AdminPage() {
   const user = await getServerSession()
+  const supabase = await createClient()
+  const billingAccess = await getBillingAccessState(supabase)
 
-  if (!user) {
+  if (!user || billingAccess.requiresPayment) {
     redirect('/admin/login')
   }
 
-  const supabase = await createClient()
   const config = await getAdminWeddingConfig(supabase, undefined)
   const [rsvps, programItems, faqItems, galleryPhotos, editorValues] = await Promise.all([
     listRsvps(supabase, config),
@@ -57,7 +59,7 @@ export default async function AdminPage() {
       <Header
         brandHref="/admin"
         brandLabel={`${config.coupleLabel} · Paarbereich`}
-        ctaHref="/demo"
+        ctaHref="/einladung"
         ctaLabel="Einladung öffnen"
         navItems={ADMIN_NAV_ITEMS}
       />
@@ -103,7 +105,7 @@ export default async function AdminPage() {
             <div className="mt-5 flex flex-wrap gap-3">
               <Link
                 className="inline-flex min-h-11 items-center justify-center rounded-full bg-gold-500 px-5 py-3 text-sm font-semibold text-charcoal-900 shadow-gold transition hover:bg-gold-400"
-                href="/demo"
+                href="/einladung"
               >
                 Gästeseite öffnen
               </Link>
@@ -187,7 +189,7 @@ export default async function AdminPage() {
             <div className="mt-5 flex flex-wrap gap-3">
               <Link
                 className="inline-flex min-h-11 items-center justify-center rounded-full bg-gold-500 px-5 py-3 text-sm font-semibold text-charcoal-900 shadow-gold transition hover:bg-gold-400"
-                href="/demo"
+                href="/einladung"
               >
                 Einladung öffnen
               </Link>

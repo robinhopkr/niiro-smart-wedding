@@ -7,6 +7,9 @@ import {
   validateAdminCredentials,
   ADMIN_SESSION_COOKIE,
 } from '@/lib/auth/admin-session'
+import { getBillingAccessState } from '@/lib/billing/access'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { createPublicClient } from '@/lib/supabase/public'
 import { loginSchema } from '@/lib/validations/admin.schema'
 import type { ApiResponse } from '@/types/api'
 
@@ -39,6 +42,20 @@ export async function POST(
         code: 'ADMIN_LOGIN_NOT_CONFIGURED',
       },
       { status: 503 },
+    )
+  }
+
+  const supabase = createAdminClient() ?? createPublicClient()
+  const billingAccess = await getBillingAccessState(supabase)
+
+  if (billingAccess.requiresPayment) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Der Brautpaar-Bereich wird nach dem Kauf freigeschaltet.',
+        code: 'PAYMENT_REQUIRED',
+      },
+      { status: 402 },
     )
   }
 

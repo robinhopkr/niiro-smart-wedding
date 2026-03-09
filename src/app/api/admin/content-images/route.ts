@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-import { getAdminSessionFromCookieStore } from '@/lib/auth/admin-session'
+import { requirePaidAdminSession } from '@/lib/auth/require-paid-admin-session'
 import { createPublicClient } from '@/lib/supabase/public'
 import { getAdminWeddingConfig, uploadContentImageFile } from '@/lib/supabase/repository'
 import type { ApiResponse } from '@/types/api'
@@ -15,17 +15,10 @@ function isAllowedFolder(value: string): value is 'cover' | 'couple' | 'section'
 export async function POST(
   request: NextRequest,
 ): Promise<NextResponse<ApiResponse<{ publicUrl: string; path: string }>>> {
-  const session = getAdminSessionFromCookieStore(request.cookies)
+  const access = await requirePaidAdminSession(request)
 
-  if (!session) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Nicht autorisiert.',
-        code: 'UNAUTHORIZED',
-      },
-      { status: 401 },
-    )
+  if (!access.ok) {
+    return access.response
   }
 
   const formData = await request.formData().catch(() => null)

@@ -116,7 +116,20 @@ interface AppSettingsTexts extends LegacyTexts {
   dressCodeMen?: string
   dressCodeExtras?: string
   dressCodeColors?: string[]
+  billingStatus?: 'paid' | 'unpaid'
+  billingEmail?: string | null
+  billingPaidAt?: string | null
+  billingStripeSessionId?: string | null
+  billingStripePaymentIntentId?: string | null
   probe?: string | null
+}
+
+export interface StoredBillingRecord {
+  status: 'paid' | 'unpaid'
+  email: string | null
+  paidAt: string | null
+  stripeCheckoutSessionId: string | null
+  stripePaymentIntentId: string | null
 }
 
 function isObject(value: Json | null): value is Record<string, Json | undefined> {
@@ -180,6 +193,23 @@ function parseAppSettingsQuestions(row: AppSettingsRow | null): Record<string, J
   }
 
   return row.fragen
+}
+
+function normalizeOptionalString(value: string | null | undefined): string | null {
+  const normalized = value?.trim()
+  return normalized ? normalized : null
+}
+
+function parseStoredBillingRecord(row: AppSettingsRow | null): StoredBillingRecord {
+  const texts = parseAppSettingsTexts(row)
+
+  return {
+    status: texts.billingStatus === 'paid' ? 'paid' : 'unpaid',
+    email: normalizeOptionalString(texts.billingEmail)?.toLowerCase() ?? null,
+    paidAt: normalizeOptionalString(texts.billingPaidAt),
+    stripeCheckoutSessionId: normalizeOptionalString(texts.billingStripeSessionId),
+    stripePaymentIntentId: normalizeOptionalString(texts.billingStripePaymentIntentId),
+  }
 }
 
 function toStoragePath(path: string): string {
@@ -443,6 +473,48 @@ async function getAppSettingsRow(supabase: DbClient): Promise<AppSettingsRow | n
   }
 
   return null
+}
+
+export async function getStoredBillingRecord(supabase: DbClient): Promise<StoredBillingRecord> {
+  return parseStoredBillingRecord(await getAppSettingsRow(supabase))
+}
+
+export async function saveStoredBillingRecord(
+  supabase: DbClient,
+  values: StoredBillingRecord,
+): Promise<StoredBillingRecord> {
+  const currentSettings = await getAppSettingsRow(supabase)
+  const existingTexts = parseAppSettingsTexts(currentSettings)
+
+  const texte: Json = {
+    ...existingTexts,
+    billingStatus: values.status,
+    billingEmail: values.email,
+    billingPaidAt: values.paidAt,
+    billingStripeSessionId: values.stripeCheckoutSessionId,
+    billingStripePaymentIntentId: values.stripePaymentIntentId,
+    probe: undefined,
+  }
+
+  const payload: Database['public']['Tables']['app_einstellungen']['Insert'] = {
+    id: APP_SETTINGS_ID,
+    brautpaar: currentSettings?.brautpaar ?? null,
+    hochzeitsdatum: currentSettings?.hochzeitsdatum ?? null,
+    rsvp_deadline: currentSettings?.rsvp_deadline ?? null,
+    fragen: currentSettings?.fragen ?? null,
+    texte,
+  }
+
+  const { data, error } = (await query(supabase, 'app_einstellungen')
+    .upsert(payload)
+    .select('*')
+    .single()) as QueryResult<Database['public']['Tables']['app_einstellungen']['Row']>
+
+  if (error) {
+    throw error
+  }
+
+  return parseStoredBillingRecord(data)
 }
 
 function applyAppSettingsToConfig(baseConfig: WeddingConfig, row: AppSettingsRow | null): WeddingConfig {

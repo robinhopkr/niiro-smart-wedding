@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-import { getAdminSessionFromCookieStore } from '@/lib/auth/admin-session'
+import { requirePaidAdminSession } from '@/lib/auth/require-paid-admin-session'
 import { createClient } from '@/lib/supabase/server'
 import { getAdminWeddingConfig, listRsvps } from '@/lib/supabase/repository'
 import type { ApiResponse } from '@/types/api'
@@ -9,17 +9,10 @@ import type { RsvpRecord } from '@/types/wedding'
 export async function GET(
   request: NextRequest,
 ): Promise<NextResponse<ApiResponse<RsvpRecord[]>>> {
-  const session = getAdminSessionFromCookieStore(request.cookies)
+  const access = await requirePaidAdminSession(request)
 
-  if (!session) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Nicht autorisiert.',
-        code: 'UNAUTHORIZED',
-      },
-      { status: 401 },
-    )
+  if (!access.ok) {
+    return access.response
   }
 
   const supabase = await createClient()

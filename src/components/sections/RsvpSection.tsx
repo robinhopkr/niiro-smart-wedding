@@ -8,9 +8,11 @@ import { SectionImageGallery } from './SectionImageGallery'
 export function RsvpSection({
   config,
   images = [],
+  mode = 'live',
 }: {
   config: WeddingConfig
   images?: SectionImage[]
+  mode?: 'demo' | 'live'
 }) {
   return (
     <Section density="compact" id="rsvp" className="max-w-5xl space-y-6">
@@ -20,7 +22,7 @@ export function RsvpSection({
           'Bitte gebt uns bis zum Anmeldeschluss Bescheid, ob ihr dabei sein könnt. So können wir entspannt und verlässlich planen.'}
       </p>
       <SectionImageGallery images={images} className="xl:grid-cols-2" />
-      <RsvpForm config={config} />
+      <RsvpForm config={config} mode={mode} />
     </Section>
   )
 }

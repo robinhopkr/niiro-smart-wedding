@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-import { getAdminSessionFromCookieStore } from '@/lib/auth/admin-session'
+import { requirePaidAdminSession } from '@/lib/auth/require-paid-admin-session'
 import { createPublicClient } from '@/lib/supabase/public'
 import { saveWeddingEditorValues } from '@/lib/supabase/repository'
 import { weddingEditorSchema } from '@/lib/validations/wedding-editor.schema'
@@ -10,17 +10,10 @@ import type { WeddingConfig } from '@/types/wedding'
 export async function POST(
   request: NextRequest,
 ): Promise<NextResponse<ApiResponse<WeddingConfig>>> {
-  const session = getAdminSessionFromCookieStore(request.cookies)
+  const access = await requirePaidAdminSession(request)
 
-  if (!session) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Nicht autorisiert.',
-        code: 'UNAUTHORIZED',
-      },
-      { status: 401 },
-    )
+  if (!access.ok) {
+    return access.response
   }
 
   const rawBody: unknown = await request.json().catch(() => null)

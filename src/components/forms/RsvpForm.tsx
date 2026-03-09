@@ -13,9 +13,15 @@ import { Textarea } from '../ui/Textarea'
 import { MenuSelect } from './MenuSelect'
 import { RsvpSuccess } from './RsvpSuccess'
 
-export function RsvpForm({ config }: { config: WeddingConfig }) {
+export function RsvpForm({
+  config,
+  mode = 'live',
+}: {
+  config: WeddingConfig
+  mode?: 'demo' | 'live'
+}) {
   const { form, step, isAttending, plusOne, submissionState, submitError, submittedName, nextStep, previousStep, submit } =
-    useRsvpForm()
+    useRsvpForm(mode)
   const {
     register,
     control,
@@ -148,7 +154,11 @@ export function RsvpForm({ config }: { config: WeddingConfig }) {
           </Button>
         ) : (
           <Button loading={submissionState === 'submitting'} type="submit">
-            {submissionState === 'submitting' ? 'Wird gesendet...' : 'Antwort absenden'}
+            {submissionState === 'submitting'
+              ? 'Wird gesendet...'
+              : mode === 'demo'
+                ? 'Demo-Rueckmeldung testen'
+                : 'Antwort absenden'}
           </Button>
         )}
       </div>

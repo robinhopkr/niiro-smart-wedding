@@ -10,7 +10,7 @@ import type { ApiResponse, RsvpSubmitResponse } from '@/types/api'
 type Step = 1 | 2 | 3
 type SubmissionState = 'idle' | 'submitting' | 'success' | 'error'
 
-export function useRsvpForm() {
+export function useRsvpForm(mode: 'demo' | 'live' = 'live') {
   const form = useForm<RsvpSchema>({
     resolver: zodResolver(rsvpSchema),
     defaultValues: {
@@ -81,6 +81,14 @@ export function useRsvpForm() {
   const submit = form.handleSubmit(async (values) => {
     setSubmissionState('submitting')
     setSubmitError(null)
+
+    if (mode === 'demo') {
+      window.setTimeout(() => {
+        setSubmittedName(values.guestName)
+        setSubmissionState('success')
+      }, 450)
+      return
+    }
 
     const controller = new AbortController()
     const timeout = window.setTimeout(() => controller.abort(), 10_000)
