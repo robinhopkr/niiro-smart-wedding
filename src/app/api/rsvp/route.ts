@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { ENV } from '@/lib/constants'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createPublicClient } from '@/lib/supabase/public'
 import { getActiveWeddingConfig, submitRsvp } from '@/lib/supabase/repository'
 import { rsvpSchema } from '@/lib/validations/rsvp.schema'
@@ -72,7 +73,8 @@ export async function POST(
       )
     }
 
-    const supabase = createPublicClient()
+    // Prefer the service role on the server so RSVP writes also work against legacy schemas with RLS.
+    const supabase = createAdminClient() ?? createPublicClient()
     const config = await getActiveWeddingConfig(supabase)
 
     if (!config.sourceId) {
@@ -111,6 +113,8 @@ export async function POST(
       message: 'Vielen Dank für deine Antwort!',
     })
   } catch (error) {
+    console.error('RSVP submission failed', error)
+
     return NextResponse.json(
       {
         success: false,
