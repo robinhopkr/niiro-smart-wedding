@@ -4,7 +4,7 @@ import {
   createAdminSessionToken,
   getAdminSessionCookieOptions,
   hasConfiguredAdminCredentials,
-  validateAdminCredentials,
+  resolveAdminLogin,
   ADMIN_SESSION_COOKIE,
 } from '@/lib/auth/admin-session'
 import { getBillingAccessState } from '@/lib/billing/access'
@@ -61,7 +61,27 @@ export async function POST(
     )
   }
 
-  if (!validateAdminCredentials(parseResult.data.email, parseResult.data.password)) {
+  if (!hasConfiguredAdminCredentials(parseResult.data.role)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          parseResult.data.role === 'planner'
+            ? 'Der Wedding-Planer-Login ist aktuell nicht konfiguriert.'
+            : 'Der Brautpaar-Login ist aktuell nicht konfiguriert.',
+        code: 'ADMIN_LOGIN_NOT_CONFIGURED',
+      },
+      { status: 503 },
+    )
+  }
+
+  const session = resolveAdminLogin(
+    parseResult.data.role,
+    parseResult.data.email,
+    parseResult.data.password,
+  )
+
+  if (!session) {
     return NextResponse.json(
       {
         success: false,
@@ -72,7 +92,7 @@ export async function POST(
     )
   }
 
-  const token = createAdminSessionToken(parseResult.data.email)
+  const token = createAdminSessionToken(session.email, session.role)
   if (!token) {
     return NextResponse.json(
       {

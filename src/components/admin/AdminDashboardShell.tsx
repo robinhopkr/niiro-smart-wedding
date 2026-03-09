@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
 import { Badge } from '@/components/ui/Badge'
 import { APP_BRAND_NAME } from '@/lib/constants'
+import type { AdminSessionRole } from '@/lib/auth/admin-session'
 import type { WeddingConfig } from '@/types/wedding'
 
 import { AdminSidebarNav } from './AdminSidebarNav'
@@ -15,6 +16,7 @@ interface AdminDashboardShellProps {
   galleryHref: string | null
   guestInviteUrl: string
   photographerHref: string | null
+  sessionRole: AdminSessionRole
 }
 
 export function AdminDashboardShell({
@@ -23,7 +25,10 @@ export function AdminDashboardShell({
   galleryHref,
   guestInviteUrl,
   photographerHref,
+  sessionRole,
 }: AdminDashboardShellProps) {
+  const roleLabel = sessionRole === 'planner' ? 'Wedding Planner' : 'Brautpaar'
+
   return (
     <main className="min-h-screen bg-cream-50">
       <Header
@@ -45,6 +50,7 @@ export function AdminDashboardShell({
               deutlich weniger überladen.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
+              <Badge variant="neutral">{roleLabel}</Badge>
               <Badge variant="neutral">{config.guestCode ?? 'Ohne Gästecode'}</Badge>
               <Badge variant="neutral">{config.templateId}</Badge>
             </div>

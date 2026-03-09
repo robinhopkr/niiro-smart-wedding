@@ -13,18 +13,60 @@ type CookieStore = {
 
 export interface AdminSession {
   email: string
+  role: AdminSessionRole
 }
 
-function getAdminEmail(): string | null {
-  return process.env.ADMIN_EMAIL?.trim().toLowerCase() ?? null
+export type AdminSessionRole = 'couple' | 'planner'
+
+interface ConfiguredAdminAccount {
+  email: string
+  password: string
+  role: AdminSessionRole
 }
 
-function getAdminPassword(): string | null {
-  return process.env.ADMIN_PASSWORD ?? null
+function normalizeEmail(value: string | null | undefined): string | null {
+  const normalized = value?.trim().toLowerCase()
+  return normalized ? normalized : null
+}
+
+function getConfiguredAdminAccount(role: AdminSessionRole): ConfiguredAdminAccount | null {
+  if (role === 'planner') {
+    const email = normalizeEmail(process.env.WEDDING_PLANNER_EMAIL)
+    const password = process.env.WEDDING_PLANNER_PASSWORD ?? null
+
+    if (!email || !password) {
+      return null
+    }
+
+    return {
+      email,
+      password,
+      role,
+    }
+  }
+
+  const email = normalizeEmail(process.env.ADMIN_EMAIL)
+  const password = process.env.ADMIN_PASSWORD ?? null
+
+  if (!email || !password) {
+    return null
+  }
+
+  return {
+    email,
+    password,
+    role,
+  }
+}
+
+function getConfiguredAdminAccounts(): ConfiguredAdminAccount[] {
+  return (['couple', 'planner'] as const)
+    .map((role) => getConfiguredAdminAccount(role))
+    .filter((account): account is ConfiguredAdminAccount => Boolean(account))
 }
 
 function getSessionSecret(): string | null {
-  return process.env.ADMIN_SESSION_SECRET ?? getAdminPassword()
+  return process.env.ADMIN_SESSION_SECRET ?? process.env.ADMIN_PASSWORD ?? process.env.WEDDING_PLANNER_PASSWORD ?? null
 }
 
 function createSignature(value: string, secret: string): string {
@@ -42,22 +84,44 @@ function safeCompare(left: string, right: string): boolean {
   return timingSafeEqual(leftBuffer, rightBuffer)
 }
 
-export function hasConfiguredAdminCredentials(): boolean {
-  return Boolean(getAdminEmail() && getAdminPassword())
-}
-
-export function validateAdminCredentials(email: string, password: string): boolean {
-  const adminEmail = getAdminEmail()
-  const adminPassword = getAdminPassword()
-
-  if (!adminEmail || !adminPassword) {
-    return false
+export function hasConfiguredAdminCredentials(role?: AdminSessionRole): boolean {
+  if (role) {
+    return Boolean(getConfiguredAdminAccount(role))
   }
 
-  return adminEmail === email.trim().toLowerCase() && safeCompare(adminPassword, password)
+  return getConfiguredAdminAccounts().length > 0
 }
 
-export function createAdminSessionToken(email: string): string | null {
+export function hasConfiguredCoupleCredentials(): boolean {
+  return hasConfiguredAdminCredentials('couple')
+}
+
+export function hasConfiguredPlannerCredentials(): boolean {
+  return hasConfiguredAdminCredentials('planner')
+}
+
+export function resolveAdminLogin(
+  role: AdminSessionRole,
+  email: string,
+  password: string,
+): AdminSession | null {
+  const account = getConfiguredAdminAccount(role)
+
+  if (!account) {
+    return null
+  }
+
+  if (account.email !== email.trim().toLowerCase() || !safeCompare(account.password, password)) {
+    return null
+  }
+
+  return {
+    email: account.email,
+    role: account.role,
+  }
+}
+
+export function createAdminSessionToken(email: string, role: AdminSessionRole = 'couple'): string | null {
   const secret = getSessionSecret()
   if (!secret) {
     return null
@@ -65,6 +129,7 @@ export function createAdminSessionToken(email: string): string | null {
 
   const payload = {
     email: email.trim().toLowerCase(),
+    role,
     expiresAt: Date.now() + ADMIN_SESSION_MAX_AGE * 1000,
   }
   const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url')
@@ -74,10 +139,9 @@ export function createAdminSessionToken(email: string): string | null {
 }
 
 export function verifyAdminSessionToken(token: string | null | undefined): AdminSession | null {
-  const adminEmail = getAdminEmail()
   const secret = getSessionSecret()
 
-  if (!token || !adminEmail || !secret) {
+  if (!token || !secret) {
     return null
   }
 
@@ -95,6 +159,7 @@ export function verifyAdminSessionToken(token: string | null | undefined): Admin
     const payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf8')) as {
       email?: string
       expiresAt?: number
+      role?: AdminSessionRole
     }
 
     if (!payload.email || !payload.expiresAt) {
@@ -105,12 +170,16 @@ export function verifyAdminSessionToken(token: string | null | undefined): Admin
       return null
     }
 
-    if (payload.email !== adminEmail) {
+    const role = payload.role === 'planner' ? 'planner' : 'couple'
+    const account = getConfiguredAdminAccount(role)
+
+    if (!account || payload.email !== account.email) {
       return null
     }
 
     return {
       email: payload.email,
+      role,
     }
   } catch {
     return null
@@ -130,4 +199,3 @@ export function getAdminSessionCookieOptions() {
     secure: process.env.NODE_ENV === 'production',
   }
 }
-

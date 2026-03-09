@@ -6,12 +6,25 @@ import { startTransition, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { loginSchema, type LoginSchema } from '@/lib/validations/admin.schema'
+import { cn } from '@/lib/utils/cn'
 import type { ApiResponse } from '@/types/api'
 
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 
-export function LoginForm() {
+interface LoginFormProps {
+  role?: 'couple' | 'planner'
+  submitLabel?: string
+  className?: string
+  embedded?: boolean
+}
+
+export function LoginForm({
+  role = 'couple',
+  submitLabel = 'Anmelden',
+  className,
+  embedded = false,
+}: LoginFormProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -32,7 +45,10 @@ export function LoginForm() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(values),
+      body: JSON.stringify({
+        ...values,
+        role,
+      }),
     })
 
     const result = (await response.json()) as ApiResponse<{ authenticated: true }>
@@ -50,7 +66,15 @@ export function LoginForm() {
   })
 
   return (
-    <form className="surface-card mx-auto w-full max-w-lg space-y-5 px-6 py-8 sm:px-10" noValidate onSubmit={onSubmit}>
+    <form
+      className={cn(
+        'mx-auto w-full max-w-lg space-y-5 px-6 py-8 sm:px-10',
+        embedded ? 'rounded-[1.5rem] border border-cream-200 bg-cream-50/70 px-5 py-6 sm:px-6' : 'surface-card',
+        className,
+      )}
+      noValidate
+      onSubmit={onSubmit}
+    >
       <Input label="E-Mail" error={errors.email?.message} type="email" {...register('email')} />
       <Input label="Passwort" error={errors.password?.message} type="password" {...register('password')} />
       {errorMessage ? (
@@ -59,7 +83,7 @@ export function LoginForm() {
         </div>
       ) : null}
       <Button className="w-full" loading={isSubmitting} size="lg" type="submit">
-        Anmelden
+        {submitLabel}
       </Button>
     </form>
   )

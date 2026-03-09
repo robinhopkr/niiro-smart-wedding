@@ -4,6 +4,10 @@ import { BillingPaywall } from '@/components/billing/BillingPaywall'
 import { LoginForm } from '@/components/forms/LoginForm'
 import { Section } from '@/components/ui/Section'
 import { SectionHeading } from '@/components/ui/SectionHeading'
+import {
+  hasConfiguredCoupleCredentials,
+  hasConfiguredPlannerCredentials,
+} from '@/lib/auth/admin-session'
 import { getServerSession } from '@/lib/auth/get-session'
 import { getBillingAccessState } from '@/lib/billing/access'
 import { finalizeCheckoutSession, type FinalizeCheckoutResult } from '@/lib/billing/service'
@@ -69,6 +73,8 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
   const supabase = createAdminClient() ?? (await createClient())
   const config = await getAdminWeddingConfig(supabase, undefined)
   const billingAccess = await getBillingAccessState(supabase, config)
+  const coupleLoginConfigured = hasConfiguredCoupleCredentials()
+  const plannerLoginConfigured = hasConfiguredPlannerCredentials()
 
   if (session && !billingAccess.requiresPayment) {
     redirect('/admin/uebersicht')
@@ -86,9 +92,9 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
   return (
     <Section className="space-y-8">
       <div className="mx-auto max-w-2xl text-center">
-        <SectionHeading as="h1">Login für Brautpaare</SectionHeading>
+        <SectionHeading as="h1">Login für Brautpaare und Wedding Planner</SectionHeading>
         <p className="mt-4 text-charcoal-600">
-          Dieser geschützte Bereich ist ausschließlich für das Brautpaar gedacht.
+          Dieser geschützte Bereich steht dem Brautpaar und optional dem Wedding Planner derselben Hochzeit zur Verfügung.
         </p>
       </div>
       {notice ? (
@@ -97,7 +103,50 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
           <p className="mt-1">{notice.body}</p>
         </div>
       ) : null}
-      {billingAccess.requiresPayment ? <BillingPaywall adminEmail={billingAccess.adminEmail} /> : <LoginForm />}
+      {billingAccess.requiresPayment ? (
+        <BillingPaywall adminEmail={billingAccess.adminEmail} />
+      ) : (
+        <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-2">
+          <div className="surface-card px-6 py-8 sm:px-8">
+            <div className="space-y-3">
+              <p className="text-sm uppercase tracking-[0.18em] text-gold-700">Brautpaar</p>
+              <h2 className="font-display text-card text-charcoal-900">Zugang für das Paar</h2>
+              <p className="text-charcoal-600">
+                Für alle Inhalte, QR-Code, RSVP-Auswertung, Tischplan und Vorschau.
+              </p>
+            </div>
+            {coupleLoginConfigured ? (
+              <div className="mt-6">
+                <LoginForm embedded role="couple" submitLabel="Als Brautpaar anmelden" />
+              </div>
+            ) : (
+              <div className="mt-6 rounded-[1.5rem] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+                Der Brautpaar-Login ist aktuell noch nicht konfiguriert.
+              </div>
+            )}
+          </div>
+
+          <div className="surface-card px-6 py-8 sm:px-8">
+            <div className="space-y-3">
+              <p className="text-sm uppercase tracking-[0.18em] text-sage-700">Wedding Planner</p>
+              <h2 className="font-display text-card text-charcoal-900">Zugang für den Wedding Planner</h2>
+              <p className="text-charcoal-600">
+                Gleiche Rechte wie das Brautpaar, aber mit separaten Zugangsdaten für Planung und Abstimmung.
+              </p>
+            </div>
+            {plannerLoginConfigured ? (
+              <div className="mt-6">
+                <LoginForm embedded role="planner" submitLabel="Als Wedding Planner anmelden" />
+              </div>
+            ) : (
+              <div className="mt-6 rounded-[1.5rem] border border-cream-300 bg-cream-50 px-5 py-4 text-sm text-charcoal-700">
+                Dieser Zugang ist optional und aktuell noch nicht eingerichtet. Setzt dafür
+                `WEDDING_PLANNER_EMAIL` und `WEDDING_PLANNER_PASSWORD`.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </Section>
   )
 }

@@ -6,7 +6,7 @@ interface AdminDashboardLayoutProps {
 }
 
 export default async function AdminDashboardLayout({ children }: AdminDashboardLayoutProps) {
-  const { config, galleryHref, guestInviteUrl, photographerHref } = await getProtectedAdminContext()
+  const { config, galleryHref, guestInviteUrl, photographerHref, user } = await getProtectedAdminContext()
 
   return (
     <AdminDashboardShell
@@ -14,6 +14,7 @@ export default async function AdminDashboardLayout({ children }: AdminDashboardL
       galleryHref={galleryHref}
       guestInviteUrl={guestInviteUrl}
       photographerHref={photographerHref}
+      sessionRole={user.role}
     >
       {children}
     </AdminDashboardShell>
