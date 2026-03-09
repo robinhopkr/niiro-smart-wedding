@@ -4,6 +4,7 @@ import { MapPinned } from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/Button'
+import { ExternalLink } from '@/components/ui/ExternalLink'
 
 function buildGoogleEmbedUrl(address: string): string {
   return `https://www.google.com/maps?q=${encodeURIComponent(address)}&z=15&output=embed`
@@ -114,22 +115,18 @@ export function LocationMap({ address, embedUrl }: { address: string; embedUrl: 
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <a
+            <ExternalLink
               className="inline-flex min-h-11 items-center justify-center rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
               href={googleMapsUrl}
-              rel="noopener noreferrer"
-              target="_blank"
             >
               In Google Maps öffnen
-            </a>
-            <a
+            </ExternalLink>
+            <ExternalLink
               className="inline-flex min-h-11 items-center justify-center rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
               href={openStreetMapUrl}
-              rel="noopener noreferrer"
-              target="_blank"
             >
               In OpenStreetMap öffnen
-            </a>
+            </ExternalLink>
           </div>
         </div>
       ) : (

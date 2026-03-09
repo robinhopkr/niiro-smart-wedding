@@ -1,6 +1,7 @@
 import { Globe, Instagram } from 'lucide-react'
 
 import { Section } from '@/components/ui/Section'
+import { ExternalLink } from '@/components/ui/ExternalLink'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { cn } from '@/lib/utils/cn'
 import type { VendorProfile } from '@/types/wedding'
@@ -65,21 +66,19 @@ export function VendorSection({ vendors }: VendorSectionProps) {
 
               <div className={cn('flex flex-wrap gap-3', !vendor.websiteUrl && !vendor.instagramUrl && 'pt-1')}>
                 {vendor.websiteUrl ? (
-                  <a className={actionClassName()} href={vendor.websiteUrl} rel="noopener noreferrer" target="_blank">
+                  <ExternalLink className={actionClassName()} href={vendor.websiteUrl}>
                     <Globe className="h-4 w-4" />
                     Website
-                  </a>
+                  </ExternalLink>
                 ) : null}
                 {vendor.instagramUrl ? (
-                  <a
+                  <ExternalLink
                     className={actionClassName()}
                     href={vendor.instagramUrl}
-                    rel="noopener noreferrer"
-                    target="_blank"
                   >
                     <Instagram className="h-4 w-4" />
                     Instagram
-                  </a>
+                  </ExternalLink>
                 ) : null}
                 {!vendor.websiteUrl && !vendor.instagramUrl ? (
                   <p className="text-sm text-charcoal-500">

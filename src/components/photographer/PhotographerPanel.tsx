@@ -2,6 +2,7 @@
 
 import { Camera, Download, ImagePlus, Trash2 } from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { startTransition, useState } from 'react'
 import { toast } from 'sonner'
@@ -12,6 +13,7 @@ import type { ApiResponse } from '@/types/api'
 import type { GalleryCollections, GalleryPhoto, GalleryVisibility } from '@/types/wedding'
 
 import { Button } from '../ui/Button'
+import { ExternalLink } from '../ui/ExternalLink'
 
 interface PhotographerPanelProps {
   guestCode: string
@@ -140,7 +142,7 @@ export function PhotographerPanel({
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {photos.map((photo) => (
               <article key={photo.path} className="overflow-hidden rounded-[1.75rem] bg-white shadow-elegant">
-                <a href={photo.publicUrl} rel="noreferrer" target="_blank">
+                <ExternalLink href={photo.publicUrl}>
                   <div className="relative aspect-[4/3] w-full">
                     <Image
                       fill
@@ -151,7 +153,7 @@ export function PhotographerPanel({
                       unoptimized
                     />
                   </div>
-                </a>
+                </ExternalLink>
                 <div className="space-y-3 px-5 py-4">
                   <div>
                     <p className="truncate text-sm font-semibold text-charcoal-800">{photo.name}</p>
@@ -219,15 +221,13 @@ export function PhotographerPanel({
                 onChange={(event) => handleUpload(event, 'private')}
               />
             </label>
-            <a
+            <Link
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
               href={publicGalleryHref}
-              rel="noreferrer"
-              target="_blank"
             >
               <Download className="h-4 w-4" />
               Öffentliche Galerie
-            </a>
+            </Link>
             <Button type="button" variant="ghost" onClick={handleLogout}>
               Abmelden
             </Button>

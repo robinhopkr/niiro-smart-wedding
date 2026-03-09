@@ -1,5 +1,6 @@
 import Image from 'next/image'
 
+import { ExternalLink } from '@/components/ui/ExternalLink'
 import { formatGermanDateTime } from '@/lib/utils/date'
 import type { GalleryPhoto } from '@/types/wedding'
 
@@ -27,7 +28,7 @@ export function GalleryGrid({
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {photos.map((photo) => (
         <article key={photo.path} className="overflow-hidden rounded-[1.75rem] bg-white shadow-elegant">
-          <a className="block" href={photo.publicUrl} rel="noreferrer" target="_blank">
+          <ExternalLink className="block" href={photo.publicUrl}>
             <div className="relative aspect-[4/3] w-full overflow-hidden">
               <Image
                 fill
@@ -38,7 +39,7 @@ export function GalleryGrid({
                 unoptimized
               />
             </div>
-          </a>
+          </ExternalLink>
           <div className="space-y-2 px-5 py-4">
             <p className="truncate text-sm font-semibold text-charcoal-800">{photo.name}</p>
             <p className="text-xs uppercase tracking-[0.18em] text-charcoal-500">

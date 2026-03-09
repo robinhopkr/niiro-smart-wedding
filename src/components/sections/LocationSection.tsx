@@ -1,6 +1,7 @@
 import { MapPin } from 'lucide-react'
 
 import { Section } from '@/components/ui/Section'
+import { ExternalLink } from '@/components/ui/ExternalLink'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import type { SectionImage, WeddingConfig } from '@/types/wedding'
 
@@ -41,15 +42,15 @@ export function LocationSection({
             </address>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <a className={linkClassName()} href={googleUrl} rel="noopener noreferrer" target="_blank">
+            <ExternalLink className={linkClassName()} href={googleUrl}>
               Google Maps
-            </a>
-            <a className={linkClassName()} href={appleUrl} rel="noopener noreferrer" target="_blank">
+            </ExternalLink>
+            <ExternalLink className={linkClassName()} href={appleUrl}>
               Apple Maps
-            </a>
-            <a className={linkClassName()} href={osmUrl} rel="noopener noreferrer" target="_blank">
+            </ExternalLink>
+            <ExternalLink className={linkClassName()} href={osmUrl}>
               OpenStreetMap
-            </a>
+            </ExternalLink>
           </div>
           <p className="text-sm text-charcoal-500">
             Falls ihr Fragen zur Anreise habt, meldet euch bitte direkt bei uns.
