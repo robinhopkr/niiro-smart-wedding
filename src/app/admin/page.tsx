@@ -176,11 +176,10 @@ export default async function AdminPage() {
 
       <Section id="gaeste" className="space-y-8 pt-0">
         <div className="max-w-3xl">
-          <SectionHeading>Gästeliste und Sitzplan</SectionHeading>
+          <SectionHeading>Teilnehmerliste und Tischplan</SectionHeading>
           <p className="mt-4 text-charcoal-600">
-            Legt eure Gäste strukturiert an, ordnet Familien, Freunde, Kolleg:innen oder
-            Dienstleister zu und erstellt daraus manuell oder automatisch einen passenden
-            Sitzplan. Die Veröffentlichung für Gäste bleibt dabei standardmäßig deaktiviert.
+            Hier pflegt ihr eure interne Teilnehmerliste für den Tischplan. Die echten
+            RSVP-Antworten eurer Gäste findet ihr separat weiter unten im Bereich RSVP.
           </p>
         </div>
 
@@ -336,10 +335,10 @@ export default async function AdminPage() {
       </Section>
 
       <Section id="rsvps" className="space-y-8 pt-0">
-        <SectionHeading>Rückmeldungen</SectionHeading>
+        <SectionHeading>RSVP-Antworten</SectionHeading>
         <p className="max-w-3xl text-charcoal-600">
-          Hier seht ihr alle eingegangenen Antworten inklusive Zusagen, Gästezahl und
-          Essensvarianten.
+          Hier seht ihr alle eingegangenen Gästeantworten inklusive Zusagen, Personenanzahl und
+          Essensvarianten. Einzelne Antworten könnt ihr bei Bedarf auch wieder löschen.
         </p>
         <AdminRsvpPanel initialRsvps={rsvps} />
       </Section>

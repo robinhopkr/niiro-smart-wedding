@@ -4,10 +4,10 @@ import type { AdminSummary } from '@/types/wedding'
 
 export function RsvpStats({ summary }: { summary: AdminSummary }) {
   const cards = [
-    { label: 'Antworten', value: summary.total },
+    { label: 'RSVP', value: summary.total },
     { label: 'Zusagen', value: summary.attending },
     { label: 'Absagen', value: summary.declined },
-    { label: 'Gäste', value: summary.guestCount },
+    { label: 'Personen', value: summary.guestCount },
   ]
 
   return (

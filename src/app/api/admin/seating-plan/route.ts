@@ -71,7 +71,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       data,
-      message: 'Gästeliste und Sitzplan wurden gespeichert.',
+      message: 'Teilnehmerliste und Tischplan wurden gespeichert.',
     })
   } catch (error) {
     return NextResponse.json(

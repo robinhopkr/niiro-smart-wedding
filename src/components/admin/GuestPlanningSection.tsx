@@ -2,7 +2,7 @@
 
 import { Building2, Plus, Save, Sparkles, Trash2, Users, WandSparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { startTransition, useMemo, useState } from 'react'
+import { startTransition, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/Badge'
@@ -49,8 +49,11 @@ function normalizeSeatAssignments(seatAssignments: Array<string | null>, seatCou
   return nextAssignments
 }
 
-function createTable(index: number, kind: SeatingTable['kind'] = 'guest'): SeatingTable {
-  const seatCount = kind === 'service' ? 6 : 8
+function createTable(
+  index: number,
+  kind: SeatingTable['kind'] = 'guest',
+  seatCount = kind === 'service' ? 6 : 8,
+): SeatingTable {
 
   return {
     id: createId('table'),
@@ -285,6 +288,69 @@ function normalizePlanningData(values: SeatingPlanData): SeatingPlanData {
   }
 }
 
+function SeatingPreview({
+  tables,
+  guestNamesById,
+}: {
+  tables: SeatingTable[]
+  guestNamesById: Map<string, string>
+}) {
+  if (!tables.length) {
+    return (
+      <div className="rounded-[1.75rem] border border-dashed border-cream-300 bg-cream-50 px-5 py-6 text-sm text-charcoal-600">
+        Sobald ihr Tische anlegt, erscheint hier eine visuelle Vorschau eures Tischplans.
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-2">
+      {tables.map((table) => {
+        const occupiedSeats = table.seatAssignments.filter(Boolean).length
+
+        return (
+          <article key={table.id} className="surface-card px-5 py-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h4 className="font-display text-card text-charcoal-900">{table.name}</h4>
+                <p className="mt-1 text-sm text-charcoal-500">
+                  {table.kind === 'service' ? 'Dienstleistertisch' : 'Gästetisch'}
+                </p>
+              </div>
+              <Badge variant={table.kind === 'service' ? 'attending' : 'neutral'}>
+                {occupiedSeats}/{table.seatCount} belegt
+              </Badge>
+            </div>
+
+            <div className="mt-5 flex items-center justify-center">
+              <div className="flex h-40 w-40 items-center justify-center rounded-full border border-gold-200 bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.18),_rgba(255,255,255,0.96)_58%)] text-center shadow-sm">
+                <div className="space-y-1 px-6">
+                  <p className="font-display text-xl text-charcoal-900">{table.name}</p>
+                  <p className="text-sm text-charcoal-600">
+                    {table.seatCount} Plätze
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              {table.seatAssignments.map((guestId, seatIndex) => (
+                <div
+                  key={`${table.id}-preview-seat-${seatIndex}`}
+                  className="rounded-full border border-cream-200 bg-cream-50 px-3 py-2 text-sm text-charcoal-700"
+                >
+                  <span className="font-semibold text-charcoal-900">Platz {seatIndex + 1}:</span>{' '}
+                  {guestId ? guestNamesById.get(guestId) ?? 'Zugewiesen' : 'Frei'}
+                </div>
+              ))}
+            </div>
+          </article>
+        )
+      })}
+    </div>
+  )
+}
+
 export function GuestPlanningSection({
   initialData,
   rsvps,
@@ -295,12 +361,24 @@ export function GuestPlanningSection({
   const router = useRouter()
   const [plan, setPlan] = useState<SeatingPlanData>(initialData)
   const [isSaving, setIsSaving] = useState(false)
+  const [guestTableCountDraft, setGuestTableCountDraft] = useState(0)
+  const [guestSeatCountDraft, setGuestSeatCountDraft] = useState(8)
 
   const assignedGuestIds = useMemo(() => getAssignedGuestIds(plan.tables), [plan.tables])
   const unassignedGuests = useMemo(
     () => plan.guests.filter((guest) => !assignedGuestIds.has(guest.id)),
     [assignedGuestIds, plan.guests],
   )
+  const guestNamesById = useMemo(
+    () => new Map(plan.guests.map((guest) => [guest.id, guest.name])),
+    [plan.guests],
+  )
+
+  useEffect(() => {
+    const guestTables = plan.tables.filter((table) => table.kind === 'guest')
+    setGuestTableCountDraft(guestTables.length)
+    setGuestSeatCountDraft(guestTables[0]?.seatCount ?? 8)
+  }, [plan.tables])
 
   function updateGuest(guestId: string, patch: Partial<PlanningGuest>) {
     setPlan((current) => ({
@@ -352,7 +430,7 @@ export function GuestPlanningSection({
     const importedGuests = buildImportedGuests(rsvps, plan.guests)
 
     if (!importedGuests.length) {
-      toast.message('Es konnten keine neuen Gäste aus den Rückmeldungen übernommen werden.')
+      toast.message('Es konnten keine neuen Teilnehmenden aus den RSVP-Antworten übernommen werden.')
       return
     }
 
@@ -360,7 +438,7 @@ export function GuestPlanningSection({
       ...current,
       guests: [...current.guests, ...importedGuests],
     }))
-    toast.success(`${importedGuests.length} Gäste aus den Rückmeldungen übernommen.`)
+    toast.success(`${importedGuests.length} Teilnehmende aus den RSVP-Antworten übernommen.`)
   }
 
   function addGuest() {
@@ -375,6 +453,32 @@ export function GuestPlanningSection({
       ...current,
       tables: [...current.tables, createTable(current.tables.length + 1, kind)],
     }))
+  }
+
+  function applyGuestTableLayout() {
+    const nextGuestTableCount = Math.max(0, Math.min(24, Math.round(guestTableCountDraft || 0)))
+    const nextSeatCount = Math.max(1, Math.min(24, Math.round(guestSeatCountDraft || 1)))
+
+    setPlan((current) => {
+      const guestTables = current.tables.filter((table) => table.kind === 'guest')
+      const serviceTables = current.tables.filter((table) => table.kind === 'service')
+      const nextGuestTables = guestTables.slice(0, nextGuestTableCount).map((table) => ({
+        ...table,
+        seatCount: nextSeatCount,
+        seatAssignments: normalizeSeatAssignments(table.seatAssignments, nextSeatCount),
+      }))
+
+      while (nextGuestTables.length < nextGuestTableCount) {
+        nextGuestTables.push(createTable(nextGuestTables.length + 1, 'guest', nextSeatCount))
+      }
+
+      return {
+        ...current,
+        tables: [...nextGuestTables, ...serviceTables],
+      }
+    })
+
+    toast.success('Das Tischlayout wurde aktualisiert.')
   }
 
   function runAutomaticSeating() {
@@ -414,12 +518,12 @@ export function GuestPlanningSection({
       }
 
       setPlan(result.data)
-      toast.success(result.message ?? 'Gästeliste und Sitzplan wurden gespeichert.')
+      toast.success(result.message ?? 'Teilnehmerliste und Tischplan wurden gespeichert.')
       startTransition(() => {
         router.refresh()
       })
     } catch {
-      toast.error('Gästeliste und Sitzplan konnten gerade nicht gespeichert werden.')
+      toast.error('Teilnehmerliste und Tischplan konnten gerade nicht gespeichert werden.')
     } finally {
       setIsSaving(false)
     }
@@ -430,12 +534,13 @@ export function GuestPlanningSection({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2">
-            <Badge variant="neutral">{plan.guests.length} Gäste</Badge>
+            <Badge variant="neutral">{plan.guests.length} Teilnehmende</Badge>
             <Badge variant="neutral">{plan.tables.length} Tische</Badge>
             <Badge variant="neutral">{unassignedGuests.length} unzugeordnet</Badge>
           </div>
           <p className="max-w-3xl text-body-md text-charcoal-600">
-            Legt eure Gästeliste an, kategorisiert Personen und erstellt daraus einen Tischplan.
+            Diese Teilnehmerliste ist eure interne Planungsansicht für Sitzplan und Gruppen.
+            Die eingegangenen Gästeantworten findet ihr separat im Bereich RSVP.
             Die smarte Sitzverteilung setzt ähnliche Gruppen zusammen und berücksichtigt Dienstleister
             bevorzugt am Dienstleistertisch.
           </p>
@@ -443,7 +548,7 @@ export function GuestPlanningSection({
         <div className="flex flex-wrap gap-3">
           <Button type="button" variant="secondary" onClick={importGuestsFromRsvps}>
             <Users className="h-4 w-4" />
-            Aus RSVPs übernehmen
+            Aus RSVP übernehmen
           </Button>
           <Button type="button" variant="secondary" onClick={runAutomaticSeating}>
             <WandSparkles className="h-4 w-4" />
@@ -488,7 +593,7 @@ export function GuestPlanningSection({
       <div className="space-y-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="font-display text-card text-charcoal-900">Gästeliste</h3>
+            <h3 className="font-display text-card text-charcoal-900">Teilnehmerliste</h3>
             <p className="mt-2 text-[0.96rem] leading-7 text-charcoal-600">
               Kategorien und Gruppen helfen bei der automatischen Verteilung. Nutzt das Feld
               `Gruppe/Haushalt`, wenn Personen zusammen sitzen sollen.
@@ -496,7 +601,7 @@ export function GuestPlanningSection({
           </div>
           <Button type="button" variant="secondary" onClick={addGuest}>
             <Plus className="h-4 w-4" />
-            Gast hinzufügen
+            Teilnehmer hinzufügen
           </Button>
         </div>
 
@@ -559,7 +664,7 @@ export function GuestPlanningSection({
           </div>
         ) : (
           <div className="rounded-[1.75rem] border border-dashed border-cream-300 bg-cream-50 px-5 py-6 text-sm text-charcoal-600">
-            Noch keine Gäste angelegt. Ihr könnt sie manuell erfassen oder direkt aus den RSVP-Rückmeldungen übernehmen.
+            Noch keine Teilnehmenden angelegt. Ihr könnt sie manuell erfassen oder direkt aus den RSVP-Antworten übernehmen.
           </div>
         )}
       </div>
@@ -569,7 +674,7 @@ export function GuestPlanningSection({
           <div>
             <h3 className="font-display text-card text-charcoal-900">Sitzplan</h3>
             <p className="mt-2 text-[0.96rem] leading-7 text-charcoal-600">
-              Legt beliebig viele Tische mit individueller Sitzplatzanzahl an. Gäste lassen sich
+              Legt beliebig viele Tische mit individueller Sitzplatzanzahl an. Teilnehmende lassen sich
               manuell zuordnen oder per smarter Verteilung automatisch setzen.
             </p>
           </div>
@@ -583,6 +688,45 @@ export function GuestPlanningSection({
               Dienstleistertisch
             </Button>
           </div>
+        </div>
+
+        <div className="rounded-[1.75rem] border border-cream-200 bg-cream-50/70 px-5 py-5 shadow-sm">
+          <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+            <Input
+              label="Anzahl Gästetische"
+              helperText="Erstellt oder reduziert die Anzahl eurer normalen Gästetische."
+              inputMode="numeric"
+              max={24}
+              min={0}
+              type="number"
+              value={guestTableCountDraft}
+              onChange={(event) => setGuestTableCountDraft(Number(event.target.value) || 0)}
+            />
+            <Input
+              label="Sitzplätze pro Gästetisch"
+              helperText="Diese Einstellung wirkt auf alle normalen Gästetische. Einzelne Tische könnt ihr darunter zusätzlich anpassen."
+              inputMode="numeric"
+              max={24}
+              min={1}
+              type="number"
+              value={guestSeatCountDraft}
+              onChange={(event) => setGuestSeatCountDraft(Number(event.target.value) || 1)}
+            />
+            <Button type="button" variant="secondary" onClick={applyGuestTableLayout}>
+              Layout anwenden
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <h4 className="font-display text-card text-charcoal-900">Visuelle Vorschau</h4>
+            <p className="mt-2 text-[0.96rem] leading-7 text-charcoal-600">
+              So wirkt euer Tischplan aktuell im Paarbereich. Freie Plätze und bereits gesetzte Personen
+              sind direkt sichtbar.
+            </p>
+          </div>
+          <SeatingPreview guestNamesById={guestNamesById} tables={plan.tables} />
         </div>
 
         {plan.tables.length ? (

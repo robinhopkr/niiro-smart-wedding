@@ -60,11 +60,11 @@ export const MARKETING_NAV_ITEMS = [
 
 export const ADMIN_NAV_ITEMS = [
   { href: '#uebersicht', label: 'Übersicht' },
-  { href: '#gaeste', label: 'Gästeliste' },
-  { href: '#sitzplan', label: 'Sitzplan' },
+  { href: '#gaeste', label: 'Teilnehmer' },
+  { href: '#sitzplan', label: 'Tischplan' },
   { href: '#inhalte', label: 'Inhalte' },
   { href: '#zugaenge', label: 'Zugänge' },
-  { href: '#rsvps', label: 'Rückmeldungen' },
+  { href: '#rsvps', label: 'RSVP' },
   { href: '#vorschau', label: 'Vorschau' },
 ] as const
 

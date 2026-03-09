@@ -1,14 +1,24 @@
 'use client'
 
+import { Trash2 } from 'lucide-react'
+
 import { Badge } from '@/components/ui/Badge'
 import { formatGermanDateTime } from '@/lib/utils/date'
 import type { RsvpRecord } from '@/types/wedding'
 
-export function RsvpTable({ rsvps }: { rsvps: RsvpRecord[] }) {
+export function RsvpTable({
+  rsvps,
+  deletingId,
+  onDelete,
+}: {
+  rsvps: RsvpRecord[]
+  deletingId?: string | null
+  onDelete?: (rsvp: RsvpRecord) => void
+}) {
   if (!rsvps.length) {
     return (
       <div className="surface-card px-6 py-6 text-charcoal-600">
-        Noch keine Antworten vorhanden.
+        Noch keine RSVP-Antworten vorhanden.
       </div>
     )
   }
@@ -26,6 +36,7 @@ export function RsvpTable({ rsvps }: { rsvps: RsvpRecord[] }) {
               <th className="px-5 py-4 font-semibold">Allergien & Unverträglichkeiten</th>
               <th className="px-5 py-4 font-semibold">Nachricht</th>
               <th className="px-5 py-4 font-semibold">Zeitpunkt</th>
+              <th className="px-5 py-4 font-semibold">Aktion</th>
             </tr>
           </thead>
           <tbody>
@@ -45,6 +56,19 @@ export function RsvpTable({ rsvps }: { rsvps: RsvpRecord[] }) {
                 <td className="px-5 py-4 text-charcoal-700">{rsvp.dietaryNotes ?? '–'}</td>
                 <td className="px-5 py-4 text-charcoal-700">{rsvp.message ?? '–'}</td>
                 <td className="px-5 py-4 text-charcoal-500">{formatGermanDateTime(rsvp.createdAt)}</td>
+                <td className="px-5 py-4">
+                  {onDelete ? (
+                    <button
+                      className="inline-flex min-h-10 items-center gap-2 rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={deletingId === rsvp.id}
+                      type="button"
+                      onClick={() => onDelete(rsvp)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {deletingId === rsvp.id ? 'Löscht...' : 'Löschen'}
+                    </button>
+                  ) : null}
+                </td>
               </tr>
             ))}
           </tbody>

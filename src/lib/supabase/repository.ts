@@ -54,6 +54,7 @@ interface SupabaseQuery extends PromiseLike<QueryResult<unknown>> {
   insert: (values: unknown) => SupabaseQuery
   upsert: (values: unknown) => SupabaseQuery
   update: (values: unknown) => SupabaseQuery
+  delete: () => SupabaseQuery
   eq: (column: string, value: unknown) => SupabaseQuery
   limit: (count: number) => SupabaseQuery
   order: (column: string, options?: { ascending?: boolean }) => SupabaseQuery
@@ -2306,6 +2307,42 @@ export async function listRsvps(supabase: DbClient, config: WeddingConfig): Prom
   }
 
   return []
+}
+
+export async function deleteRsvp(
+  supabase: DbClient,
+  config: WeddingConfig,
+  rsvpId: string,
+): Promise<void> {
+  if (config.source === 'modern' && config.sourceId) {
+    const { error } = (await query(supabase, 'rsvps')
+      .delete()
+      .eq('config_id', config.sourceId)
+      .eq('id', rsvpId)) as QueryResult<null>
+
+    if (!error) {
+      return
+    }
+
+    if (!isMissingRelation(error)) {
+      throw error
+    }
+  }
+
+  if (config.sourceId) {
+    const { error } = (await query(supabase, 'rsvp_antworten')
+      .delete()
+      .eq('hochzeit_id', config.sourceId)
+      .eq('id', rsvpId)) as QueryResult<null>
+
+    if (error) {
+      throw error
+    }
+
+    return
+  }
+
+  throw new Error('Es steht aktuell keine aktive Hochzeitskonfiguration zur Verfügung.')
 }
 
 export function buildAdminSummary(rsvps: RsvpRecord[]): AdminSummary {

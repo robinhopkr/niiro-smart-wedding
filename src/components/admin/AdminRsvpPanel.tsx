@@ -2,6 +2,7 @@
 
 import { RefreshCcw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
 import { RsvpStats } from '@/components/admin/RsvpStats'
 import { RsvpTable } from '@/components/admin/RsvpTable'
@@ -40,6 +41,7 @@ function buildSummary(rsvps: RsvpRecord[]): AdminSummary {
 export function AdminRsvpPanel({ initialRsvps }: AdminRsvpPanelProps) {
   const [rsvps, setRsvps] = useState(initialRsvps)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState(() => new Date())
 
   const summary = useMemo(() => buildSummary(rsvps), [rsvps])
@@ -68,6 +70,43 @@ export function AdminRsvpPanel({ initialRsvps }: AdminRsvpPanelProps) {
       if (!silent) {
         setIsRefreshing(false)
       }
+    }
+  }
+
+  async function handleDelete(rsvp: RsvpRecord) {
+    const confirmed = window.confirm(
+      `Soll die Rückmeldung von ${rsvp.guestName} wirklich gelöscht werden?`,
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    setDeletingId(rsvp.id)
+
+    try {
+      const response = await fetch('/api/admin/rsvps', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: rsvp.id }),
+      })
+
+      const result = (await response.json()) as ApiResponse<{ deleted: true }>
+
+      if (!response.ok || !result.success) {
+        toast.error(result.success ? 'Löschen fehlgeschlagen.' : result.error)
+        return
+      }
+
+      setRsvps((current) => current.filter((entry) => entry.id !== rsvp.id))
+      setLastUpdated(new Date())
+      toast.success(result.message ?? 'Die Rückmeldung wurde gelöscht.')
+    } catch {
+      toast.error('Die Rückmeldung konnte gerade nicht gelöscht werden.')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -100,7 +139,8 @@ export function AdminRsvpPanel({ initialRsvps }: AdminRsvpPanelProps) {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-charcoal-600">
-          Neue Rückmeldungen erscheinen hier automatisch.
+          Hier seht ihr nur echte RSVP-Antworten eurer Gäste. Für eure interne Tischplanung nutzt ihr
+          die Teilnehmerliste weiter oben.
           <span className="ml-2 text-charcoal-500">
             Letzte Aktualisierung: {formatGermanDateTime(lastUpdated)}
           </span>
@@ -112,7 +152,7 @@ export function AdminRsvpPanel({ initialRsvps }: AdminRsvpPanelProps) {
       </div>
 
       <RsvpStats summary={summary} />
-      <RsvpTable rsvps={rsvps} />
+      <RsvpTable deletingId={deletingId} rsvps={rsvps} onDelete={handleDelete} />
     </div>
   )
 }
