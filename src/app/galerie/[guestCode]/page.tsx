@@ -12,7 +12,7 @@ import {
   DEMO_WEDDING_CONFIG,
 } from '@/lib/demo-wedding'
 import { createClient } from '@/lib/supabase/server'
-import { getWeddingConfigByGuestCode, listGalleryPhotos } from '@/lib/supabase/repository'
+import { getGalleryCollections, getWeddingConfigByGuestCode } from '@/lib/supabase/repository'
 
 interface GalleryPageProps {
   params: Promise<{
@@ -75,7 +75,9 @@ export default async function GalleryPage({ params }: GalleryPageProps) {
     notFound()
   }
 
-  const photos = await listGalleryPhotos(supabase, config)
+  const galleryCollections = await getGalleryCollections(supabase, config)
+  const photos = galleryCollections.publicPhotos
+  const sharedPrivatePhotos = config.sharePrivateGalleryWithGuests ? galleryCollections.privatePhotos : []
 
   return (
     <main className="min-h-screen bg-cream-50">
@@ -117,6 +119,17 @@ export default async function GalleryPage({ params }: GalleryPageProps) {
           emptyTitle="Noch sind keine Fotos online."
           photos={photos}
         />
+        {sharedPrivatePhotos.length ? (
+          <div className="space-y-5">
+            <div className="max-w-3xl">
+              <SectionHeading>Zusätzliche Freigabe des Brautpaares</SectionHeading>
+              <p className="mt-4 text-charcoal-600">
+                Diese Auswahl wurde vom Brautpaar zusätzlich aus dem privaten Bereich für alle Gäste freigegeben.
+              </p>
+            </div>
+            <GalleryGrid photos={sharedPrivatePhotos} />
+          </div>
+        ) : null}
       </Section>
 
       <Footer coupleLabel={config.coupleLabel} weddingDate={config.weddingDate} />

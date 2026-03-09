@@ -9,6 +9,7 @@ import {
 } from '@/lib/supabase/repository'
 import { photographerDeleteSchema } from '@/lib/validations/photographer.schema'
 import type { ApiResponse } from '@/types/api'
+import type { GalleryVisibility } from '@/types/wedding'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024
 
@@ -34,13 +35,18 @@ export async function POST(
 ): Promise<NextResponse<ApiResponse<{ uploaded: true }>>> {
   const formData = await request.formData().catch(() => null)
   const guestCode = formData?.get('guestCode')
+  const visibility = formData?.get('visibility')
   const files = formData?.getAll('photos') ?? []
 
-  if (typeof guestCode !== 'string' || !files.length) {
+  if (
+    typeof guestCode !== 'string' ||
+    !files.length ||
+    (visibility !== 'public' && visibility !== 'private')
+  ) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Bitte wähle mindestens ein Foto aus.',
+        error: 'Bitte wähle mindestens ein Foto und einen Zielbereich aus.',
         code: 'VALIDATION_ERROR',
       },
       { status: 422 },
@@ -104,7 +110,7 @@ export async function POST(
       })),
     )
 
-    await uploadGalleryFiles(supabase, config, uploads)
+    await uploadGalleryFiles(supabase, config, uploads, visibility as GalleryVisibility)
 
     return NextResponse.json({
       success: true,

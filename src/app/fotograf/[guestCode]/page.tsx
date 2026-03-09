@@ -9,7 +9,7 @@ import { Section } from '@/components/ui/Section'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { getPhotoSessionFromCookieStore } from '@/lib/auth/photo-session'
 import { createClient } from '@/lib/supabase/server'
-import { getWeddingConfigByGuestCode, listGalleryPhotos } from '@/lib/supabase/repository'
+import { getGalleryCollections, getWeddingConfigByGuestCode } from '@/lib/supabase/repository'
 
 interface PhotographerPageProps {
   params: Promise<{
@@ -28,7 +28,7 @@ export default async function PhotographerPage({ params }: PhotographerPageProps
 
   const cookieStore = await cookies()
   const session = getPhotoSessionFromCookieStore(cookieStore, config.sourceId)
-  const photos = await listGalleryPhotos(supabase, config)
+  const galleryCollections = await getGalleryCollections(supabase, config)
 
   return (
     <main className="min-h-screen bg-cream-50">
@@ -52,8 +52,9 @@ export default async function PhotographerPage({ params }: PhotographerPageProps
           <PhotographerPanel
             coupleLabel={config.coupleLabel}
             guestCode={resolvedParams.guestCode}
-            photos={photos}
+            galleryCollections={galleryCollections}
             publicGalleryHref={`/galerie/${resolvedParams.guestCode}`}
+            sharePrivateWithGuests={config.sharePrivateGalleryWithGuests}
           />
         ) : config.photoPassword ? (
           <PhotographerLoginForm guestCode={resolvedParams.guestCode} />

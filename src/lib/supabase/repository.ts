@@ -21,7 +21,9 @@ import type {
   EditableProgramItem,
   EditableSectionImage,
   FaqItem,
+  GalleryCollections,
   GalleryPhoto,
+  GalleryVisibility,
   MusicRequestEntry,
   MusicWishlistData,
   PlanningGuest,
@@ -85,6 +87,8 @@ type AppSettingsRow = Database['public']['Tables']['app_einstellungen']['Row']
 const GALLERY_BUCKET = 'hochzeitsfotos'
 const APP_SETTINGS_ID = 1
 const CONTENT_ASSET_PREFIX = 'content'
+const PUBLIC_GALLERY_FOLDER = 'public'
+const PRIVATE_GALLERY_FOLDER = 'private'
 
 interface ConfigOverlayRow {
   brautpaar?: string | null
@@ -142,6 +146,7 @@ interface AppSettingsTexts extends LegacyTexts {
   templateId?: WeddingTemplateId
   fontPresetId?: WeddingFontPresetId
   musicWishlistEnabled?: boolean
+  sharePrivateGalleryWithGuests?: boolean
   billingStatus?: 'paid' | 'unpaid'
   billingEmail?: string | null
   billingPaidAt?: string | null
@@ -639,6 +644,7 @@ function createFallbackConfig(): WeddingConfig {
     templateId: DEFAULT_WEDDING_TEMPLATE_ID,
     fontPresetId: DEFAULT_WEDDING_FONT_PRESET_ID,
     musicWishlistEnabled: false,
+    sharePrivateGalleryWithGuests: false,
     rsvpDeadline: ENV.rsvpDeadline,
     heroImageUrl: null,
     couplePhotos: [],
@@ -680,6 +686,7 @@ function mapModernConfig(row: Database['public']['Tables']['wedding_config']['Ro
     templateId: DEFAULT_WEDDING_TEMPLATE_ID,
     fontPresetId: DEFAULT_WEDDING_FONT_PRESET_ID,
     musicWishlistEnabled: false,
+    sharePrivateGalleryWithGuests: false,
     rsvpDeadline: row.rsvp_deadline,
     heroImageUrl: null,
     couplePhotos: [],
@@ -731,6 +738,7 @@ function mapLegacyConfig(row: LegacyWeddingRow): WeddingConfig {
     templateId: getNormalizedTemplateId(appTexts.templateId),
     fontPresetId: getNormalizedFontPresetId(appTexts.fontPresetId),
     musicWishlistEnabled: appTexts.musicWishlistEnabled === true,
+    sharePrivateGalleryWithGuests: appTexts.sharePrivateGalleryWithGuests === true,
     rsvpDeadline: normaliseDateInput(row.rsvp_deadline) ?? ENV.rsvpDeadline,
     heroImageUrl: texts.einladungCover ?? null,
     couplePhotos: parseCouplePhotos(appTexts),
@@ -1366,6 +1374,9 @@ function applyConfigOverlayToConfig(baseConfig: WeddingConfig, row: ConfigOverla
     fontPresetId: getNormalizedFontPresetId(texts.fontPresetId ?? baseConfig.fontPresetId),
     musicWishlistEnabled:
       texts.musicWishlistEnabled === true || baseConfig.musicWishlistEnabled === true,
+    sharePrivateGalleryWithGuests:
+      texts.sharePrivateGalleryWithGuests === true ||
+      baseConfig.sharePrivateGalleryWithGuests === true,
     heroImageUrl: texts.einladungCover?.trim() || baseConfig.heroImageUrl,
     couplePhotos: hasCouplePhotos ? parseCouplePhotos(texts) : baseConfig.couplePhotos,
     sectionImages: hasSectionImages ? parseSectionImages(texts) : baseConfig.sectionImages,
@@ -1477,6 +1488,7 @@ function mapLegacyWeddingEditorValues(
     templateId: config.templateId,
     fontPresetId: config.fontPresetId,
     musicWishlistEnabled: config.musicWishlistEnabled,
+    sharePrivateGalleryWithGuests: config.sharePrivateGalleryWithGuests,
     coverImageUrl: config.heroImageUrl ?? '',
     couplePhotos: mapEditableCouplePhotos(config.couplePhotos),
     sectionImages: mapEditableSectionImages(config.sectionImages),
@@ -1727,6 +1739,7 @@ export async function getWeddingEditorValues(
     templateId: config.templateId,
     fontPresetId: config.fontPresetId,
     musicWishlistEnabled: config.musicWishlistEnabled,
+    sharePrivateGalleryWithGuests: config.sharePrivateGalleryWithGuests,
     coverImageUrl: config.heroImageUrl ?? '',
     couplePhotos: mapEditableCouplePhotos(config.couplePhotos),
     sectionImages: mapEditableSectionImages(config.sectionImages),
@@ -1735,15 +1748,25 @@ export async function getWeddingEditorValues(
   }
 }
 
-export async function listGalleryPhotos(
+function sortGalleryPhotos(photos: GalleryPhoto[]): GalleryPhoto[] {
+  return photos
+    .slice()
+    .sort(
+      (left, right) =>
+        new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime(),
+    )
+}
+
+async function listGalleryPhotosForPath(
   supabase: DbClient,
-  config: WeddingConfig,
+  path: string,
+  visibility: GalleryVisibility,
 ): Promise<GalleryPhoto[]> {
-  if (!config.sourceId || !supabase.storage) {
+  if (!supabase.storage) {
     return []
   }
 
-  const { data, error } = await supabase.storage.from(GALLERY_BUCKET).list(config.sourceId, {
+  const { data, error } = await supabase.storage.from(GALLERY_BUCKET).list(path, {
     limit: 1000,
     sortBy: {
       column: 'created_at',
@@ -1756,17 +1779,63 @@ export async function listGalleryPhotos(
       return []
     }
 
+    const message = error instanceof Error ? error.message.toLowerCase() : ''
+    if (message.includes('not found')) {
+      return []
+    }
+
     throw error
   }
 
   return (data ?? [])
     .filter((file) => file.id)
-    .map((file) => ({
-      name: file.name,
-      path: `${config.sourceId}/${file.name}`,
-      publicUrl: buildGalleryPublicUrl(`${config.sourceId}/${file.name}`),
-      createdAt: file.created_at ?? null,
-    }))
+    .map((file) => {
+      const filePath = `${path}/${file.name}`
+
+      return {
+        name: file.name,
+        path: filePath,
+        publicUrl: buildGalleryPublicUrl(filePath),
+        createdAt: file.created_at ?? null,
+        visibility,
+      }
+    })
+}
+
+export async function getGalleryCollections(
+  supabase: DbClient,
+  config: WeddingConfig,
+): Promise<GalleryCollections> {
+  if (!config.sourceId || !supabase.storage) {
+    return {
+      publicPhotos: [],
+      privatePhotos: [],
+    }
+  }
+
+  const [legacyPublicPhotos, publicFolderPhotos, privateFolderPhotos] = await Promise.all([
+    listGalleryPhotosForPath(supabase, config.sourceId, 'public'),
+    listGalleryPhotosForPath(supabase, `${config.sourceId}/${PUBLIC_GALLERY_FOLDER}`, 'public'),
+    listGalleryPhotosForPath(supabase, `${config.sourceId}/${PRIVATE_GALLERY_FOLDER}`, 'private'),
+  ])
+
+  return {
+    publicPhotos: sortGalleryPhotos([...legacyPublicPhotos, ...publicFolderPhotos]),
+    privatePhotos: sortGalleryPhotos(privateFolderPhotos),
+  }
+}
+
+export async function listGalleryPhotos(
+  supabase: DbClient,
+  config: WeddingConfig,
+): Promise<GalleryPhoto[]> {
+  const collections = await getGalleryCollections(supabase, config)
+
+  if (config.sharePrivateGalleryWithGuests) {
+    return sortGalleryPhotos([...collections.publicPhotos, ...collections.privatePhotos])
+  }
+
+  return collections.publicPhotos
 }
 
 export async function uploadGalleryFiles(
@@ -1777,15 +1846,19 @@ export async function uploadGalleryFiles(
     contentType: string
     body: Uint8Array
   }>,
+  visibility: GalleryVisibility = 'public',
 ): Promise<void> {
   if (!config.sourceId || !supabase.storage) {
     throw new Error('Die Galerie ist aktuell nicht verfügbar.')
   }
 
+  const targetFolder =
+    visibility === 'private' ? PRIVATE_GALLERY_FOLDER : PUBLIC_GALLERY_FOLDER
+
   for (const file of files) {
     const safeName = sanitizeGalleryFileName(file.name)
     const uniqueName = `${Date.now()}-${safeName}`
-    const path = `${config.sourceId}/${uniqueName}`
+    const path = `${config.sourceId}/${targetFolder}/${uniqueName}`
     const { error } = await supabase.storage.from(GALLERY_BUCKET).upload(path, file.body, {
       cacheControl: '3600',
       contentType: file.contentType,
@@ -1890,6 +1963,7 @@ export async function saveWeddingEditorValues(
     templateId: values.templateId,
     fontPresetId: values.fontPresetId,
     musicWishlistEnabled: values.musicWishlistEnabled,
+    sharePrivateGalleryWithGuests: values.sharePrivateGalleryWithGuests,
     couplePhotos: values.couplePhotos.map((item) => ({
       id: item.id,
       url: item.imageUrl,

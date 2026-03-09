@@ -3,6 +3,7 @@ import type { WeddingFontPresetId, WeddingTemplateId } from '@/lib/wedding-desig
 export type DataSource = 'modern' | 'legacy' | 'fallback'
 export type MenuChoice = 'meat' | 'fish' | 'vegetarian' | 'vegan'
 export type ContentImageSection = 'programm' | 'anfahrt' | 'dresscode' | 'galerie' | 'rsvp' | 'faq'
+export type GalleryVisibility = 'public' | 'private'
 export type GuestCategory =
   | 'family'
   | 'close_friends'
@@ -60,6 +61,7 @@ export interface WeddingConfig {
   templateId: WeddingTemplateId
   fontPresetId: WeddingFontPresetId
   musicWishlistEnabled: boolean
+  sharePrivateGalleryWithGuests: boolean
   rsvpDeadline: string
   heroImageUrl: string | null
   couplePhotos: CouplePhoto[]
@@ -169,6 +171,12 @@ export interface GalleryPhoto {
   path: string
   publicUrl: string
   createdAt: string | null
+  visibility: GalleryVisibility
+}
+
+export interface GalleryCollections {
+  publicPhotos: GalleryPhoto[]
+  privatePhotos: GalleryPhoto[]
 }
 
 export interface EditableProgramItem {
@@ -225,6 +233,7 @@ export interface WeddingEditorValues {
   templateId: WeddingTemplateId
   fontPresetId: WeddingFontPresetId
   musicWishlistEnabled: boolean
+  sharePrivateGalleryWithGuests: boolean
   coverImageUrl: string
   couplePhotos: EditableCouplePhoto[]
   sectionImages: EditableSectionImage[]

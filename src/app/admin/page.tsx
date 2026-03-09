@@ -8,6 +8,7 @@ import { GuestAccessCard } from '@/components/admin/GuestAccessCard'
 import { GuestPlanningSection } from '@/components/admin/GuestPlanningSection'
 import { LogoutButton } from '@/components/admin/LogoutButton'
 import { WeddingEditorForm } from '@/components/admin/WeddingEditorForm'
+import { GalleryGrid } from '@/components/gallery/GalleryGrid'
 import { Footer } from '@/components/layout/Footer'
 import { Header } from '@/components/layout/Header'
 import { CountdownSection } from '@/components/sections/CountdownSection'
@@ -31,11 +32,11 @@ import { createClient } from '@/lib/supabase/server'
 import {
   getAdminWeddingConfig,
   getFaqItems,
+  getGalleryCollections,
   getMusicWishlistData,
   getProgramItems,
   getSeatingPlanData,
   getWeddingEditorValues,
-  listGalleryPhotos,
   listRsvps,
 } from '@/lib/supabase/repository'
 
@@ -48,15 +49,18 @@ export default async function AdminPage() {
   if (!user || billingAccess.requiresPayment) {
     redirect('/admin/login')
   }
-  const [rsvps, programItems, faqItems, galleryPhotos, editorValues, seatingPlanData, musicWishlistData] = await Promise.all([
+  const [rsvps, programItems, faqItems, galleryCollections, editorValues, seatingPlanData, musicWishlistData] = await Promise.all([
     listRsvps(supabase, config),
     getProgramItems(supabase, config),
     getFaqItems(supabase, config),
-    listGalleryPhotos(supabase, config),
+    getGalleryCollections(supabase, config),
     getWeddingEditorValues(supabase, config),
     getSeatingPlanData(supabase, config),
     getMusicWishlistData(supabase, config),
   ])
+  const galleryPhotos = config.sharePrivateGalleryWithGuests
+    ? [...galleryCollections.publicPhotos, ...galleryCollections.privatePhotos]
+    : galleryCollections.publicPhotos
 
   const galleryHref = config.guestCode ? `/galerie/${config.guestCode}` : null
   const photographerHref = config.guestCode ? `/fotograf/${config.guestCode}` : null
@@ -158,7 +162,8 @@ export default async function AdminPage() {
               <div className="flex items-center justify-between gap-4">
                 <dt>Galerie</dt>
                 <dd className="font-semibold text-charcoal-900">
-                  {galleryPhotos.length} {galleryPhotos.length === 1 ? 'Foto' : 'Fotos'}
+                  {galleryCollections.publicPhotos.length + galleryCollections.privatePhotos.length}{' '}
+                  {galleryCollections.publicPhotos.length + galleryCollections.privatePhotos.length === 1 ? 'Foto' : 'Fotos'}
                 </dd>
               </div>
             </dl>
@@ -274,6 +279,56 @@ export default async function AdminPage() {
                   Fotografen-Login
                 </Link>
               ) : null}
+            </div>
+          </article>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-2">
+          <article className="surface-card px-6 py-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="font-display text-card text-charcoal-900">Öffentlicher Bereich</h3>
+                <p className="mt-2 text-charcoal-600">
+                  Diese Bilder sehen alle Gäste in der Galerie.
+                </p>
+              </div>
+              <span className="rounded-full bg-cream-100 px-4 py-2 text-sm font-semibold text-charcoal-800">
+                {galleryCollections.publicPhotos.length} Fotos
+              </span>
+            </div>
+            <div className="mt-5">
+              <GalleryGrid
+                emptyCopy="Hier erscheinen alle Bilder, die der Fotograf in den öffentlichen Bereich lädt."
+                emptyTitle="Noch keine öffentlichen Fotos"
+                photos={galleryCollections.publicPhotos}
+              />
+            </div>
+          </article>
+
+          <article className="surface-card px-6 py-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="font-display text-card text-charcoal-900">Privater Bereich</h3>
+                <p className="mt-2 text-charcoal-600">
+                  Diese Bilder sind nur für euch sichtbar, solange ihr sie nicht freigebt.
+                </p>
+                <p className="mt-2 text-sm text-charcoal-500">
+                  Freigabe für Gäste aktuell:{' '}
+                  <span className="font-semibold text-charcoal-900">
+                    {config.sharePrivateGalleryWithGuests ? 'aktiv' : 'deaktiviert'}
+                  </span>
+                </p>
+              </div>
+              <span className="rounded-full bg-cream-100 px-4 py-2 text-sm font-semibold text-charcoal-800">
+                {galleryCollections.privatePhotos.length} Fotos
+              </span>
+            </div>
+            <div className="mt-5">
+              <GalleryGrid
+                emptyCopy="Hier erscheinen Bilder, die der Fotograf ausdrücklich in den privaten Bereich lädt."
+                emptyTitle="Noch keine privaten Fotos"
+                photos={galleryCollections.privatePhotos}
+              />
             </div>
           </article>
         </div>

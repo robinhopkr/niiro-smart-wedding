@@ -37,6 +37,7 @@ export const DEMO_WEDDING_CONFIG: WeddingConfig = {
   templateId: 'rose-garden',
   fontPresetId: 'cormorant-nunito',
   musicWishlistEnabled: false,
+  sharePrivateGalleryWithGuests: false,
   rsvpDeadline: '2027-05-15T23:59:59+02:00',
   heroImageUrl: '/images/demo/cover-couple.svg',
   couplePhotos: [
@@ -139,17 +140,20 @@ export const DEMO_GALLERY_PHOTOS: GalleryPhoto[] = [
     path: 'demo/gallery-golden-hour.svg',
     publicUrl: '/images/demo/gallery-golden-hour.svg',
     createdAt: '2027-06-19T18:05:00+02:00',
+    visibility: 'public',
   },
   {
     name: 'Dinner unter Lichterketten',
     path: 'demo/gallery-dinner.svg',
     publicUrl: '/images/demo/gallery-dinner.svg',
     createdAt: '2027-06-19T20:14:00+02:00',
+    visibility: 'public',
   },
   {
     name: 'Tanzflaeche am Abend',
     path: 'demo/gallery-dance.svg',
     publicUrl: '/images/demo/gallery-dance.svg',
     createdAt: '2027-06-19T22:48:00+02:00',
+    visibility: 'public',
   },
 ]
