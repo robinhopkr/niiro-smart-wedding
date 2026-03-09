@@ -2,7 +2,7 @@ import { versionFromReleaseTag } from '@/lib/mobile/versioning'
 
 const DEFAULT_RELEASE_REPO = 'robinhopkr/hochzeits-rsvp'
 const DEFAULT_RELEASE_TAG_PREFIX = 'mobile-v'
-const RELEASE_CACHE_SECONDS = 600
+const RELEASE_CACHE_SECONDS = 60
 
 interface GitHubReleaseAsset {
   browser_download_url: string
