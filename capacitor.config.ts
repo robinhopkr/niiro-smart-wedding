@@ -53,11 +53,47 @@ function withPath(baseUrl: string, path: string) {
   return `${normalizedBaseUrl}${normalizedPath}`
 }
 
-const appBaseUrl =
-  process.env.CAPACITOR_SERVER_URL ??
-  process.env.NEXT_PUBLIC_APP_URL ??
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  'https://hochzeits-rsvp.vercel.app'
+function isLoopbackUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return ['127.0.0.1', '::1', 'localhost'].includes(url.hostname)
+  } catch {
+    return false
+  }
+}
+
+function readHostedAppUrl(): string {
+  return 'https://hochzeits-rsvp.vercel.app'
+}
+
+function resolveAppBaseUrl(): string {
+  const explicitMobileUrl = process.env.CAPACITOR_SERVER_URL?.trim()
+
+  if (explicitMobileUrl) {
+    return explicitMobileUrl
+  }
+
+  const publicAppUrl =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ?? process.env.NEXT_PUBLIC_SITE_URL?.trim() ?? null
+  const allowLocalhost = process.env.CAPACITOR_ALLOW_LOCALHOST === 'true'
+
+  if (!publicAppUrl) {
+    return readHostedAppUrl()
+  }
+
+  if (isLoopbackUrl(publicAppUrl) && !allowLocalhost) {
+    console.warn(
+      '[capacitor] NEXT_PUBLIC_APP_URL zeigt auf localhost. ' +
+        'Fuer native Builds wird stattdessen die gehostete Domain verwendet. ' +
+        'Setze CAPACITOR_ALLOW_LOCALHOST=true oder CAPACITOR_SERVER_URL, falls du bewusst lokal entwickeln willst.',
+    )
+    return readHostedAppUrl()
+  }
+
+  return publicAppUrl
+}
+
+const appBaseUrl = resolveAppBaseUrl()
 
 const appStartPath = process.env.CAPACITOR_APP_START_PATH ?? '/demo'
 const remoteAppUrl = withPath(appBaseUrl, appStartPath)
