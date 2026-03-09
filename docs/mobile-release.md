@@ -31,12 +31,14 @@ Dann erzeugt der Workflow:
 
 - signiertes Release-APK
 - signiertes Release-AAB
+- automatische Android-Versionsnummern aus dem Tag, z. B. `mobile-v1.0.5` -> `versionName 1.0.5`
 
 ### Wichtige Aenderung
 
 - GitHub Releases enthalten nur noch signierte Release-Dateien.
 - Oeffentliche Debug-APKs werden nicht mehr als Release-Download veroeffentlicht.
 - Fuer lokale Schnelltests kannst du Debug-Builds weiterhin direkt ueber Gradle oder Android Studio erzeugen.
+- Die App prueft gegen das neueste GitHub-Release und blendet bei einer neueren Version einen Update-Hinweis mit APK-Download ein.
 
 ## iOS
 

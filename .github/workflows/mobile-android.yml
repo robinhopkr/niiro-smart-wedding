@@ -35,6 +35,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Derive mobile version metadata
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          if [[ "$TAG_NAME" == mobile-v* ]]; then
+            VERSION_NAME="${TAG_NAME#mobile-v}"
+          else
+            VERSION_NAME="1.0.0"
+          fi
+          VERSION_CODE=$(VERSION_NAME="$VERSION_NAME" python - <<'PY'
+          import os
+
+          version = os.environ["VERSION_NAME"]
+          parts = [int(part) for part in version.split(".")]
+          while len(parts) < 3:
+              parts.append(0)
+
+          print(parts[0] * 10000 + parts[1] * 100 + parts[2])
+          PY
+          )
+          echo "ANDROID_VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+          echo "ANDROID_VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+
       - name: Sync Capacitor assets
         env:
           CAPACITOR_SERVER_URL: https://hochzeits-rsvp.vercel.app
@@ -70,6 +93,8 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_VERSION_CODE: ${{ env.ANDROID_VERSION_CODE }}
+          ANDROID_VERSION_NAME: ${{ env.ANDROID_VERSION_NAME }}
         run: |
           chmod +x android/gradlew
           cd android

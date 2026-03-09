@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Analytics } from '@vercel/analytics/react'
 import { Toaster } from 'sonner'
 
+import { AppUpdatePrompt } from '@/components/mobile/AppUpdatePrompt'
 import { APP_BRAND_NAME, APP_DESCRIPTION, ENV } from '@/lib/constants'
 import { fontBody, fontDisplay } from '@/lib/fonts'
 
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="de" className={`${fontDisplay.variable} ${fontBody.variable}`}>
       <body className="font-body bg-cream-50 text-charcoal-800 antialiased">
         {children}
+        <AppUpdatePrompt />
         <Toaster position="top-center" richColors />
         <Analytics />
       </body>
