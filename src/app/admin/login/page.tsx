@@ -71,7 +71,7 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
   const billingAccess = await getBillingAccessState(supabase, config)
 
   if (session && !billingAccess.requiresPayment) {
-    redirect('/admin')
+    redirect('/admin/uebersicht')
   }
 
   const notice = getNotice(billingState, checkoutResult, billingAccess.requiresPayment)

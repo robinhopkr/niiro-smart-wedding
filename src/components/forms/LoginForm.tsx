@@ -42,7 +42,7 @@ export function LoginForm() {
       return
     }
 
-    const returnUrl = searchParams.get('returnUrl') || '/admin'
+    const returnUrl = searchParams.get('returnUrl') || '/admin/uebersicht'
     startTransition(() => {
       router.replace(returnUrl)
       router.refresh()
