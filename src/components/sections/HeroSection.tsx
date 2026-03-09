@@ -189,8 +189,8 @@ export function HeroSection({ config }: { config: WeddingConfig }) {
                       <item.icon className="h-4 w-4" />
                     </span>
                     <div className="space-y-1">
-                      <p className="text-[0.72rem] uppercase tracking-[0.18em] text-charcoal-500">{item.title}</p>
-                      <p className="text-[0.97rem] font-medium leading-7 text-charcoal-800">{item.copy}</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-charcoal-500">{item.title}</p>
+                      <p className="text-sm font-medium leading-6 text-charcoal-800">{item.copy}</p>
                     </div>
                   </div>
                 </article>

@@ -726,7 +726,7 @@ export function GuestPlanningSection({
       <div className="space-y-5">
         <div>
           <h3 className="font-display text-card text-charcoal-900">RSVP-Teilnehmende</h3>
-          <p className="mt-2 text-[0.96rem] leading-7 text-charcoal-600">
+          <p className="mt-2 text-body-md text-charcoal-600">
             Diese Liste speist den Tischplan. Sie wird aus euren Zusagen übernommen; das Brautpaar steht
             automatisch mit drin. Kategorien und Gruppen helfen bei der automatischen Verteilung.
           </p>
@@ -821,7 +821,7 @@ export function GuestPlanningSection({
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h3 className="font-display text-card text-charcoal-900">Sitzplan</h3>
-            <p className="mt-2 text-[0.96rem] leading-7 text-charcoal-600">
+            <p className="mt-2 text-body-md text-charcoal-600">
               Legt beliebig viele Tische mit individueller Sitzplatzanzahl an. Teilnehmende lassen sich
               manuell zuordnen oder per smarter Verteilung automatisch setzen.
             </p>
@@ -873,7 +873,7 @@ export function GuestPlanningSection({
         <div className="space-y-4">
           <div>
             <h4 className="font-display text-card text-charcoal-900">Visuelle Vorschau</h4>
-            <p className="mt-2 text-[0.96rem] leading-7 text-charcoal-600">
+            <p className="mt-2 text-body-md text-charcoal-600">
               So wirkt euer Tischplan aktuell im Paarbereich. Freie Plätze und bereits gesetzte Personen
               sind direkt sichtbar.
             </p>

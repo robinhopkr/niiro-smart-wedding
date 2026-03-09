@@ -35,7 +35,7 @@ export function CountdownTimer({ targetDate }: { targetDate: string }) {
         ].map((item) => (
           <div key={item.label} className="rounded-3xl bg-white px-4 py-5 text-center shadow-elegant">
             <div className="font-display text-metric text-charcoal-900">{item.value}</div>
-            <div className="mt-2 text-[0.72rem] uppercase tracking-[0.2em] text-charcoal-500">{item.label}</div>
+            <div className="mt-2 text-xs uppercase tracking-[0.2em] text-charcoal-500">{item.label}</div>
           </div>
         ))}
       </div>

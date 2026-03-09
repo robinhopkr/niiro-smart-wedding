@@ -96,7 +96,7 @@ export function GuestAccessCard({ inviteUrl, guestCode }: GuestAccessCardProps) 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <div className="rounded-[1.75rem] bg-white/85 px-5 py-4 shadow-sm ring-1 ring-cream-200">
               <p className="text-xs uppercase tracking-[0.18em] text-charcoal-500">Einladungslink</p>
-              <p className="mt-2 break-all text-[0.95rem] leading-6 font-medium text-charcoal-900">{inviteUrl}</p>
+              <p className="mt-2 break-all text-sm font-medium leading-6 text-charcoal-900">{inviteUrl}</p>
             </div>
             <div className="rounded-[1.75rem] bg-white/85 px-5 py-4 shadow-sm ring-1 ring-cream-200">
               <p className="text-xs uppercase tracking-[0.18em] text-charcoal-500">Gastcode</p>
@@ -106,7 +106,7 @@ export function GuestAccessCard({ inviteUrl, guestCode }: GuestAccessCardProps) 
             </div>
             <div className="rounded-[1.75rem] bg-white/85 px-5 py-4 shadow-sm ring-1 ring-cream-200">
               <p className="text-xs uppercase tracking-[0.18em] text-charcoal-500">Empfehlung</p>
-              <p className="mt-2 text-[0.95rem] leading-6 text-charcoal-700">
+              <p className="mt-2 text-sm leading-6 text-charcoal-700">
                 Platziert den QR-Code auf Karte, Menü, Sitzplan oder Willkommensschild.
               </p>
             </div>
@@ -146,7 +146,7 @@ export function GuestAccessCard({ inviteUrl, guestCode }: GuestAccessCardProps) 
           </div>
           <div className="mt-4 rounded-[1.5rem] bg-cream-50 px-4 py-4 text-center">
             <p className="text-xs uppercase tracking-[0.18em] text-charcoal-500">Sofort bereit zum Teilen</p>
-            <p className="mt-2 text-[0.95rem] leading-6 text-charcoal-700">
+            <p className="mt-2 text-sm leading-6 text-charcoal-700">
               Ideal zum Ausdrucken oder direkt zum Versenden an eure Gäste.
             </p>
           </div>

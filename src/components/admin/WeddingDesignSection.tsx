@@ -40,18 +40,18 @@ function TemplateCard({
           <div className="wedding-hero-orb-right absolute right-[-2rem] top-10 h-16 w-16 rounded-full blur-2xl" />
           <div className="relative space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <span className="rounded-full bg-white/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-charcoal-700">
+              <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-charcoal-700">
                 {template.vibe}
               </span>
               {isActive ? (
-                <span className="rounded-full bg-gold-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-charcoal-900">
+                <span className="rounded-full bg-gold-500 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-charcoal-900">
                   Aktiv
                 </span>
               ) : null}
             </div>
             <div>
               <p className="font-display text-2xl text-charcoal-900">Mila & Jonas</p>
-              <p className="mt-2 max-w-[18rem] text-[0.95rem] leading-6 text-charcoal-700">
+              <p className="mt-2 max-w-[18rem] text-sm leading-6 text-charcoal-700">
                 {template.description}
               </p>
             </div>
@@ -66,7 +66,7 @@ function TemplateCard({
       </div>
       <div className="px-5 py-4">
         <p className="font-display text-xl text-charcoal-900">{template.label}</p>
-        <p className="mt-1 text-[0.95rem] leading-6 text-charcoal-600">{template.vibe}</p>
+        <p className="mt-1 text-sm leading-6 text-charcoal-600">{template.vibe}</p>
       </div>
     </button>
   )
@@ -98,22 +98,22 @@ function FontCard({
     >
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-sage-600">
+          <span className="text-xs font-semibold uppercase tracking-[0.22em] text-sage-600">
             Schriftstil
           </span>
           {isActive ? (
-            <span className="rounded-full bg-gold-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-charcoal-900">
+            <span className="rounded-full bg-gold-500 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-charcoal-900">
               Aktiv
             </span>
           ) : null}
         </div>
         <div>
-          <p className="font-display text-[1.65rem] leading-tight text-charcoal-900">Mila & Jonas</p>
-          <p className="mt-3 font-body text-[0.95rem] leading-6 text-charcoal-700">{fontPreset.previewLine}</p>
+          <p className="font-display text-2xl leading-tight text-charcoal-900">Mila & Jonas</p>
+          <p className="mt-3 font-body text-sm leading-6 text-charcoal-700">{fontPreset.previewLine}</p>
         </div>
         <div>
           <p className="font-display text-xl text-charcoal-900">{fontPreset.label}</p>
-          <p className="mt-1 text-[0.95rem] leading-6 text-charcoal-600">{fontPreset.description}</p>
+          <p className="mt-1 text-sm leading-6 text-charcoal-600">{fontPreset.description}</p>
         </div>
       </div>
     </button>
@@ -151,13 +151,13 @@ export function WeddingDesignSection({
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sage-600">Aktuelle Auswahl</p>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="font-display text-[clamp(2.2rem,4vw,3rem)] leading-tight text-charcoal-900">Mila & Jonas</p>
+              <p className="font-display text-section text-charcoal-900">Mila & Jonas</p>
               <p className="mt-3 max-w-2xl font-body text-body-md text-charcoal-700">
                 {selectedTemplate.description} Kombiniert mit {selectedFontPreset.label} ergibt das einen
                 stimmigen, hochzeitsgeeigneten Look für euren Gästebereich.
               </p>
             </div>
-            <div className="rounded-[1.4rem] bg-white/80 px-4 py-4 text-[0.95rem] leading-6 text-charcoal-700">
+            <div className="rounded-[1.4rem] bg-white/80 px-4 py-4 text-sm leading-6 text-charcoal-700">
               <p className="font-semibold text-charcoal-900">{selectedTemplate.label}</p>
               <p className="mt-1">{selectedFontPreset.label}</p>
             </div>
@@ -169,7 +169,7 @@ export function WeddingDesignSection({
         <div className="flex items-center justify-between gap-3">
           <div>
             <h4 className="font-display text-card text-charcoal-900">10 Hochzeits-Templates</h4>
-            <p className="text-[0.96rem] leading-7 text-charcoal-600">
+            <p className="text-body-md text-charcoal-600">
               Von klassisch-elegant bis editorial-modern, immer passend für Hochzeiten.
             </p>
           </div>
@@ -192,7 +192,7 @@ export function WeddingDesignSection({
         <div className="flex items-center justify-between gap-3">
           <div>
             <h4 className="font-display text-card text-charcoal-900">15 Schriftstile</h4>
-            <p className="text-[0.96rem] leading-7 text-charcoal-600">
+            <p className="text-body-md text-charcoal-600">
               Kuratierte Kombinationen für elegante Überschriften und gut lesbaren Fließtext.
             </p>
           </div>
