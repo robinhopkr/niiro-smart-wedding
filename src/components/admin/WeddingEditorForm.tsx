@@ -455,7 +455,7 @@ export function WeddingEditorForm({ values }: WeddingEditorFormProps) {
               <Input
                 label="Titelbild / Hero-Bild-URL"
                 error={errors.coverImageUrl?.message}
-                helperText="Optional. Dieses Bild erscheint als Fallback, falls keine Brautpaarfotos hinterlegt sind."
+                helperText="Optional. Dieses Bild erscheint im Hero-Bereich zuerst. Weitere Brautpaarfotos koennen zusaetzlich darunter angezeigt werden."
                 {...form.register('coverImageUrl')}
               />
             )}

@@ -46,22 +46,27 @@ function buildHeroHighlights(config: WeddingConfig) {
 }
 
 function buildVisibleCouplePhotos(config: WeddingConfig): CouplePhoto[] {
-  if (config.couplePhotos.length) {
-    return config.couplePhotos
-  }
+  const photos: CouplePhoto[] = []
+  const usedUrls = new Set<string>()
 
-  if (!config.heroImageUrl) {
-    return []
-  }
-
-  return [
-    {
+  if (config.heroImageUrl) {
+    photos.push({
       id: 'hero-cover',
       imageUrl: config.heroImageUrl,
       altText: `${config.coupleLabel} auf dem Titelbild`,
-      caption: 'Brautpaar',
-    },
-  ]
+      caption: 'Titelbild',
+    })
+    usedUrls.add(config.heroImageUrl)
+  }
+
+  config.couplePhotos.forEach((photo) => {
+    if (!usedUrls.has(photo.imageUrl)) {
+      photos.push(photo)
+      usedUrls.add(photo.imageUrl)
+    }
+  })
+
+  return photos
 }
 
 export function HeroSection({ config }: { config: WeddingConfig }) {
