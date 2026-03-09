@@ -1,24 +1,15 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { CalendarHeart, GlassWater, Heart, Music4, Sparkles, UtensilsCrossed } from 'lucide-react'
 
 import { Section } from '@/components/ui/Section'
 import { SectionHeading } from '@/components/ui/SectionHeading'
+import { PROGRAM_ICON_COMPONENTS, resolveProgramIconName } from '@/lib/program-icons'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { normalizeProgramTimeLabel, sortProgramItemsChronologically } from '@/lib/utils/time'
 import type { ProgramItem, SectionImage } from '@/types/wedding'
 
 import { SectionImageGallery } from './SectionImageGallery'
-
-const iconMap = {
-  CalendarHeart,
-  GlassWater,
-  Heart,
-  Music4,
-  Sparkles,
-  UtensilsCrossed,
-} as const
 
 export function ProgramSection({
   items,
@@ -51,7 +42,13 @@ export function ProgramSection({
       {sortedItems.length ? (
         <div className="relative space-y-6 before:absolute before:left-5 before:top-3 before:h-[calc(100%-1.5rem)] before:w-px before:bg-gold-200">
           {sortedItems.map((item) => {
-            const Icon = item.icon && item.icon in iconMap ? iconMap[item.icon as keyof typeof iconMap] : CalendarHeart
+            const Icon = PROGRAM_ICON_COMPONENTS[
+              resolveProgramIconName({
+                icon: item.icon,
+                title: item.title,
+                description: item.description,
+              })
+            ]
 
             return (
               <motion.article

@@ -8,6 +8,7 @@ import { useFieldArray, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { CONTENT_IMAGE_SECTION_OPTIONS, DRESSCODE_COLOR_OPTIONS } from '@/lib/constants'
+import { PROGRAM_ICON_COMPONENTS, PROGRAM_ICON_OPTIONS, resolveProgramIconName } from '@/lib/program-icons'
 import { normalizeProgramTimeLabel, sortProgramItemsChronologically } from '@/lib/utils/time'
 import type { WeddingFontPresetId, WeddingTemplateId } from '@/lib/wedding-design'
 import { cn } from '@/lib/utils/cn'
@@ -143,6 +144,7 @@ export function WeddingEditorForm({ values }: WeddingEditorFormProps) {
   const watchedCouplePhotos = watch('couplePhotos') ?? []
   const watchedSectionImages = watch('sectionImages') ?? []
   const watchedVendorProfiles = watch('vendorProfiles') ?? []
+  const watchedProgramItems = watch('programItems') ?? []
   const sourceId = watch('sourceId') || values.sourceId
 
   const couplePhotos = useFieldArray({
@@ -1069,6 +1071,7 @@ export function WeddingEditorForm({ values }: WeddingEditorFormProps) {
                 timeLabel: '',
                 title: '',
                 description: '',
+                icon: '',
               })
             }
           >
@@ -1077,37 +1080,121 @@ export function WeddingEditorForm({ values }: WeddingEditorFormProps) {
           </Button>
         </div>
         <div className="space-y-4">
-          {programItems.fields.map((field, index) => (
-            <div key={field.id} className="rounded-[1.75rem] border border-cream-200 bg-white px-5 py-5">
-              <div className="grid gap-4 lg:grid-cols-[140px_1fr_auto]">
-                <Input
-                  label="Uhrzeit"
-                  error={errors.programItems?.[index]?.timeLabel?.message}
-                  helperText="Zum Beispiel 17:00. Eingaben wie 17, 1700 oder 17.00 werden automatisch korrigiert."
-                  {...form.register(`programItems.${index}.timeLabel`)}
-                  onBlur={() => normalizeProgramItemTime(index)}
-                />
-                <Input
-                  label="Titel"
-                  error={errors.programItems?.[index]?.title?.message}
-                  {...form.register(`programItems.${index}.title`)}
-                />
-                <div className="flex items-end">
-                  <Button type="button" variant="ghost" onClick={() => programItems.remove(index)}>
-                    <Trash2 className="h-4 w-4" />
-                    Entfernen
-                  </Button>
+          {programItems.fields.map((field, index) => {
+            const selectedIcon = watchedProgramItems[index]?.icon ?? ''
+            const PreviewIcon = PROGRAM_ICON_COMPONENTS[
+              resolveProgramIconName({
+                icon: selectedIcon,
+                title: watchedProgramItems[index]?.title ?? null,
+                description: watchedProgramItems[index]?.description ?? null,
+              })
+            ]
+
+            return (
+              <div key={field.id} className="rounded-[1.75rem] border border-cream-200 bg-white px-5 py-5">
+                <input type="hidden" {...form.register(`programItems.${index}.icon`)} />
+                <div className="grid gap-4 lg:grid-cols-[140px_1fr_auto]">
+                  <Input
+                    label="Uhrzeit"
+                    error={errors.programItems?.[index]?.timeLabel?.message}
+                    helperText="Zum Beispiel 17:00. Eingaben wie 17, 1700 oder 17.00 werden automatisch korrigiert."
+                    {...form.register(`programItems.${index}.timeLabel`)}
+                    onBlur={() => normalizeProgramItemTime(index)}
+                  />
+                  <Input
+                    label="Titel"
+                    error={errors.programItems?.[index]?.title?.message}
+                    {...form.register(`programItems.${index}.title`)}
+                  />
+                  <div className="flex items-end">
+                    <Button type="button" variant="ghost" onClick={() => programItems.remove(index)}>
+                      <Trash2 className="h-4 w-4" />
+                      Entfernen
+                    </Button>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-charcoal-700">Passendes Icon</p>
+                    <span className="inline-flex items-center gap-2 text-sm text-charcoal-500">
+                      <PreviewIcon className="h-4 w-4 text-gold-700" />
+                      Vorschau
+                    </span>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <button
+                      className={cn(
+                        'flex min-h-14 items-center gap-3 rounded-[1.25rem] border px-4 py-3 text-left transition',
+                        !selectedIcon
+                          ? 'border-gold-500 bg-gold-50 shadow-elegant'
+                          : 'border-cream-300 bg-white hover:border-gold-300',
+                      )}
+                      type="button"
+                      onClick={() =>
+                        setValue(`programItems.${index}.icon`, '', {
+                          shouldDirty: true,
+                          shouldTouch: true,
+                          shouldValidate: true,
+                        })
+                      }
+                    >
+                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cream-100 text-gold-700">
+                        <PreviewIcon className="h-4 w-4" />
+                      </span>
+                      <span className="space-y-1">
+                        <span className="block text-sm font-semibold text-charcoal-800">Automatisch</span>
+                        <span className="block text-xs leading-5 text-charcoal-500">
+                          Das Icon wird anhand von Titel und Beschreibung gewählt.
+                        </span>
+                      </span>
+                    </button>
+                    {PROGRAM_ICON_OPTIONS.map((option) => {
+                      const Icon = option.icon
+                      const isSelected = selectedIcon === option.value
+
+                      return (
+                        <button
+                          key={`${field.id}-${option.value}`}
+                          className={cn(
+                            'flex min-h-14 items-center gap-3 rounded-[1.25rem] border px-4 py-3 text-left transition',
+                            isSelected
+                              ? 'border-gold-500 bg-gold-50 shadow-elegant'
+                              : 'border-cream-300 bg-white hover:border-gold-300',
+                          )}
+                          type="button"
+                          onClick={() =>
+                            setValue(`programItems.${index}.icon`, option.value, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true,
+                            })
+                          }
+                        >
+                          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cream-100 text-gold-700">
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <span className="space-y-1">
+                            <span className="block text-sm font-semibold text-charcoal-800">{option.label}</span>
+                            <span className="block text-xs leading-5 text-charcoal-500">{option.description}</span>
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {errors.programItems?.[index]?.icon?.message ? (
+                    <p className="text-sm text-red-600">{errors.programItems?.[index]?.icon?.message}</p>
+                  ) : null}
+                </div>
+                <div className="mt-4">
+                  <Textarea
+                    label="Beschreibung"
+                    error={errors.programItems?.[index]?.description?.message}
+                    {...form.register(`programItems.${index}.description`)}
+                  />
                 </div>
               </div>
-              <div className="mt-4">
-                <Textarea
-                  label="Beschreibung"
-                  error={errors.programItems?.[index]?.description?.message}
-                  {...form.register(`programItems.${index}.description`)}
-                />
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 

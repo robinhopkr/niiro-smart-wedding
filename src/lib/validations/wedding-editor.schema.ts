@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { DRESSCODE_COLOR_OPTIONS } from '@/lib/constants'
+import { PROGRAM_ICON_OPTIONS } from '@/lib/program-icons'
 import {
   WEDDING_FONT_OPTIONS,
   WEDDING_TEMPLATE_OPTIONS,
@@ -16,6 +17,8 @@ const weddingFontPresetIds = WEDDING_FONT_OPTIONS.map((option) => option.id) as 
   ...(typeof WEDDING_FONT_OPTIONS)[number]['id'][],
 ]
 
+const programIconNames = new Set<string>(PROGRAM_ICON_OPTIONS.map((option) => option.value))
+
 const imageUrlSchema = z
   .string()
   .trim()
@@ -28,6 +31,10 @@ const editableProgramItemSchema = z.object({
   timeLabel: z.string().trim().max(50),
   title: z.string().trim().min(1, 'Bitte gib einen Programmtitel ein.').max(200),
   description: z.string().trim().max(500),
+  icon: z
+    .string()
+    .trim()
+    .refine((value) => !value || programIconNames.has(value), 'Bitte wähle ein gültiges Icon aus.'),
 })
 
 const editableFaqItemSchema = z.object({

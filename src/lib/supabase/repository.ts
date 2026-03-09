@@ -1,6 +1,7 @@
 import type { PostgrestError } from '@supabase/supabase-js'
 
 import { DEFAULT_FAQ_ITEMS, DEFAULT_PROGRAM_ITEMS, ENV, MENU_CHOICE_LABELS } from '@/lib/constants'
+import { isProgramIconName } from '@/lib/program-icons'
 import {
   DEFAULT_WEDDING_FONT_PRESET_ID,
   DEFAULT_WEDDING_TEMPLATE_ID,
@@ -116,6 +117,7 @@ interface LegacyTexts {
     zeit?: string
     titel?: string
     beschreibung?: string
+    icon?: string
   }>
   menuoptionen?: string[]
   faqItems?: Array<{
@@ -388,6 +390,7 @@ function mapEditableProgramItems(items: ProgramItem[]): EditableProgramItem[] {
     timeLabel: normalizeProgramTimeLabel(item.timeLabel),
     title: item.title,
     description: item.description ?? '',
+    icon: isProgramIconName(item.icon) ? item.icon : '',
   }))
 }
 
@@ -1443,7 +1446,7 @@ function mapProgramItemsFromSettings(row: ConfigOverlayRow | null): ProgramItem[
       timeLabel: normalizeProgramTimeLabel(item.zeit ?? '00:00'),
       title: item.titel ?? 'Programmpunkt',
       description: item.beschreibung ?? null,
-      icon: null,
+      icon: isProgramIconName(item.icon) ? item.icon : null,
       sortOrder: index + 1,
     })),
   )
@@ -1479,7 +1482,7 @@ function mapLegacyProgramItems(row: LegacyWeddingRow): ProgramItem[] {
       timeLabel: normalizeProgramTimeLabel(item.zeit ?? '00:00'),
       title: item.titel ?? 'Programmpunkt',
       description: item.beschreibung ?? null,
-      icon: null,
+      icon: isProgramIconName(item.icon) ? item.icon : null,
       sortOrder: index + 1,
     })),
   )
@@ -2037,6 +2040,7 @@ export async function saveWeddingEditorValues(
       zeit: normalizeProgramTimeLabel(item.timeLabel),
       titel: item.title,
       beschreibung: item.description || '',
+      icon: isProgramIconName(item.icon) ? item.icon : null,
     })),
     faqItems: values.faqItems.map((item) => ({
       question: item.question,
