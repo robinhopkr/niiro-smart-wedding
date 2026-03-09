@@ -1,3 +1,5 @@
+'use client'
+
 import type { AdminSummary } from '@/types/wedding'
 
 export function RsvpStats({ summary }: { summary: AdminSummary }) {

@@ -1,11 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
+import { AdminRsvpPanel } from '@/components/admin/AdminRsvpPanel'
+import { AdminSectionNav } from '@/components/admin/AdminSectionNav'
 import { ExportButton } from '@/components/admin/ExportButton'
 import { GuestAccessCard } from '@/components/admin/GuestAccessCard'
 import { LogoutButton } from '@/components/admin/LogoutButton'
-import { RsvpStats } from '@/components/admin/RsvpStats'
-import { RsvpTable } from '@/components/admin/RsvpTable'
 import { WeddingEditorForm } from '@/components/admin/WeddingEditorForm'
 import { Footer } from '@/components/layout/Footer'
 import { Header } from '@/components/layout/Header'
@@ -26,7 +26,6 @@ import { ADMIN_NAV_ITEMS, ENV } from '@/lib/constants'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import {
-  buildAdminSummary,
   getAdminWeddingConfig,
   getFaqItems,
   getProgramItems,
@@ -52,7 +51,6 @@ export default async function AdminPage() {
     getWeddingEditorValues(supabase, config),
   ])
 
-  const summary = buildAdminSummary(rsvps)
   const galleryHref = config.guestCode ? `/galerie/${config.guestCode}` : null
   const photographerHref = config.guestCode ? `/fotograf/${config.guestCode}` : null
   const guestInviteUrl = new URL('/einladung', ENV.appUrl).toString()
@@ -66,6 +64,7 @@ export default async function AdminPage() {
         ctaLabel="Einladung öffnen"
         navItems={ADMIN_NAV_ITEMS}
       />
+      <AdminSectionNav items={ADMIN_NAV_ITEMS} />
 
       <Section id="uebersicht" className="space-y-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -89,15 +88,21 @@ export default async function AdminPage() {
             <dl className="mt-5 grid gap-3 text-sm text-charcoal-600 sm:grid-cols-3 xl:grid-cols-1">
               <div className="rounded-3xl bg-cream-100 px-4 py-4">
                 <dt>Antworten</dt>
-                <dd className="mt-2 font-display text-3xl text-charcoal-900">{summary.total}</dd>
+                <dd className="mt-2 font-display text-3xl text-charcoal-900">{rsvps.length}</dd>
               </div>
               <div className="rounded-3xl bg-cream-100 px-4 py-4">
                 <dt>Zusagen</dt>
-                <dd className="mt-2 font-display text-3xl text-charcoal-900">{summary.attending}</dd>
+                <dd className="mt-2 font-display text-3xl text-charcoal-900">
+                  {rsvps.filter((entry) => entry.isAttending).length}
+                </dd>
               </div>
               <div className="rounded-3xl bg-cream-100 px-4 py-4">
                 <dt>Gäste gesamt</dt>
-                <dd className="mt-2 font-display text-3xl text-charcoal-900">{summary.guestCount}</dd>
+                <dd className="mt-2 font-display text-3xl text-charcoal-900">
+                  {rsvps
+                    .filter((entry) => entry.isAttending)
+                    .reduce((total, entry) => total + entry.totalGuests, 0)}
+                </dd>
               </div>
             </dl>
           </article>
@@ -258,8 +263,7 @@ export default async function AdminPage() {
           Hier seht ihr alle eingegangenen Antworten inklusive Zusagen, Gästezahl und
           Essensvarianten.
         </p>
-        <RsvpStats summary={summary} />
-        <RsvpTable rsvps={rsvps} />
+        <AdminRsvpPanel initialRsvps={rsvps} />
       </Section>
 
       <Section id="vorschau" className="space-y-8 pt-0">

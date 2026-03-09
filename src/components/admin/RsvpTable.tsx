@@ -1,3 +1,5 @@
+'use client'
+
 import { Badge } from '@/components/ui/Badge'
 import { formatGermanDateTime } from '@/lib/utils/date'
 import type { RsvpRecord } from '@/types/wedding'

@@ -20,8 +20,15 @@ export async function GET(
   const config = await getAdminWeddingConfig(supabase, undefined)
   const rsvps = await listRsvps(supabase, config)
 
-  return NextResponse.json({
-    success: true,
-    data: rsvps,
-  })
+  return NextResponse.json(
+    {
+      success: true,
+      data: rsvps,
+    },
+    {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      },
+    },
+  )
 }
