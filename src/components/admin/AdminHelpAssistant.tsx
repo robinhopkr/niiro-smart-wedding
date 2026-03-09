@@ -109,8 +109,8 @@ export function AdminHelpAssistant() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap gap-3">
+    <div className="flex h-full min-h-0 flex-col gap-5">
+      <div className="flex shrink-0 flex-wrap gap-3">
         {ADMIN_HELP_QUICK_QUESTIONS.map((question) => (
           <button
             key={question}
@@ -123,8 +123,8 @@ export function AdminHelpAssistant() {
         ))}
       </div>
 
-      <div className="surface-card space-y-4 px-5 py-5">
-        <div className="space-y-4">
+      <div className="surface-card flex min-h-0 flex-1 flex-col px-5 py-5">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
           {messages.map((message, index) => (
             <article
               key={`${message.role}-${index}`}
@@ -174,24 +174,26 @@ export function AdminHelpAssistant() {
         </div>
 
         <form
-          className="space-y-4"
+          className="mt-4 shrink-0 border-t border-cream-200 pt-4"
           onSubmit={(event) => {
             event.preventDefault()
             void sendMessage(draft)
           }}
         >
-          <Textarea
-            label="Frage an den Assistenten"
-            maxLength={4000}
-            placeholder="Zum Beispiel: Wo bearbeite ich den Dresscode oder wie übernehme ich RSVP-Antworten in den Tischplan?"
-            rows={4}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-          />
-          <Button loading={isLoading} size="lg" type="submit">
-            <SendHorizonal className="h-4 w-4" />
-            Frage senden
-          </Button>
+          <div className="space-y-4">
+            <Textarea
+              label="Frage an den Assistenten"
+              maxLength={4000}
+              placeholder="Zum Beispiel: Wo bearbeite ich den Dresscode oder wie übernehme ich RSVP-Antworten in den Tischplan?"
+              rows={3}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+            />
+            <Button className="w-full sm:w-auto" loading={isLoading} size="lg" type="submit">
+              <SendHorizonal className="h-4 w-4" />
+              Frage senden
+            </Button>
+          </div>
         </form>
       </div>
     </div>
