@@ -1,7 +1,7 @@
 import { AdminPageHero } from '@/components/admin/AdminPageHero'
+import { AdminGalleryManager } from '@/components/admin/AdminGalleryManager'
 import { GuestAccessCard } from '@/components/admin/GuestAccessCard'
 import { PhotographerPasswordCard } from '@/components/admin/PhotographerPasswordCard'
-import { GalleryGrid } from '@/components/gallery/GalleryGrid'
 import { ActionLink } from '@/components/ui/ActionLink'
 import { getProtectedAdminContext } from '@/lib/admin/dashboard'
 import { getGalleryCollections } from '@/lib/supabase/repository'
@@ -66,51 +66,10 @@ export default async function AdminAccessPage() {
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <article className="surface-card px-6 py-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="font-display text-card text-charcoal-900">Öffentliche Galerie</h3>
-              <p className="mt-2 text-charcoal-600">Diese Bilder sehen alle Gäste.</p>
-            </div>
-            <span className="rounded-full bg-cream-100 px-4 py-2 text-sm font-semibold text-charcoal-800">
-              {galleryCollections.publicPhotos.length} Fotos
-            </span>
-          </div>
-          <div className="mt-5">
-            <GalleryGrid
-              emptyCopy="Hier erscheinen alle Bilder, die der Fotograf in den öffentlichen Bereich lädt."
-              emptyTitle="Noch keine öffentlichen Fotos"
-              photos={galleryCollections.publicPhotos}
-            />
-          </div>
-        </article>
-
-        <article className="surface-card px-6 py-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="font-display text-card text-charcoal-900">Privater Fotobereich</h3>
-              <p className="mt-2 text-charcoal-600">Diese Bilder bleiben intern, bis ihr sie freigebt.</p>
-              <p className="mt-2 text-sm text-charcoal-500">
-                Freigabe aktuell:{' '}
-                <span className="font-semibold text-charcoal-900">
-                  {config.sharePrivateGalleryWithGuests ? 'aktiv' : 'deaktiviert'}
-                </span>
-              </p>
-            </div>
-            <span className="rounded-full bg-cream-100 px-4 py-2 text-sm font-semibold text-charcoal-800">
-              {galleryCollections.privatePhotos.length} Fotos
-            </span>
-          </div>
-          <div className="mt-5">
-            <GalleryGrid
-              emptyCopy="Hier erscheinen Bilder, die der Fotograf ausdrücklich in den privaten Bereich lädt."
-              emptyTitle="Noch keine privaten Fotos"
-              photos={galleryCollections.privatePhotos}
-            />
-          </div>
-        </article>
-      </div>
+      <AdminGalleryManager
+        galleryCollections={galleryCollections}
+        sharePrivateWithGuests={config.sharePrivateGalleryWithGuests}
+      />
     </div>
   )
 }

@@ -84,6 +84,10 @@ interface DbClient {
         path: string,
         options?: { limit?: number; sortBy?: { column: string; order: 'asc' | 'desc' } },
       ) => Promise<StorageResult<Array<{ name: string; id?: string | null; created_at?: string | null }>>>
+      move: (
+        fromPath: string,
+        toPath: string,
+      ) => Promise<StorageResult<unknown>>
       upload: (
         path: string,
         fileBody: ArrayBuffer | Uint8Array,
@@ -418,6 +422,48 @@ async function ensureGalleryBucket(supabase: DbClient): Promise<boolean> {
 function sanitizeGalleryFileName(fileName: string): string {
   const normalized = fileName.normalize('NFKD').replace(/[^\w.\-]+/g, '-')
   return normalized.replace(/-+/g, '-').replace(/^-|-$/g, '') || 'foto'
+}
+
+function getGalleryVisibilityForPath(
+  config: WeddingConfig,
+  path: string,
+): GalleryVisibility | null {
+  if (!config.sourceId || !path.startsWith(`${config.sourceId}/`)) {
+    return null
+  }
+
+  if (path.startsWith(`${config.sourceId}/${PRIVATE_GALLERY_FOLDER}/`)) {
+    return 'private'
+  }
+
+  if (
+    path.startsWith(`${config.sourceId}/${PUBLIC_GALLERY_FOLDER}/`) ||
+    path.split('/').length === 2
+  ) {
+    return 'public'
+  }
+
+  return null
+}
+
+function buildGalleryTargetPath(
+  config: WeddingConfig,
+  fileName: string,
+  visibility: GalleryVisibility,
+): string {
+  const targetFolder =
+    visibility === 'private' ? PRIVATE_GALLERY_FOLDER : PUBLIC_GALLERY_FOLDER
+
+  return `${config.sourceId}/${targetFolder}/${fileName}`
+}
+
+function isStoragePathConflictError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false
+  }
+
+  const message = 'message' in error ? String(error.message).toLowerCase() : ''
+  return message.includes('already exists') || message.includes('duplicate')
 }
 
 function mapEditableProgramItems(items: ProgramItem[]): EditableProgramItem[] {
@@ -2161,6 +2207,62 @@ export async function deleteGalleryPhoto(
     }
 
     throw error
+  }
+}
+
+export async function moveGalleryPhoto(
+  supabase: DbClient,
+  config: WeddingConfig,
+  path: string,
+  targetVisibility: GalleryVisibility,
+): Promise<GalleryPhoto> {
+  if (!config.sourceId || !supabase.storage) {
+    throw new Error('Die Galerie ist aktuell nicht verfügbar.')
+  }
+
+  const currentVisibility = getGalleryVisibilityForPath(config, path)
+
+  if (!currentVisibility) {
+    throw new Error('Ungültiger Dateipfad.')
+  }
+
+  if (currentVisibility === targetVisibility) {
+    throw new Error('Das Foto liegt bereits in diesem Bereich.')
+  }
+
+  const fileName = path.split('/').at(-1)?.trim()
+
+  if (!fileName) {
+    throw new Error('Ungültiger Dateipfad.')
+  }
+
+  const storage = supabase.storage.from(GALLERY_BUCKET)
+  const movePhoto = async (destinationPath: string) => storage.move(path, destinationPath)
+
+  let destinationPath = buildGalleryTargetPath(config, fileName, targetVisibility)
+  let { error } = await movePhoto(destinationPath)
+
+  if (error && isStoragePathConflictError(error)) {
+    const uniqueFileName = `${Date.now()}-${fileName}`
+    destinationPath = buildGalleryTargetPath(config, uniqueFileName, targetVisibility)
+    const retry = await movePhoto(destinationPath)
+    error = retry.error
+  }
+
+  if (error) {
+    if (isMissingBucketError(error)) {
+      throw new Error('Die Fotogalerie ist noch nicht eingerichtet.')
+    }
+
+    throw error
+  }
+
+  return {
+    name: destinationPath.split('/').at(-1) ?? fileName,
+    path: destinationPath,
+    publicUrl: buildGalleryPublicUrl(destinationPath),
+    createdAt: new Date().toISOString(),
+    visibility: targetVisibility,
   }
 }
 
