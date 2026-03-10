@@ -1,4 +1,5 @@
 import type { PostgrestError } from '@supabase/supabase-js'
+import type { BucketType } from '@supabase/storage-js'
 
 import { DEFAULT_FAQ_ITEMS, DEFAULT_PROGRAM_ITEMS, ENV, MENU_CHOICE_LABELS } from '@/lib/constants'
 import { isProgramIconName } from '@/lib/program-icons'
@@ -67,8 +68,16 @@ interface DbClient {
   storage?: {
     createBucket?: (
       bucket: string,
-      options?: { public?: boolean },
-    ) => Promise<StorageResult<{ name: string }>>
+      options?: {
+        public: boolean
+        fileSizeLimit?: string | number | null
+        allowedMimeTypes?: string[] | null
+        type?: BucketType
+      },
+    ) => Promise<{
+      data: { name: string } | null
+      error: Error | null
+    }>
     from: (bucket: string) => {
       list: (
         path: string,
