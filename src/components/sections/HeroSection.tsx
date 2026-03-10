@@ -96,14 +96,14 @@ export function HeroSection({ config }: { config: WeddingConfig }) {
           'relative mx-auto grid max-w-6xl gap-6 px-6 sm:px-10 lg:grid-cols-[minmax(0,1fr)_22rem]',
           heroCoverImage
             ? 'pt-6 pb-[clamp(3.25rem,6vw,5.5rem)] sm:pt-8 lg:pt-6 lg:items-start'
-            : 'min-h-[60vh] py-[clamp(3.25rem,7vw,5.5rem)] lg:min-h-[68vh] lg:items-center',
+            : 'py-[clamp(3.25rem,7vw,5.5rem)] lg:items-start lg:py-16',
         )}
       >
         <motion.div
           initial="hidden"
           animate="visible"
           variants={heroVariants}
-          className={cn('max-w-3xl space-y-8', heroCoverImage ? 'lg:pt-8' : null)}
+          className={cn('space-y-8 lg:max-w-none', heroCoverImage ? 'lg:pt-8' : null)}
         >
           <motion.p variants={itemVariants} className="text-eyebrow uppercase text-sage-600">
             Unsere Hochzeit
@@ -139,7 +139,7 @@ export function HeroSection({ config }: { config: WeddingConfig }) {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-          className={cn('space-y-4', heroCoverImage ? 'lg:-mt-16' : null)}
+          className={cn('space-y-4 lg:self-start', heroCoverImage ? 'lg:-mt-16' : null)}
         >
           {visibleCouplePhotos.length ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
@@ -163,22 +163,32 @@ export function HeroSection({ config }: { config: WeddingConfig }) {
               ))}
             </div>
           ) : null}
+        </motion.aside>
+      </div>
 
-          <div className="surface-card overflow-hidden px-6 py-6">
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <p className="text-eyebrow uppercase text-sage-600">Auf einen Blick</p>
-                  <h2 className="font-display text-card text-charcoal-900">
-                    Alles Wichtige für euren Tag mit uns
-                  </h2>
-                </div>
-              <p className="text-body-md text-charcoal-600">
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.28, duration: 0.5 }}
+        className={cn(
+          'relative mx-auto max-w-6xl px-6 pb-[clamp(3.25rem,6vw,5.5rem)] sm:px-10',
+          heroCoverImage ? 'pt-2 lg:-mt-6' : 'pt-0 lg:-mt-2',
+        )}
+      >
+        <div className="surface-card overflow-hidden px-6 py-6 sm:px-8">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-start">
+            <div className="space-y-3">
+              <p className="text-eyebrow uppercase text-sage-600">Auf einen Blick</p>
+              <h2 className="font-display text-card text-charcoal-900">
+                Alles Wichtige für euren Tag mit uns
+              </h2>
+              <p className="max-w-xl text-body-md text-charcoal-600">
                 Hier findet ihr die wichtigsten Informationen direkt gesammelt. Weiter unten könnt ihr
                 eure Rückmeldung senden und alle Details noch einmal in Ruhe nachlesen.
               </p>
             </div>
 
-            <div className="mt-6 grid gap-4">
+            <div className="grid gap-4 md:grid-cols-3">
               {heroHighlights.map((item) => (
                 <article
                   key={item.title}
@@ -197,8 +207,8 @@ export function HeroSection({ config }: { config: WeddingConfig }) {
               ))}
             </div>
           </div>
-        </motion.aside>
-      </div>
+        </div>
+      </motion.div>
     </section>
   )
 }
