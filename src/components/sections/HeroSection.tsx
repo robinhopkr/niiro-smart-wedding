@@ -95,7 +95,7 @@ export function HeroSection({ config }: { config: WeddingConfig }) {
         className={cn(
           'relative mx-auto grid max-w-6xl gap-6 px-6 sm:px-10 lg:grid-cols-[minmax(0,1fr)_22rem]',
           heroCoverImage
-            ? 'pt-6 pb-[clamp(3.25rem,6vw,5.5rem)] sm:pt-8 lg:-mt-16 lg:pt-0 lg:items-start'
+            ? 'pt-6 pb-[clamp(3.25rem,6vw,5.5rem)] sm:pt-8 lg:pt-6 lg:items-start'
             : 'min-h-[60vh] py-[clamp(3.25rem,7vw,5.5rem)] lg:min-h-[68vh] lg:items-center',
         )}
       >
@@ -103,7 +103,7 @@ export function HeroSection({ config }: { config: WeddingConfig }) {
           initial="hidden"
           animate="visible"
           variants={heroVariants}
-          className="max-w-3xl space-y-8"
+          className={cn('max-w-3xl space-y-8', heroCoverImage ? 'lg:pt-8' : null)}
         >
           <motion.p variants={itemVariants} className="text-eyebrow uppercase text-sage-600">
             Unsere Hochzeit
@@ -139,7 +139,7 @@ export function HeroSection({ config }: { config: WeddingConfig }) {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-          className="space-y-4"
+          className={cn('space-y-4', heroCoverImage ? 'lg:-mt-16' : null)}
         >
           {visibleCouplePhotos.length ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
