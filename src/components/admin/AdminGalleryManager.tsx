@@ -110,7 +110,7 @@ export function AdminGalleryManager({
   ) {
     return (
       <article className="surface-card px-6 py-6">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h3 className="font-display text-card text-charcoal-900">{title}</h3>
             <p className="mt-2 text-charcoal-600">{description}</p>
@@ -127,7 +127,7 @@ export function AdminGalleryManager({
         </div>
 
         {photos.length ? (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-5 grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]">
             {photos.map((photo) => {
               const isDeleting =
                 pendingAction?.path === photo.path && pendingAction.type === 'delete'
@@ -136,21 +136,21 @@ export function AdminGalleryManager({
               return (
                 <article
                   key={photo.path}
-                  className="overflow-hidden rounded-[1.75rem] bg-white shadow-elegant"
+                  className="flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-cream-200 bg-white shadow-elegant"
                 >
                   <ExternalLink className="block" href={photo.publicUrl}>
-                    <div className="relative aspect-[4/3] w-full overflow-hidden">
+                    <div className="relative aspect-[16/11] w-full overflow-hidden bg-cream-100">
                       <Image
                         fill
                         alt={photo.name}
                         className="object-cover transition duration-300 hover:scale-[1.02]"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 24rem"
                         src={photo.publicUrl}
                         unoptimized
                       />
                     </div>
                   </ExternalLink>
-                  <div className="space-y-4 px-5 py-4">
+                  <div className="flex flex-1 flex-col space-y-4 px-5 py-4">
                     <div className="space-y-2">
                       <p className="truncate text-sm font-semibold text-charcoal-800">
                         {photo.name}
@@ -159,8 +159,9 @@ export function AdminGalleryManager({
                         {formatGermanDateTime(photo.createdAt)}
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="mt-auto grid gap-2">
                       <Button
+                        className="w-full justify-center"
                         loading={isMoving}
                         size="sm"
                         type="button"
@@ -180,7 +181,7 @@ export function AdminGalleryManager({
                         )}
                       </Button>
                       <Button
-                        className="border border-red-200 text-red-700 hover:bg-red-50"
+                        className="w-full justify-center border border-red-200 text-red-700 hover:bg-red-50"
                         loading={isDeleting}
                         size="sm"
                         type="button"
