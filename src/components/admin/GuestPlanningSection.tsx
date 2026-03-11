@@ -396,15 +396,15 @@ function SeatingPreview({
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
+    <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr))]">
       {tables.map((table) => {
         const occupiedSeats = table.seatAssignments.filter(Boolean).length
 
         return (
-          <article key={table.id} className="surface-card px-5 py-5">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h4 className="font-display text-card text-charcoal-900">{table.name}</h4>
+          <article key={table.id} className="surface-card flex h-full min-w-0 flex-col px-5 py-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <h4 className="text-safe-wrap font-display text-card text-charcoal-900">{table.name}</h4>
                 <p className="mt-1 text-sm text-charcoal-500">
                   {TABLE_KIND_LABELS[table.kind]}
                 </p>
@@ -843,10 +843,17 @@ export function GuestPlanningSection({
         </div>
 
         <div className="rounded-[1.75rem] border border-cream-200 bg-cream-50/70 px-5 py-5 shadow-sm">
-          <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+          <div className="space-y-2">
+            <h4 className="font-display text-card text-charcoal-900">Grundlayout der Gästetische</h4>
+            <p className="max-w-3xl text-body-md text-charcoal-600">
+              Legt hier zuerst die Anzahl eurer normalen Gästetische und die Standardzahl der
+              Sitzplätze fest. Darunter könnt ihr jeden Tisch weiterhin individuell anpassen.
+            </p>
+          </div>
+
+          <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_15rem] xl:items-end">
             <Input
               label="Anzahl Gästetische"
-              helperText="Erstellt oder reduziert die Anzahl eurer normalen Gästetische."
               inputMode="numeric"
               max={24}
               min={0}
@@ -856,7 +863,6 @@ export function GuestPlanningSection({
             />
             <Input
               label="Sitzplätze pro Gästetisch"
-              helperText="Diese Einstellung wirkt auf alle normalen Gästetische. Einzelne Tische könnt ihr darunter zusätzlich anpassen."
               inputMode="numeric"
               max={24}
               min={1}
@@ -864,9 +870,14 @@ export function GuestPlanningSection({
               value={guestSeatCountDraft}
               onChange={(event) => setGuestSeatCountDraft(Number(event.target.value) || 1)}
             />
-            <Button type="button" variant="secondary" onClick={applyGuestTableLayout}>
-              Layout anwenden
-            </Button>
+            <div className="flex h-full flex-col justify-end gap-3">
+              <p className="text-sm leading-6 text-charcoal-500">
+                Übernehmt die Einstellung für alle normalen Gästetische mit einem Klick.
+              </p>
+              <Button className="w-full" type="button" variant="secondary" onClick={applyGuestTableLayout}>
+                Layout anwenden
+              </Button>
+            </div>
           </div>
         </div>
 
