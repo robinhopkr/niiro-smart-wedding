@@ -12,6 +12,24 @@ import type { ApiResponse } from '@/types/api'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 
+const DEFAULT_RETURN_URL = '/admin/uebersicht'
+
+function normalizeReturnUrl(value: string | null | undefined): string {
+  if (!value) {
+    return DEFAULT_RETURN_URL
+  }
+
+  try {
+    const url = new URL(value, 'https://mywed.local')
+    if (url.origin !== 'https://mywed.local' || !url.pathname.startsWith('/')) {
+      return DEFAULT_RETURN_URL
+    }
+    return `${url.pathname}${url.search}${url.hash}`
+  } catch {
+    return DEFAULT_RETURN_URL
+  }
+}
+
 interface LoginFormProps {
   role?: 'couple' | 'planner'
   submitLabel?: string
@@ -72,7 +90,7 @@ export function LoginForm({
       return
     }
 
-    const returnUrl = returnUrlOverride || searchParams.get('returnUrl') || '/admin/uebersicht'
+    const returnUrl = normalizeReturnUrl(returnUrlOverride || searchParams.get('returnUrl'))
     startTransition(() => {
       router.replace(returnUrl)
       router.refresh()
