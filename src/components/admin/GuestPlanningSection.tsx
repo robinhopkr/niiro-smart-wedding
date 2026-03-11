@@ -851,32 +851,50 @@ export function GuestPlanningSection({
             </p>
           </div>
 
-          <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_15rem] xl:items-end">
-            <Input
-              label="Anzahl Gästetische"
-              inputMode="numeric"
-              max={24}
-              min={0}
-              type="number"
-              value={guestTableCountDraft}
-              onChange={(event) => setGuestTableCountDraft(Number(event.target.value) || 0)}
-            />
-            <Input
-              label="Sitzplätze pro Gästetisch"
-              inputMode="numeric"
-              max={24}
-              min={1}
-              type="number"
-              value={guestSeatCountDraft}
-              onChange={(event) => setGuestSeatCountDraft(Number(event.target.value) || 1)}
-            />
-            <div className="flex h-full flex-col justify-end gap-3">
-              <p className="text-sm leading-6 text-charcoal-500">
-                Übernehmt die Einstellung für alle normalen Gästetische mit einem Klick.
+          <div className="mt-5 grid gap-4 xl:grid-cols-3">
+            <div className="flex h-full flex-col rounded-[1.5rem] border border-cream-200 bg-white px-4 py-4 shadow-sm">
+              <Input
+                label="Anzahl Gästetische"
+                inputMode="numeric"
+                max={24}
+                min={0}
+                type="number"
+                value={guestTableCountDraft}
+                onChange={(event) => setGuestTableCountDraft(Number(event.target.value) || 0)}
+              />
+              <p className="mt-3 text-sm leading-6 text-charcoal-500">
+                Erstellt oder reduziert damit die Anzahl eurer normalen Gästetische.
               </p>
-              <Button className="w-full" type="button" variant="secondary" onClick={applyGuestTableLayout}>
-                Layout anwenden
-              </Button>
+            </div>
+
+            <div className="flex h-full flex-col rounded-[1.5rem] border border-cream-200 bg-white px-4 py-4 shadow-sm">
+              <Input
+                label="Sitzplätze pro Gästetisch"
+                inputMode="numeric"
+                max={24}
+                min={1}
+                type="number"
+                value={guestSeatCountDraft}
+                onChange={(event) => setGuestSeatCountDraft(Number(event.target.value) || 1)}
+              />
+              <p className="mt-3 text-sm leading-6 text-charcoal-500">
+                Diese Zahl gilt als Standard für alle normalen Gästetische.
+              </p>
+            </div>
+
+            <div className="flex h-full flex-col rounded-[1.5rem] border border-gold-200 bg-gold-50 px-4 py-4 shadow-sm">
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-charcoal-900">Layout übernehmen</p>
+                <p className="text-sm leading-6 text-charcoal-500">
+                  Wendet die beiden Werte gesammelt auf alle normalen Gästetische an. Einzelne
+                  Tische könnt ihr darunter weiter individuell anpassen.
+                </p>
+              </div>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" type="button" variant="secondary" onClick={applyGuestTableLayout}>
+                  Layout anwenden
+                </Button>
+              </div>
             </div>
           </div>
         </div>
