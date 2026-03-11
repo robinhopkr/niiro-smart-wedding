@@ -13,12 +13,19 @@ interface HeaderNavItem {
   label: string
 }
 
+interface HeaderActionLink {
+  href: string
+  label: string
+  variant?: 'primary' | 'secondary'
+}
+
 interface HeaderProps {
   brandLabel: string
   navItems: readonly HeaderNavItem[]
   brandHref?: string
   ctaHref?: string
   ctaLabel?: string
+  actionLinks?: readonly HeaderActionLink[]
   showBrandMark?: boolean
 }
 
@@ -28,11 +35,18 @@ export function Header({
   brandHref = '/',
   ctaHref,
   ctaLabel,
+  actionLinks,
   showBrandMark = false,
 }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const drawerRef = useRef<HTMLDivElement | null>(null)
+  const resolvedActionLinks =
+    actionLinks && actionLinks.length
+      ? actionLinks
+      : ctaHref && ctaLabel
+        ? [{ href: ctaHref, label: ctaLabel, variant: 'primary' as const }]
+        : []
 
   useEffect(() => {
     const handleScroll = () => {
@@ -109,14 +123,20 @@ export function Header({
               {item.label}
             </Link>
           ))}
-          {ctaHref && ctaLabel ? (
+          {resolvedActionLinks.map((link) => (
             <Link
-              className="inline-flex min-h-11 items-center justify-center rounded-full bg-gold-500 px-5 py-3 text-sm font-semibold text-charcoal-900 shadow-gold transition hover:bg-gold-400"
-              href={ctaHref}
+              key={`${link.href}-${link.label}`}
+              className={cn(
+                'inline-flex min-h-11 items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition',
+                link.variant === 'secondary'
+                  ? 'border border-gold-300 bg-white text-charcoal-800 hover:border-gold-500 hover:bg-cream-50'
+                  : 'bg-gold-500 text-charcoal-900 shadow-gold hover:bg-gold-400',
+              )}
+              href={link.href}
             >
-              {ctaLabel}
+              {link.label}
             </Link>
-          ) : null}
+          ))}
         </nav>
 
         <button
@@ -150,15 +170,21 @@ export function Header({
                   {item.label}
                 </Link>
               ))}
-              {ctaHref && ctaLabel ? (
+              {resolvedActionLinks.map((link) => (
                 <Link
-                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-gold-500 px-4 py-3 text-base font-semibold text-charcoal-900"
-                  href={ctaHref}
+                  key={`${link.href}-${link.label}-mobile`}
+                  className={cn(
+                    'inline-flex min-h-11 items-center justify-center rounded-full px-4 py-3 text-base font-semibold',
+                    link.variant === 'secondary'
+                      ? 'border border-gold-300 bg-white text-charcoal-800'
+                      : 'bg-gold-500 text-charcoal-900',
+                  )}
+                  href={link.href}
                   onClick={() => setIsOpen(false)}
                 >
-                  {ctaLabel}
+                  {link.label}
                 </Link>
-              ) : null}
+              ))}
             </nav>
           </motion.div>
         ) : null}

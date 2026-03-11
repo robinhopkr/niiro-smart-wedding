@@ -8,7 +8,19 @@ import { getServerSession } from '@/lib/auth/get-session'
 import { resolveWeddingAccessForSession } from '@/lib/auth/admin-accounts'
 import { getBillingPricing } from '@/lib/billing/constants'
 
-export default async function AdminLoginPage() {
+function getRoleFromSearchParams(value: string | string[] | undefined): 'couple' | 'planner' {
+  if (value === 'planner' || (Array.isArray(value) && value[0] === 'planner')) {
+    return 'planner'
+  }
+
+  return 'couple'
+}
+
+interface AdminLoginPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+export default async function AdminLoginPage({ searchParams }: AdminLoginPageProps) {
   const pricing = getBillingPricing()
   const session = await getServerSession()
 
@@ -29,6 +41,9 @@ export default async function AdminLoginPage() {
     } catch {}
   }
 
+  const resolvedSearchParams = await searchParams
+  const activeRole = getRoleFromSearchParams(resolvedSearchParams.role)
+
   return (
     <Section className="space-y-8">
       <div className="mx-auto max-w-3xl text-center">
@@ -46,7 +61,7 @@ export default async function AdminLoginPage() {
       </div>
 
       <div className="mx-auto grid w-full max-w-6xl gap-6 xl:grid-cols-2">
-        <div className="surface-card px-6 py-8 sm:px-8">
+        <div className={`surface-card px-6 py-8 sm:px-8 ${activeRole === 'couple' ? 'ring-2 ring-gold-200' : ''}`}>
           <div className="space-y-3">
             <p className="text-sm uppercase tracking-[0.18em] text-gold-700">Brautpaar</p>
             <h2 className="font-display text-card text-charcoal-900">Eigene Hochzeit verwalten</h2>
@@ -76,7 +91,7 @@ export default async function AdminLoginPage() {
           </div>
         </div>
 
-        <div className="surface-card px-6 py-8 sm:px-8">
+        <div className={`surface-card px-6 py-8 sm:px-8 ${activeRole === 'planner' ? 'ring-2 ring-sage-200' : ''}`}>
           <div className="space-y-3">
             <p className="text-sm uppercase tracking-[0.18em] text-sage-700">Wedding Planner</p>
             <h2 className="font-display text-card text-charcoal-900">Mehrere Brautpaare verwalten</h2>

@@ -48,17 +48,21 @@ export function ProductHeroSection() {
           <div className="flex flex-wrap gap-3">
             <Link
               className="inline-flex min-h-12 items-center justify-center rounded-full bg-gold-500 px-6 py-3 text-base font-semibold text-charcoal-900 shadow-gold transition hover:bg-gold-400"
-              href="/admin/registrieren?role=couple"
-            >
-              {pricing.promoActive
-                ? `Jetzt für ${pricing.activePriceLabel} freischalten`
-                : `Jetzt für ${pricing.activePriceLabel} kaufen`}
-            </Link>
-            <Link
-              className="inline-flex min-h-12 items-center justify-center rounded-full border border-gold-300 bg-white px-6 py-3 text-base font-semibold text-charcoal-800 transition hover:border-gold-500"
               href="/demo"
             >
               Live-Demo öffnen
+            </Link>
+            <Link
+              className="inline-flex min-h-12 items-center justify-center rounded-full border border-gold-300 bg-white px-6 py-3 text-base font-semibold text-charcoal-800 transition hover:border-gold-500"
+              href="/admin/login?role=couple"
+            >
+              Login Brautpaare
+            </Link>
+            <Link
+              className="inline-flex min-h-12 items-center justify-center rounded-full border border-gold-300 bg-white px-6 py-3 text-base font-semibold text-charcoal-800 transition hover:border-gold-500"
+              href="/admin/login?role=planner"
+            >
+              Login Wedding Planner
             </Link>
           </div>
 
@@ -83,12 +87,20 @@ export function ProductHeroSection() {
                 Einführungspreis nur bis {pricing.promoDeadlineLabel}. Danach kostet myWed wieder {pricing.standardPriceLabel}.
               </p>
             ) : null}
-            <p className="mt-3 text-sm text-charcoal-600">
-              Nach der Registrierung geht es direkt in den Stripe-Checkout. Bereits registriert?{' '}
-              <Link className="font-semibold text-gold-700 hover:text-gold-800" href="/admin/login">
-                Zum Login
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500"
+                href="/admin/registrieren?role=couple"
+              >
+                Brautpaar registrieren
               </Link>
-            </p>
+              <Link
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-cream-300 bg-cream-50 px-5 py-3 text-sm font-semibold text-charcoal-700 transition hover:bg-white"
+                href="/admin/login"
+              >
+                Bestehenden Zugang öffnen
+              </Link>
+            </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">

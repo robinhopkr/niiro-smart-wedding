@@ -31,15 +31,24 @@ export function ProductCtaSection() {
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               className="inline-flex min-h-12 items-center justify-center rounded-full bg-gold-500 px-6 py-3 font-semibold text-charcoal-900 shadow-gold transition hover:bg-gold-400"
+              href="/demo"
+            >
+              Demo öffnen
+            </Link>
+            <Link
+              className="inline-flex min-h-12 items-center justify-center rounded-full border border-gold-300 bg-white/90 px-6 py-3 font-semibold text-charcoal-800 transition hover:border-gold-500 hover:bg-white"
               href="/admin/registrieren?role=couple"
             >
               Brautpaar registrieren
             </Link>
-            <Link
-              className="inline-flex min-h-12 items-center justify-center rounded-full border border-gold-300 bg-white/90 px-6 py-3 font-semibold text-charcoal-800 transition hover:border-gold-500 hover:bg-white"
-              href="/admin/login"
-            >
-              Bereits Kunde? Login
+          </div>
+          <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm">
+            <Link className="font-semibold text-gold-700 hover:text-gold-800" href="/admin/login?role=couple">
+              Login Brautpaare
+            </Link>
+            <span className="text-charcoal-300">•</span>
+            <Link className="font-semibold text-gold-700 hover:text-gold-800" href="/admin/login?role=planner">
+              Login Wedding Planner
             </Link>
           </div>
         </div>
