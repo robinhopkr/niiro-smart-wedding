@@ -17,6 +17,7 @@ import {
   createWeddingForRegistration,
   findClaimableWeddingForRegistration,
   generateUniqueGuestCode,
+  getActiveWeddingConfig,
   getCoupleAccountByEmail,
   getCoupleAccountByWeddingRef,
   getLinkedPlannerForWedding,
@@ -60,6 +61,43 @@ function buildPlannerSession(account: PlannerAccount): AdminSession {
   }
 }
 
+function normalizeEmail(value: string): string {
+  return value.trim().toLowerCase()
+}
+
+function isLegacyCoupleLogin(input: {
+  email: string
+  password: string
+}): boolean {
+  const configuredEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase()
+  const configuredPassword = process.env.ADMIN_PASSWORD
+
+  if (!configuredEmail || !configuredPassword) {
+    return false
+  }
+
+  return normalizeEmail(input.email) === configuredEmail && input.password === configuredPassword
+}
+
+async function buildLegacyCoupleSession(
+  supabase: ReturnType<typeof getRequiredAdminClient>,
+  email: string,
+): Promise<AdminSession> {
+  const config = await getActiveWeddingConfig(supabase)
+
+  if (config.source === 'fallback' || !config.sourceId) {
+    throw new Error('Für den Legacy-Login konnte keine bearbeitbare Hochzeit gefunden werden.')
+  }
+
+  return {
+    accountId: `legacy-couple:${normalizeEmail(email)}`,
+    email: normalizeEmail(email),
+    role: 'couple',
+    weddingSource: config.source,
+    weddingSourceId: config.sourceId,
+  }
+}
+
 async function generatePlannerCustomerNumber(): Promise<string> {
   const supabase = getRequiredAdminClient()
 
@@ -93,8 +131,16 @@ export async function resolveWeddingAccessForSession(
     throw new Error('Die ausgewählte Hochzeit konnte nicht mehr geladen werden.')
   }
 
-  const coupleAccount = await getCoupleAccountByWeddingRef(supabase, session.weddingSource, session.weddingSourceId)
-  const billingAccess = await getBillingAccessState(supabase, config, coupleAccount?.email ?? null)
+  const coupleAccount = await getCoupleAccountByWeddingRef(
+    supabase,
+    session.weddingSource,
+    session.weddingSourceId,
+  )
+  const billingAccess = await getBillingAccessState(
+    supabase,
+    config,
+    session.role === 'couple' ? session.email : coupleAccount?.email ?? null,
+  )
 
   return {
     billingAccess,
@@ -202,7 +248,28 @@ export async function loginAdminAccount(input: {
   if (input.role === 'couple') {
     const account = await getCoupleAccountByEmail(supabase, input.email)
 
-    if (!account || !verifyPassword(input.password, account.passwordHash)) {
+    if (!account) {
+      if (!isLegacyCoupleLogin(input)) {
+        throw new Error('E-Mail oder Passwort sind nicht korrekt.')
+      }
+
+      const session = await buildLegacyCoupleSession(supabase, input.email)
+      const sessionToken = createAdminSessionToken(session)
+
+      if (!sessionToken) {
+        throw new Error('Die Sitzung konnte nicht erstellt werden.')
+      }
+
+      const { billingAccess } = await resolveWeddingAccessForSession(session)
+
+      return {
+        nextUrl: billingAccess.requiresPayment ? '/admin/kauf' : '/admin/uebersicht',
+        session,
+        sessionToken,
+      }
+    }
+
+    if (!verifyPassword(input.password, account.passwordHash)) {
       throw new Error('E-Mail oder Passwort sind nicht korrekt.')
     }
 
