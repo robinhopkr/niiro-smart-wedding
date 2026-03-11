@@ -15,7 +15,7 @@ export default async function AdminAccessPage() {
     <div className="space-y-6">
       <AdminPageHero
         title="Zugänge und Galerie"
-        description="Hier findet ihr alles, was ihr teilen oder prüfen wollt: Einladung, QR-Code, Galerie und den Fotografen-Zugang."
+        description="Hier findet ihr alles, was ihr teilen oder prüfen wollt: Einladung, QR-Code, PDF-Download, Galerie und den Fotografen-Zugang."
       />
 
       <GuestAccessCard
@@ -43,7 +43,7 @@ export default async function AdminAccessPage() {
           <p className="text-sm uppercase tracking-[0.18em] text-gold-700">Für Gäste</p>
           <h2 className="mt-3 font-display text-card text-charcoal-900">Einladung teilen</h2>
           <p className="mt-3 text-charcoal-600">
-            Öffnet den Gästebereich oder springt direkt in die öffentliche Galerie.
+            Öffnet den Gästebereich, ladet die Einladung als PDF herunter oder springt direkt in die öffentliche Galerie.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <ActionLink href={guestInviteHref}>Einladung öffnen</ActionLink>

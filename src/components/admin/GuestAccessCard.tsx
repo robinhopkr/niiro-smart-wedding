@@ -38,6 +38,7 @@ export function GuestAccessCard({ inviteHref, inviteUrl, guestCode }: GuestAcces
   const [qrCodeObjectUrl, setQrCodeObjectUrl] = useState('')
   const [qrCodeBlob, setQrCodeBlob] = useState<Blob | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [isDownloadingInvitationPdf, setIsDownloadingInvitationPdf] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -143,6 +144,94 @@ export function GuestAccessCard({ inviteHref, inviteUrl, guestCode }: GuestAcces
     }
   }
 
+  function extractFilename(contentDisposition: string | null): string {
+    if (!contentDisposition) {
+      return 'mywed-einladung.pdf'
+    }
+
+    const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/iu)
+    if (utf8Match?.[1]) {
+      return decodeURIComponent(utf8Match[1])
+    }
+
+    const basicMatch = contentDisposition.match(/filename="([^"]+)"/iu)
+    if (basicMatch?.[1]) {
+      return basicMatch[1]
+    }
+
+    return 'mywed-einladung.pdf'
+  }
+
+  async function downloadInvitationPdf() {
+    setIsDownloadingInvitationPdf(true)
+
+    try {
+      const response = await fetch('/api/admin/invitation-pdf', {
+        method: 'GET',
+        credentials: 'same-origin',
+      })
+
+      if (!response.ok) {
+        let message = 'Die Einladung konnte gerade nicht erstellt werden.'
+
+        try {
+          const result = await response.json()
+
+          if (
+            result &&
+            typeof result === 'object' &&
+            'success' in result &&
+            result.success === false &&
+            'error' in result &&
+            typeof result.error === 'string'
+          ) {
+            message = result.error
+          }
+        } catch {
+          // Keep fallback message if the response is not JSON.
+        }
+
+        toast.error(message)
+        return
+      }
+
+      const blob = await response.blob()
+      const fileName = extractFilename(response.headers.get('content-disposition'))
+      const file = new File([blob], fileName, { type: 'application/pdf' })
+
+      if (
+        typeof navigator !== 'undefined' &&
+        typeof navigator.share === 'function' &&
+        typeof navigator.canShare === 'function' &&
+        navigator.canShare({ files: [file] })
+      ) {
+        await navigator.share({
+          title: 'Digitale Einladung',
+          text: 'Hier ist die digitale Einladung für unsere Gäste.',
+          files: [file],
+        })
+        toast.success('Die Einladung ist bereit zum Teilen.')
+        return
+      }
+
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.download = fileName
+      link.rel = 'noopener'
+      link.style.display = 'none'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000)
+      toast.success('Die Einladung wird als PDF heruntergeladen.')
+    } catch {
+      toast.error('Die Einladung konnte gerade nicht als PDF geladen werden.')
+    } finally {
+      setIsDownloadingInvitationPdf(false)
+    }
+  }
+
   return (
     <article
       id="gaeste-qr"
@@ -158,11 +247,11 @@ export function GuestAccessCard({ inviteHref, inviteUrl, guestCode }: GuestAcces
             </div>
             <div>
               <h2 className="font-display text-2xl text-charcoal-900 sm:text-3xl">
-                QR-Code für die Gästeseite
+                QR-Code und PDF für eure Gästeseite
               </h2>
               <p className="mt-3 max-w-2xl text-body-md text-charcoal-700">
-                Dieser QR-Code ist euer schnellster Weg für Save-the-Date, Einladungskarte und
-                Hochzeitspapeterie. Gäste scannen ihn und landen direkt auf eurer Einladung.
+                Hier findet ihr alles zum Teilen: den direkten Gästelink, den QR-Code und eine
+                fertige PDF-Einladung zum Download und Versand per Mail.
               </p>
             </div>
           </div>
@@ -181,7 +270,7 @@ export function GuestAccessCard({ inviteHref, inviteUrl, guestCode }: GuestAcces
             <div className="rounded-[1.75rem] bg-white/85 px-5 py-4 shadow-sm ring-1 ring-cream-200">
               <p className="text-xs uppercase tracking-[0.18em] text-charcoal-500">Empfehlung</p>
               <p className="mt-2 text-sm leading-6 text-charcoal-700">
-                Platziert den QR-Code auf Karte, Menü, Sitzplan oder Willkommensschild.
+                Nutzt QR-Code und PDF für Karte, Menü, Mailversand, Sitzplan oder Willkommensschild.
               </p>
             </div>
           </div>
@@ -197,6 +286,15 @@ export function GuestAccessCard({ inviteHref, inviteUrl, guestCode }: GuestAcces
             <Button type="button" variant="secondary" onClick={copyInviteUrl}>
               <Copy className="h-4 w-4" />
               Link kopieren
+            </Button>
+            <Button
+              loading={isDownloadingInvitationPdf}
+              type="button"
+              variant="secondary"
+              onClick={() => void downloadInvitationPdf()}
+            >
+              <Download className="h-4 w-4" />
+              Einladung als PDF
             </Button>
             <Button loading={isDownloading} type="button" variant="secondary" onClick={() => void downloadQrCode()}>
               <Download className="h-4 w-4" />
@@ -221,7 +319,7 @@ export function GuestAccessCard({ inviteHref, inviteUrl, guestCode }: GuestAcces
           <div className="mt-4 rounded-[1.5rem] bg-cream-50 px-4 py-4 text-center">
             <p className="text-xs uppercase tracking-[0.18em] text-charcoal-500">Sofort bereit zum Teilen</p>
             <p className="mt-2 text-sm leading-6 text-charcoal-700">
-              Ideal zum Ausdrucken oder direkt zum Versenden an eure Gäste.
+              Ideal zum Ausdrucken, als PDF-Anhang oder direkt zum Versenden an eure Gäste.
             </p>
           </div>
         </div>
