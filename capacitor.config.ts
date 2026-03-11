@@ -95,7 +95,7 @@ function resolveAppBaseUrl(): string {
 
 const appBaseUrl = resolveAppBaseUrl()
 
-const appStartPath = process.env.CAPACITOR_APP_START_PATH ?? '/demo'
+const appStartPath = process.env.CAPACITOR_APP_START_PATH ?? '/'
 const remoteAppUrl = withPath(appBaseUrl, appStartPath)
 const allowNavigationHost = new URL(appBaseUrl).host
 
