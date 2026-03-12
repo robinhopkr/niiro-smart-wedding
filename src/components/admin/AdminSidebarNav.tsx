@@ -50,7 +50,7 @@ export function AdminSidebarNav() {
               </span>
               <div className="min-w-0">
                 <p className="font-semibold text-charcoal-900">{item.label}</p>
-                <p className="mt-1 text-sm leading-6 text-charcoal-600">{item.description}</p>
+                <p className="mt-1 text-body-md text-charcoal-600">{item.description}</p>
               </div>
             </div>
           </Link>

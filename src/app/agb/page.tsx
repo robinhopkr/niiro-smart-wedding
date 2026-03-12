@@ -4,18 +4,18 @@ import { LegalPageLayout } from '@/components/legal/LegalPageLayout'
 import { LEGAL } from '@/lib/legal'
 
 export const metadata: Metadata = {
-  title: 'AGB | myWed by NiiRo AI',
+  title: 'AGB | NiiRo Smart Wedding',
 }
 
 export default function AgbPage() {
   return (
     <LegalPageLayout
       title="Allgemeine Geschäftsbedingungen"
-      intro="Muster-AGB für die Nutzung von myWed durch Brautpaare und Wedding Planner."
+      intro="Muster-AGB für die Nutzung von NiiRo Smart Wedding durch Brautpaare und Wedding Planner."
     >
       <h2>1. Geltungsbereich</h2>
       <p>
-        Diese AGB gelten für die Nutzung von myWed by NiiRo AI durch Brautpaare und Wedding Planner.
+        Diese AGB gelten für die Nutzung von NiiRo Smart Wedding durch Brautpaare und Wedding Planner.
         Der Gästebereich ist für Gäste kostenfrei nutzbar.
       </p>
 
@@ -26,7 +26,7 @@ export default function AgbPage() {
 
       <h2>3. Leistungsbeschreibung</h2>
       <p>
-        myWed bietet digitale Hochzeitsseiten mit RSVP, Inhaltsverwaltung, Galerie, Zugängen und
+        NiiRo Smart Wedding bietet digitale Hochzeitsseiten mit RSVP, Inhaltsverwaltung, Galerie, Zugängen und
         optionalen Planungsfunktionen. Der konkrete Funktionsumfang ergibt sich aus der jeweils
         bereitgestellten App-Version.
       </p>

@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation'
 
+import { AdminPageHero } from '@/components/admin/AdminPageHero'
+import { AdminRouteNav } from '@/components/admin/AdminRouteNav'
 import { PlannerWeddingSelector } from '@/components/admin/PlannerWeddingSelector'
 import { LogoutButton } from '@/components/admin/LogoutButton'
 import { Section } from '@/components/ui/Section'
-import { SectionHeading } from '@/components/ui/SectionHeading'
 import { getServerSession } from '@/lib/auth/get-session'
 import { listPlannerWeddingOptions } from '@/lib/auth/admin-accounts'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -33,17 +34,34 @@ export default async function PlannerWeddingSelectionPage() {
   }
 
   const weddings = await listPlannerWeddingOptions(session.accountId)
+  const unlockedWeddings = weddings.filter((entry) => entry.billingUnlocked)
+  const pendingWeddings = weddings.length - unlockedWeddings.length
 
   return (
     <Section className="space-y-8">
-      <div className="mx-auto max-w-3xl text-center">
-        <SectionHeading as="h1">Brautpaar auswählen</SectionHeading>
-        <p className="mt-4 text-charcoal-600">
-          Wählt hier eines eurer freigegebenen Brautpaare aus. Innerhalb der Hochzeit habt ihr Zugriff auf alle Bereiche außer auf private Fotos.
-        </p>
-        <div className="mt-5 flex justify-center">
+      <AdminRouteNav sessionRole="planner" />
+
+      <AdminPageHero
+        title="Wedding-Planer-Übersicht"
+        description="Hier seht ihr alle Brautpaare, die euch zugeordnet wurden. Eure Registrierung ist kostenlos. Öffnen könnt ihr jeweils nur Hochzeiten, die vom Brautpaar freigegeben und bezahlt wurden. Innerhalb der Hochzeit habt ihr Zugriff auf alle Bereiche außer auf private Fotos."
+        actions={
           <LogoutButton label="Logout" variant="secondary" />
-        </div>
+        }
+      />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <article className="surface-card px-5 py-5">
+          <p className="text-eyebrow text-charcoal-500">Zugeordnet</p>
+          <p className="mt-3 font-display text-metric text-charcoal-900">{weddings.length}</p>
+        </article>
+        <article className="surface-card px-5 py-5">
+          <p className="text-eyebrow text-charcoal-500">Freigeschaltet</p>
+          <p className="mt-3 font-display text-metric text-charcoal-900">{unlockedWeddings.length}</p>
+        </article>
+        <article className="surface-card px-5 py-5">
+          <p className="text-eyebrow text-charcoal-500">Warten auf Kauf</p>
+          <p className="mt-3 font-display text-metric text-charcoal-900">{pendingWeddings}</p>
+        </article>
       </div>
 
       <PlannerWeddingSelector customerNumber={plannerAccount.customerNumber} weddings={weddings} />

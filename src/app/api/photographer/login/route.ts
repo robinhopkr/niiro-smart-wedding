@@ -10,6 +10,7 @@ import {
 import { createPublicClient } from '@/lib/supabase/public'
 import { getWeddingConfigByGuestCode } from '@/lib/supabase/repository'
 import { photographerLoginSchema } from '@/lib/validations/photographer.schema'
+import { getWeddingGalleryExpiredMessage, isWeddingRetentionExpired } from '@/lib/wedding-lifecycle'
 import type { ApiResponse } from '@/types/api'
 
 function safeCompare(left: string, right: string): boolean {
@@ -51,6 +52,17 @@ export async function POST(
         code: 'NO_PHOTOGRAPHER_ACCESS',
       },
       { status: 404 },
+    )
+  }
+
+  if (isWeddingRetentionExpired(config.weddingDate)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: getWeddingGalleryExpiredMessage(),
+        code: 'GALLERY_EXPIRED',
+      },
+      { status: 403 },
     )
   }
 

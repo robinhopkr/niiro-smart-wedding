@@ -82,6 +82,10 @@ export function PlannerWeddingSelector({
         <p className="mt-4 max-w-3xl text-charcoal-600">
           Das Brautpaar trägt diese Kundennummer in seinem Paarbereich ein. Danach erscheint die Hochzeit hier in eurer Auswahl.
         </p>
+        <p className="mt-3 max-w-3xl text-charcoal-600">
+          Wenn ihr eine Hochzeit öffnet, landet ihr im selben Paarbereich wie das Brautpaar. Nur
+          private Fotos bleiben für euch ausgeblendet.
+        </p>
       </div>
 
       {weddings.length ? (
@@ -118,7 +122,7 @@ export function PlannerWeddingSelector({
                 </div>
               </div>
               <p className="mt-4 text-sm text-charcoal-600">
-                Zugriff auf alle Bereiche außer auf private Fotos des Brautpaares.
+                Beim Öffnen seht ihr denselben Paarbereich wie das Brautpaar, außer private Fotos.
               </p>
               <div className="mt-5">
                 <Button
@@ -128,7 +132,7 @@ export function PlannerWeddingSelector({
                   type="button"
                   onClick={() => void handleSelectWedding(entry)}
                 >
-                  Hochzeit öffnen
+                  Paarbereich öffnen
                 </Button>
               </div>
             </article>

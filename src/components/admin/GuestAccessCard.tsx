@@ -106,7 +106,7 @@ export function GuestAccessCard({ inviteHref, inviteUrl, guestCode }: GuestAcces
     setIsDownloading(true)
 
     try {
-      const file = new File([qrCodeBlob], 'mywed-gaesteseite-qr.png', { type: qrCodeBlob.type })
+      const file = new File([qrCodeBlob], 'niiro-smart-wedding-gaesteseite-qr.png', { type: qrCodeBlob.type })
 
       if (
         typeof navigator !== 'undefined' &&
@@ -115,7 +115,7 @@ export function GuestAccessCard({ inviteHref, inviteUrl, guestCode }: GuestAcces
         navigator.canShare({ files: [file] })
       ) {
         await navigator.share({
-          title: 'myWed QR-Code',
+          title: 'NiiRo Smart Wedding QR-Code',
           text: 'QR-Code für die Gästeseite',
           files: [file],
         })
@@ -125,7 +125,7 @@ export function GuestAccessCard({ inviteHref, inviteUrl, guestCode }: GuestAcces
 
       const link = document.createElement('a')
       link.href = qrCodeObjectUrl
-      link.download = 'mywed-gaesteseite-qr.png'
+      link.download = 'niiro-smart-wedding-gaesteseite-qr.png'
       link.rel = 'noopener'
       link.style.display = 'none'
       document.body.appendChild(link)
@@ -146,7 +146,7 @@ export function GuestAccessCard({ inviteHref, inviteUrl, guestCode }: GuestAcces
 
   function extractFilename(contentDisposition: string | null): string {
     if (!contentDisposition) {
-      return 'mywed-einladung.pdf'
+      return 'niiro-smart-wedding-einladung.pdf'
     }
 
     const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/iu)
@@ -159,7 +159,7 @@ export function GuestAccessCard({ inviteHref, inviteUrl, guestCode }: GuestAcces
       return basicMatch[1]
     }
 
-    return 'mywed-einladung.pdf'
+    return 'niiro-smart-wedding-einladung.pdf'
   }
 
   async function downloadInvitationPdf() {
@@ -235,13 +235,13 @@ export function GuestAccessCard({ inviteHref, inviteUrl, guestCode }: GuestAcces
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(212,154,29,0.18),_transparent_32%),radial-gradient(circle_at_78%_18%,_rgba(143,168,154,0.18),_transparent_30%),linear-gradient(180deg,rgba(255,250,241,0.9),rgba(255,255,255,0.96))]" />
       <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.45fr)_22rem] lg:items-center">
         <div>
-          <p className="text-sm uppercase tracking-[0.18em] text-gold-700">Für eure Gäste teilen</p>
+          <p className="text-eyebrow text-gold-700">Für eure Gäste teilen</p>
           <div className="mt-4 flex items-start gap-3">
             <div className="rounded-2xl bg-white/80 p-3 text-gold-700 shadow-sm ring-1 ring-gold-200">
               <QrCode className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="font-display text-2xl text-charcoal-900 sm:text-3xl">
+              <h2 className="font-display text-card text-charcoal-900 sm:text-section">
                 QR-Code und PDF für eure Gästeseite
               </h2>
               <p className="mt-3 max-w-2xl text-body-md text-charcoal-700">
@@ -253,18 +253,18 @@ export function GuestAccessCard({ inviteHref, inviteUrl, guestCode }: GuestAcces
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <div className="rounded-[1.75rem] bg-white/85 px-5 py-4 shadow-sm ring-1 ring-cream-200">
-              <p className="text-xs uppercase tracking-[0.18em] text-charcoal-500">Einladungslink</p>
-              <p className="mt-2 break-all text-sm font-medium leading-6 text-charcoal-900">{inviteUrl}</p>
+              <p className="text-eyebrow text-charcoal-500">Einladungslink</p>
+              <p className="mt-2 break-all text-body-md font-medium text-charcoal-900">{inviteUrl}</p>
             </div>
             <div className="rounded-[1.75rem] bg-white/85 px-5 py-4 shadow-sm ring-1 ring-cream-200">
-              <p className="text-xs uppercase tracking-[0.18em] text-charcoal-500">Gastcode</p>
-              <p className="mt-2 text-lg font-semibold text-charcoal-900">
+              <p className="text-eyebrow text-charcoal-500">Gastcode</p>
+              <p className="mt-2 text-card font-semibold text-charcoal-900">
                 {guestCode || 'Nicht gesetzt'}
               </p>
             </div>
             <div className="rounded-[1.75rem] bg-white/85 px-5 py-4 shadow-sm ring-1 ring-cream-200">
-              <p className="text-xs uppercase tracking-[0.18em] text-charcoal-500">Empfehlung</p>
-              <p className="mt-2 text-sm leading-6 text-charcoal-700">
+              <p className="text-eyebrow text-charcoal-500">Empfehlung</p>
+              <p className="mt-2 text-body-md text-charcoal-700">
                 Nutzt QR-Code und PDF für Karte, Menü, Mailversand, Sitzplan oder Willkommensschild.
               </p>
             </div>
@@ -312,8 +312,8 @@ export function GuestAccessCard({ inviteHref, inviteUrl, guestCode }: GuestAcces
             )}
           </div>
           <div className="mt-4 rounded-[1.5rem] bg-cream-50 px-4 py-4 text-center">
-            <p className="text-xs uppercase tracking-[0.18em] text-charcoal-500">Sofort bereit zum Teilen</p>
-            <p className="mt-2 text-sm leading-6 text-charcoal-700">
+            <p className="text-eyebrow text-charcoal-500">Sofort bereit zum Teilen</p>
+            <p className="mt-2 text-body-md text-charcoal-700">
               Ideal zum Ausdrucken, als PDF-Anhang oder direkt zum Versenden an eure Gäste.
             </p>
           </div>

@@ -11,10 +11,10 @@ def resolvedVersionCode = (releaseVersionCode ?: "10000").toInteger()
 def resolvedVersionName = releaseVersionName ?: "1.0.0"
 
 android {
-    namespace = "com.niiro.hochzeitsapp"
+    namespace = "com.niiro.smartwedding"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.niiro.hochzeitsapp"
+        applicationId "com.niiro.smartwedding"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode resolvedVersionCode

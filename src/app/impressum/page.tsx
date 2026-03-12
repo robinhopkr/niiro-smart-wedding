@@ -4,14 +4,14 @@ import { LegalPageLayout } from '@/components/legal/LegalPageLayout'
 import { LEGAL, LEGAL_ADDRESS_LINES } from '@/lib/legal'
 
 export const metadata: Metadata = {
-  title: 'Impressum | myWed by NiiRo AI',
+  title: 'Impressum | NiiRo Smart Wedding',
 }
 
 export default function ImpressumPage() {
   return (
     <LegalPageLayout
       title="Impressum"
-      intro="Anbieterkennzeichnung und Kontaktdaten für myWed by NiiRo AI."
+      intro="Anbieterkennzeichnung und Kontaktdaten für NiiRo Smart Wedding."
     >
       <h2>Angaben gemäß § 5 DDG</h2>
       <p>{LEGAL.companyName}</p>

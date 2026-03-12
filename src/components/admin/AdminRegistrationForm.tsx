@@ -38,7 +38,7 @@ export function AdminRegistrationForm({ role }: AdminRegistrationFormProps) {
         ? {
             endpoint: '/api/admin/register-planner',
             helper:
-              'Nach der Registrierung bekommt ihr eure Kundennummer. Diese Nummer gibt euch das Brautpaar später in seinem Paarbereich frei.',
+              'Die Registrierung für Wedding Planner ist kostenlos. Nach der Registrierung bekommt ihr eure Kundennummer. Diese Nummer gibt euch das Brautpaar später in seinem Paarbereich frei. Sichtbar und bearbeitbar sind für euch nur Hochzeiten, die vom Brautpaar freigegeben und bezahlt wurden.',
             nameLabel: 'Name oder Firmenname',
             submitLabel: 'Wedding-Planer-Konto anlegen',
           }

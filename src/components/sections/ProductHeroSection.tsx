@@ -1,5 +1,12 @@
+import Image from 'next/image'
 import Link from 'next/link'
-import { CalendarHeart, Camera, LayoutDashboard, MapPinned, MessageCircleHeart } from 'lucide-react'
+import {
+  CalendarHeart,
+  Camera,
+  LayoutDashboard,
+  MapPinned,
+  MessageCircleHeart,
+} from 'lucide-react'
 
 import { Divider } from '@/components/ui/Divider'
 import { getBillingPricing } from '@/lib/billing/constants'
@@ -37,7 +44,7 @@ export function ProductHeroSection() {
               ) : null}
             </div>
             <h1 className="font-display text-hero text-charcoal-900">
-              myWed — stilvolle Einladungen, klare Rückmeldungen und eine Galerie danach.
+              NiiRo Smart Wedding — stilvolle Einladungen, klare Rückmeldungen und eine Galerie danach.
             </h1>
             <p className="max-w-2xl text-body-lg text-charcoal-600">
               Eine elegante Hochzeitsseite für eure Gäste mit RSVP, Ablauf, Anfahrt, FAQ,
@@ -84,7 +91,7 @@ export function ProductHeroSection() {
             </p>
             {pricing.promoActive ? (
               <p className="mt-2 text-sm text-charcoal-600">
-                Einführungspreis nur bis {pricing.promoDeadlineLabel}. Danach kostet myWed wieder {pricing.standardPriceLabel}.
+                Einführungspreis nur bis {pricing.promoDeadlineLabel}. Danach kostet NiiRo Smart Wedding wieder {pricing.standardPriceLabel}.
               </p>
             ) : null}
             <div className="mt-4 flex flex-wrap gap-3">
@@ -115,8 +122,30 @@ export function ProductHeroSection() {
         </div>
 
         <div className="relative">
-          <div className="mx-auto grid w-full max-w-xl gap-4 sm:gap-5 lg:absolute lg:-left-6 lg:top-8 lg:w-[520px] lg:max-w-none">
-            <article className="surface-card w-full px-5 py-5 sm:px-6 sm:py-6 lg:rotate-[-2deg]">
+          <div className="relative hidden h-[52rem] lg:block">
+            <PolaroidCard
+              alt="Brautpaar am Meer"
+              caption="Eleganter Hero mit echter Hochzeitsstimmung"
+              className="absolute right-10 top-0 rotate-[-7deg]"
+              imageSrc="/images/demo/cover-couple-new.jpg"
+            />
+            <PolaroidCard
+              alt="Brautpaar in goldenem Abendlicht"
+              caption="Warme Paarfotos für Einladung und Galerie"
+              className="absolute left-4 top-56 rotate-[6deg]"
+              imageSrc="/images/demo/gallery-golden-hour.jpg"
+              size="sm"
+            />
+            <PolaroidCard
+              alt="Brautpaar beim Hochzeitstanz"
+              caption="Emotionale Erinnerungen für Gäste und Brautpaar"
+              className="absolute right-0 top-[25.5rem] rotate-[3deg]"
+              imageSrc="/images/demo/gallery-first-dance-new.jpg"
+            />
+          </div>
+
+          <div className="mx-auto grid w-full max-w-xl gap-4 sm:gap-5 lg:hidden">
+            <article className="surface-card w-full px-5 py-5 sm:px-6 sm:py-6">
               <div className="flex items-center justify-between">
                 <p className="font-display text-2xl leading-tight text-charcoal-900">Gastansicht</p>
                 <MessageCircleHeart className="h-5 w-5 text-dusty-rose-500" />
@@ -136,7 +165,7 @@ export function ProductHeroSection() {
               </div>
             </article>
 
-            <article className="surface-card w-full px-5 py-5 sm:px-6 sm:py-6 lg:ml-auto lg:max-w-md lg:rotate-[2deg]">
+            <article className="surface-card w-full px-5 py-5 sm:px-6 sm:py-6">
               <div className="flex items-center justify-between">
                 <p className="font-display text-2xl leading-tight text-charcoal-900">Brautpaar-Dashboard</p>
                 <LayoutDashboard className="h-5 w-5 text-gold-500" />
@@ -180,5 +209,43 @@ function StatCard({ label, value }: { label: string; value: string }) {
       <div className="font-display text-metric text-charcoal-900">{value}</div>
       <div className="mt-1 text-xs uppercase tracking-[0.18em] text-charcoal-500">{label}</div>
     </div>
+  )
+}
+
+function PolaroidCard({
+  alt,
+  caption,
+  className,
+  imageSrc,
+  size = 'md',
+}: {
+  alt: string
+  caption: string
+  className?: string
+  imageSrc: string
+  size?: 'sm' | 'md'
+}) {
+  const dimensions =
+    size === 'sm'
+      ? 'w-[15.5rem]'
+      : 'w-[18.75rem]'
+
+  return (
+    <article className={`${dimensions} rounded-[1.9rem] border border-cream-200 bg-white p-4 shadow-[0_22px_60px_rgba(43,37,32,0.12)] ${className ?? ''}`}>
+      <div className="overflow-hidden rounded-[1.45rem] bg-cream-100">
+        <Image
+          alt={alt}
+          className="h-auto w-full object-cover"
+          height={size === 'sm' ? 320 : 380}
+          sizes={size === 'sm' ? '248px' : '300px'}
+          src={imageSrc}
+          width={size === 'sm' ? 248 : 300}
+        />
+      </div>
+      <div className="px-2 pb-2 pt-4">
+        <p className="text-xs uppercase tracking-[0.22em] text-sage-700">NiiRo Smart Wedding</p>
+        <p className="mt-2 text-sm leading-6 text-charcoal-700">{caption}</p>
+      </div>
+    </article>
   )
 }

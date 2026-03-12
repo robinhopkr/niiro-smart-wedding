@@ -167,6 +167,54 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['planner_wedding_access']['Insert']>
         Relationships: []
       }
+      gallery_media: {
+        Row: {
+          id: string
+          wedding_source: 'modern' | 'legacy'
+          wedding_source_id: string
+          visibility: 'public' | 'private'
+          storage_provider: 'supabase' | 'r2'
+          file_name: string
+          original_key: string
+          preview_key: string | null
+          lightbox_key: string | null
+          original_content_type: string | null
+          preview_content_type: string | null
+          lightbox_content_type: string | null
+          width: number | null
+          height: number | null
+          original_bytes: number | null
+          preview_bytes: number | null
+          lightbox_bytes: number | null
+          uploaded_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          wedding_source: 'modern' | 'legacy'
+          wedding_source_id: string
+          visibility: 'public' | 'private'
+          storage_provider: 'supabase' | 'r2'
+          file_name: string
+          original_key: string
+          preview_key?: string | null
+          lightbox_key?: string | null
+          original_content_type?: string | null
+          preview_content_type?: string | null
+          lightbox_content_type?: string | null
+          width?: number | null
+          height?: number | null
+          original_bytes?: number | null
+          preview_bytes?: number | null
+          lightbox_bytes?: number | null
+          uploaded_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['gallery_media']['Insert']>
+        Relationships: []
+      }
       app_einstellungen: {
         Row: {
           id: number

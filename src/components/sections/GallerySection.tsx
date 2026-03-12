@@ -1,6 +1,8 @@
 import Link from 'next/link'
 
 import { GalleryGrid } from '@/components/gallery/GalleryGrid'
+import { DownloadLink } from '@/components/ui/DownloadLink'
+import { DEMO_GUEST_CODE } from '@/lib/demo-wedding'
 import { Section } from '@/components/ui/Section'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { normaliseDateInput } from '@/lib/utils/date'
@@ -52,6 +54,11 @@ export function GallerySection({ config, photos, images = [] }: GallerySectionPr
             >
               Galerie öffnen
             </Link>
+            {photos.length && config.guestCode !== DEMO_GUEST_CODE ? (
+              <DownloadLink href={`/api/gallery-download/${config.guestCode}`}>
+                Öffentliche Fotos herunterladen
+              </DownloadLink>
+            ) : null}
             {photographerHref ? (
               <Link
                 className="inline-flex min-h-11 items-center justify-center rounded-full bg-gold-500 px-5 py-3 text-sm font-semibold text-charcoal-900 shadow-gold transition hover:bg-gold-400"

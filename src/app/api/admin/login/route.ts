@@ -6,6 +6,7 @@ import {
 } from '@/lib/auth/admin-session'
 import { loginAdminAccount } from '@/lib/auth/admin-accounts'
 import { loginSchema } from '@/lib/validations/admin.schema'
+import { getWeddingRetentionExpiredMessage } from '@/lib/wedding-lifecycle'
 import type { ApiResponse } from '@/types/api'
 
 type LoginResponse = {
@@ -45,7 +46,12 @@ export async function POST(
     return response
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Der Login ist fehlgeschlagen.'
-    const code = message.includes('nicht korrekt') ? 'INVALID_CREDENTIALS' : 'LOGIN_FAILED'
+    const code =
+      message === getWeddingRetentionExpiredMessage()
+        ? 'ACCESS_EXPIRED'
+        : message.includes('nicht korrekt')
+          ? 'INVALID_CREDENTIALS'
+          : 'LOGIN_FAILED'
 
     return NextResponse.json(
       {
@@ -53,7 +59,7 @@ export async function POST(
         error: message,
         code,
       },
-      { status: code === 'INVALID_CREDENTIALS' ? 401 : 500 },
+      { status: code === 'INVALID_CREDENTIALS' ? 401 : code === 'ACCESS_EXPIRED' ? 403 : 500 },
     )
   }
 }

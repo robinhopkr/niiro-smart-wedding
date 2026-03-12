@@ -50,7 +50,7 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
         <SectionHeading as="h1">Login für Brautpaare und Wedding Planner</SectionHeading>
         <p className="mt-4 text-charcoal-600">
           Brautpaare registrieren ihre Hochzeit selbst und schließen den Kauf für ihren Paarbereich eigenständig ab.
-          Wedding Planner greifen danach über ihre Kundennummer auf freigegebene Hochzeiten zu.
+          Wedding Planner registrieren sich kostenlos und greifen danach über ihre Kundennummer auf freigegebene Hochzeiten zu.
         </p>
         <p className="mt-2 text-sm text-charcoal-600">
           Paarbereich regulär {pricing.standardPriceLabel} inkl. MwSt.
@@ -70,13 +70,10 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
             </p>
           </div>
           <div className="mt-6 space-y-4">
-            <LoginForm
-              embedded
-              role="couple"
-              secondaryReturnUrl="/admin/einrichtung"
-              secondarySubmitLabel="Fragebogen zur Einrichtung von myWed"
-              submitLabel="Als Brautpaar anmelden"
-            />
+            <LoginForm embedded role="couple" submitLabel="Als Brautpaar anmelden" />
+            <p className="text-sm leading-6 text-charcoal-500">
+              Den Fragebogen findet ihr direkt nach dem Login auf eurer Startseite im Paarbereich.
+            </p>
             <div className="rounded-[1.5rem] border border-cream-200 bg-cream-50 px-5 py-5">
               <p className="font-semibold text-charcoal-900">Noch kein Brautpaar-Konto?</p>
               <p className="mt-2 text-sm leading-6 text-charcoal-600">
@@ -104,7 +101,7 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
             <div className="rounded-[1.5rem] border border-cream-200 bg-cream-50 px-5 py-5">
               <p className="font-semibold text-charcoal-900">Noch kein Wedding-Planer-Konto?</p>
               <p className="mt-2 text-sm leading-6 text-charcoal-600">
-                Erstellt euer Planner-Konto. Ihr erhaltet eine Kundennummer, die euch Brautpaare in ihrem Paarbereich freigeben.
+                Erstellt euer Planner-Konto kostenlos. Ihr erhaltet eine Kundennummer, die euch Brautpaare in ihrem Paarbereich freigeben.
               </p>
               <div className="mt-4">
                 <ActionLink href="/admin/registrieren?role=planner" variant="secondary">

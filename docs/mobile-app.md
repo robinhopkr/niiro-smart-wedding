@@ -13,16 +13,16 @@ Die Hochzeits-App basiert auf `next@15`, Server Components, API-Routen und Supab
 ```env
 CAPACITOR_SERVER_URL=https://hochzeit.example.com
 CAPACITOR_APP_START_PATH=/demo
-CAPACITOR_APP_ID=com.niiro.hochzeitsapp
-CAPACITOR_APP_NAME=myWed by NiiRo AI
-MOBILE_RELEASES_REPO=robinhopkr/hochzeits-rsvp
+CAPACITOR_APP_ID=com.niiro.smartwedding
+CAPACITOR_APP_NAME=NiiRo Smart Wedding
+MOBILE_RELEASES_REPO=robinhopkr/niiro-smart-wedding
 ```
 
 - `CAPACITOR_SERVER_URL`: Bevorzugte URL für die native App.
 - `CAPACITOR_APP_START_PATH`: Standard ist `/demo`, damit die App direkt in die Hochzeitsoberflaeche startet.
 - `MOBILE_RELEASES_REPO`: GitHub-Repo für die Update-Prüfung in der nativen App.
 - Wenn `CAPACITOR_SERVER_URL` fehlt, wird `NEXT_PUBLIC_APP_URL` verwendet.
-- Wenn beides fehlt, fällt Capacitor auf `https://mywed.niiro.ai/demo` zurück.
+- Wenn beides fehlt, fällt Capacitor auf die aktuell produktive Domain zurück, standardmäßig `https://smartwedding.niiro.ai`.
 
 ## Lokale Entwicklung
 

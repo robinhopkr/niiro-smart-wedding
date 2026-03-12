@@ -73,8 +73,10 @@ export function WeddingInvitationPage({
         brandHref="/"
         brandLabel={APP_BRAND_NAME}
         navItems={navItems}
-        ctaHref="/admin/login"
-        ctaLabel="Login für Brautpaare"
+        actionLinks={[
+          { href: '/admin/login?role=planner', label: 'Login Wedding Planner', variant: 'secondary' },
+          { href: '/admin/login?role=couple', label: 'Login für Brautpaare', variant: 'primary' },
+        ]}
         showBrandMark
       />
       {showDemoBanner ? (

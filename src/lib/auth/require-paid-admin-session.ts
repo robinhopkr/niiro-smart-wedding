@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import { getAdminSessionFromCookieStore } from '@/lib/auth/admin-session'
 import { resolveWeddingAccessForSession } from '@/lib/auth/admin-accounts'
+import { getWeddingRetentionExpiredMessage } from '@/lib/wedding-lifecycle'
 import type { ApiResponse } from '@/types/api'
 import type { AdminSession } from './admin-session'
 import type { WeddingConfig } from '@/types/wedding'
@@ -58,18 +59,20 @@ export async function requirePaidAdminSession(
     billingAccess = resolvedAccess.billingAccess
     config = resolvedAccess.config
   } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Die ausgewählte Hochzeit konnte nicht geladen werden.'
+
     return {
       ok: false,
       response: NextResponse.json(
         {
           success: false,
-          error:
-            error instanceof Error
-              ? error.message
-              : 'Die ausgewählte Hochzeit konnte nicht geladen werden.',
-          code: 'WEDDING_NOT_AVAILABLE',
+          error: message,
+          code: message === getWeddingRetentionExpiredMessage() ? 'ACCESS_EXPIRED' : 'WEDDING_NOT_AVAILABLE',
         },
-        { status: 409 },
+        { status: message === getWeddingRetentionExpiredMessage() ? 403 : 409 },
       ),
     }
   }

@@ -38,7 +38,7 @@ interface AvailableUpdate {
   releaseUrl: string
 }
 
-const DISMISSED_VERSION_STORAGE_KEY = 'mywed-mobile-dismissed-version'
+const DISMISSED_VERSION_STORAGE_KEY = 'niiro-smart-wedding-mobile-dismissed-version'
 
 function readDismissedVersion(): string | null {
   try {

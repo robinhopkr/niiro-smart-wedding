@@ -6,6 +6,7 @@ export type MenuChoice = 'meat' | 'fish' | 'vegetarian' | 'vegan'
 export type ContentImageSection = 'programm' | 'anfahrt' | 'dresscode' | 'galerie' | 'rsvp' | 'faq'
 export type DressCodeColorHint = 'soft' | 'moderate' | 'strong'
 export type GalleryVisibility = 'public' | 'private'
+export type GalleryStorageProvider = 'supabase' | 'r2'
 export type GuestCategory =
   | 'family'
   | 'close_friends'
@@ -195,13 +196,33 @@ export interface GalleryPhoto {
   name: string
   path: string
   publicUrl: string
+  previewUrl: string | null
   createdAt: string | null
   visibility: GalleryVisibility
+  storageProvider: GalleryStorageProvider
+  originalPath: string | null
 }
 
 export interface GalleryCollections {
   publicPhotos: GalleryPhoto[]
   privatePhotos: GalleryPhoto[]
+}
+
+export interface GalleryStorageSummary {
+  totalPhotos: number
+  publicPhotoCount: number
+  privatePhotoCount: number
+  managedPhotoCount: number
+  legacyPhotoCount: number
+  originalBytes: number
+  derivedBytes: number
+  totalManagedBytes: number
+  warningThresholdBytes: number
+  hardLimitBytes: number
+  warningPhotoCount: number
+  usesR2: boolean
+  warningLevel: 'ok' | 'warning' | 'limit'
+  warningMessages: string[]
 }
 
 export interface EditableProgramItem {

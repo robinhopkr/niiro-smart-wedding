@@ -292,7 +292,7 @@ function sanitizeFileName(input: string): string {
 
 export function buildInvitationPdfFilename(config: WeddingConfig): string {
   const baseName = sanitizeFileName(config.guestCode ?? config.coupleLabel) || 'einladung'
-  return `mywed-einladung-${baseName}.pdf`
+  return `niiro-smart-wedding-einladung-${baseName}.pdf`
 }
 
 export async function createInvitationPdf({
@@ -309,7 +309,7 @@ export async function createInvitationPdf({
   pdfDoc.setAuthor(APP_BRAND_NAME)
   pdfDoc.setCreator(APP_BRAND_NAME)
   pdfDoc.setSubject(`Digitale Hochzeitseinladung für ${config.coupleLabel}`)
-  pdfDoc.setKeywords(['Hochzeit', 'Einladung', 'myWed', config.coupleLabel, config.guestCode ?? ''])
+  pdfDoc.setKeywords(['Hochzeit', 'Einladung', 'NiiRo Smart Wedding', config.coupleLabel, config.guestCode ?? ''])
 
   const page = pdfDoc.addPage([595.28, 841.89])
   drawPageShell(page)
@@ -482,7 +482,7 @@ export async function createInvitationPdf({
   })
 
   const inviteCopy =
-    'Über den folgenden Link gelangen eure Gäste direkt auf den Gästebereich von myWed. Dort können sie zu- oder absagen und alle wichtigen Informationen zur Hochzeit sehen.'
+    'Über den folgenden Link gelangen eure Gäste direkt auf den Gästebereich von NiiRo Smart Wedding. Dort können sie zu- oder absagen und alle wichtigen Informationen zur Hochzeit sehen.'
   const inviteCopyLineHeight = 17
   const inviteCopyLines = wrapText(inviteCopy, sansFont, 11.5, contentWidth - 36)
   const inviteUrlLineHeight = 14
@@ -571,8 +571,8 @@ export async function createInvitationPdf({
     color: rgb(0.353, 0.431, 0.373),
   })
 
-  activePage.drawText('Erstellt mit myWed by NiiRo AI', {
-    x: width - margin - sansFont.widthOfTextAtSize('Erstellt mit myWed by NiiRo AI', 10),
+  activePage.drawText('Erstellt mit NiiRo Smart Wedding', {
+    x: width - margin - sansFont.widthOfTextAtSize('Erstellt mit NiiRo Smart Wedding', 10),
     y: 34,
     size: 10,
     font: sansFont,

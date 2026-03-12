@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { GalleryGrid } from '@/components/gallery/GalleryGrid'
 import { Footer } from '@/components/layout/Footer'
 import { Header } from '@/components/layout/Header'
+import { DownloadLink } from '@/components/ui/DownloadLink'
 import { Section } from '@/components/ui/Section'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import {
@@ -31,8 +32,10 @@ export default async function GalleryPage({ params }: GalleryPageProps) {
         <Header
           brandHref="/demo"
           brandLabel={DEMO_WEDDING_CONFIG.coupleLabel}
-          ctaHref="/admin/login"
-          ctaLabel="Login für Brautpaare"
+          actionLinks={[
+            { href: '/admin/login?role=planner', label: 'Login Wedding Planner', variant: 'secondary' },
+            { href: '/admin/login?role=couple', label: 'Login für Brautpaare', variant: 'primary' },
+          ]}
           navItems={[]}
         />
 
@@ -47,11 +50,11 @@ export default async function GalleryPage({ params }: GalleryPageProps) {
                   'Hier sammeln wir nach und nach die schönsten Erinnerungen an unseren gemeinsamen Tag.'}
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
-                href="/demo"
-              >
+          <div className="flex flex-wrap gap-3">
+            <Link
+              className="inline-flex min-h-11 items-center justify-center rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
+              href="/demo"
+            >
                 Zur Demo-Einladung
               </Link>
             </div>
@@ -87,8 +90,10 @@ export default async function GalleryPage({ params }: GalleryPageProps) {
       <Header
         brandHref={invitationHref}
         brandLabel={config.coupleLabel}
-        ctaHref="/admin/login"
-        ctaLabel="Login für Brautpaare"
+        actionLinks={[
+          { href: '/admin/login?role=planner', label: 'Login Wedding Planner', variant: 'secondary' },
+          { href: '/admin/login?role=couple', label: 'Login für Brautpaare', variant: 'primary' },
+        ]}
         navItems={[]}
       />
 
@@ -108,6 +113,11 @@ export default async function GalleryPage({ params }: GalleryPageProps) {
             >
               Zur Einladung
             </Link>
+            {photos.length ? (
+              <DownloadLink href={`/api/gallery-download/${resolvedParams.guestCode}`}>
+                Öffentliche Fotos herunterladen
+              </DownloadLink>
+            ) : null}
             {photographerHref ? (
               <Link
                 className="inline-flex min-h-11 items-center justify-center rounded-full bg-gold-500 px-5 py-3 text-sm font-semibold text-charcoal-900 shadow-gold transition hover:bg-gold-400"

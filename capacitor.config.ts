@@ -63,7 +63,7 @@ function isLoopbackUrl(value: string): boolean {
 }
 
 function readHostedAppUrl(): string {
-  return 'https://mywed.niiro.ai'
+  return process.env.CAPACITOR_HOSTED_APP_URL?.trim() || 'https://smartwedding.niiro.ai'
 }
 
 function resolveAppBaseUrl(): string {
@@ -101,14 +101,14 @@ const allowNavigationHost = new URL(appBaseUrl).host
 
 if (!process.env.CAPACITOR_SERVER_URL && !process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_SITE_URL) {
   console.warn(
-    '[capacitor] Keine Mobile-URL gefunden. Fallback auf https://mywed.niiro.ai. ' +
+    `[capacitor] Keine Mobile-URL gefunden. Fallback auf ${readHostedAppUrl()}. ` +
       'Setze CAPACITOR_SERVER_URL, falls du eine andere Domain verwenden willst.',
   )
 }
 
 const config: CapacitorConfig = {
-  appId: process.env.CAPACITOR_APP_ID ?? 'com.niiro.mywed',
-  appName: process.env.CAPACITOR_APP_NAME ?? 'myWed by NiiRo AI',
+  appId: process.env.CAPACITOR_APP_ID ?? 'com.niiro.smartwedding',
+  appName: process.env.CAPACITOR_APP_NAME ?? 'NiiRo Smart Wedding',
   webDir: 'mobile-shell',
   bundledWebRuntime: false,
   server: {

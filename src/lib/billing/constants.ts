@@ -11,14 +11,17 @@ export const BILLING_PROMO_PRICE_LABEL = formatBillingPrice(BILLING_PROMO_AMOUNT
 export const BILLING_PROMO_VALID_UNTIL_ISO = '2026-04-30T23:59:59.999+02:00'
 export const BILLING_PROMO_VALID_UNTIL_LABEL = '30.04.2026'
 export const BILLING_PRICE_NOTE = 'einmalig pro Brautpaar inkl. MwSt.'
-export const BILLING_PRODUCT_NAME = 'myWed by NiiRo AI - Brautpaar-Zugang'
+export const BILLING_PRODUCT_NAME = 'NiiRo Smart Wedding - Brautpaar-Zugang'
 export const BILLING_PRODUCT_DESCRIPTION =
   'Einmaliger Zugriff auf den geschützten Brautpaar-Bereich inklusive gesetzlicher MwSt.'
-export const BILLING_STANDARD_PRICE_LOOKUP_KEY = 'mywed-couple-access-one-time-eur'
-export const BILLING_PROMO_PRICE_LOOKUP_KEY = 'mywed-couple-access-promo-eur'
-export const BILLING_STATEMENT_DESCRIPTOR_SUFFIX = 'MYWED'
+export const BILLING_STANDARD_PRICE_LOOKUP_KEY = 'niiro-smart-wedding-couple-access-one-time-eur'
+export const BILLING_PROMO_PRICE_LOOKUP_KEY = 'niiro-smart-wedding-couple-access-promo-eur'
+export const BILLING_STATEMENT_DESCRIPTOR_SUFFIX = 'SMARTWEDDING'
 
-export const DEFAULT_BILLING_BYPASS_EMAILS = ['robin_kolb@yahoo.com'] as const
+export const DEFAULT_BILLING_BYPASS_EMAILS = [
+  'robin_kolb@yahoo.com',
+  'aninaehl@gmail.com',
+] as const
 
 function formatBillingPrice(amountCents: number): string {
   return EURO_CURRENCY_FORMATTER.format(amountCents / 100)

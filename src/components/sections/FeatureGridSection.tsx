@@ -44,7 +44,7 @@ const features = [
 export function FeatureGridSection() {
   return (
     <Section id="funktionen" className="space-y-8">
-      <SectionHeading>Was myWed abdeckt</SectionHeading>
+      <SectionHeading>Was NiiRo Smart Wedding abdeckt</SectionHeading>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {features.map((feature) => (
           <article key={feature.title} className="surface-card px-6 py-6">

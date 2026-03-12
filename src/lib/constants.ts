@@ -5,7 +5,8 @@ const publicSupabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const publicWeddingDate = process.env.NEXT_PUBLIC_WEDDING_DATE
 const publicRsvpDeadline = process.env.NEXT_PUBLIC_RSVP_DEADLINE
 const publicAppUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL
-const canonicalAppUrl = 'https://mywed.niiro.ai'
+const canonicalAppUrl =
+  process.env.NEXT_PUBLIC_CANONICAL_APP_URL?.trim() || 'https://smartwedding.niiro.ai'
 
 function readAppUrl(): string {
   const normalized = publicAppUrl?.trim()
@@ -45,6 +46,11 @@ export const ENV = {
     'NEXT_PUBLIC_SUPABASE_ANON_KEY',
   ),
   serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? null,
+  r2AccountId: process.env.R2_ACCOUNT_ID ?? null,
+  r2AccessKeyId: process.env.R2_ACCESS_KEY_ID ?? null,
+  r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? null,
+  r2Bucket: process.env.R2_BUCKET ?? null,
+  r2PublicBaseUrl: process.env.R2_PUBLIC_BASE_URL ?? null,
   weddingDate: publicWeddingDate ?? '2026-11-03T14:00:00+01:00',
   rsvpDeadline: publicRsvpDeadline ?? '2026-10-01T23:59:59+02:00',
   appUrl: readAppUrl(),
@@ -54,10 +60,24 @@ export const ENV = {
   adminEmail: process.env.ADMIN_EMAIL ?? null,
 } as const
 
-export const APP_BRAND_NAME = 'myWed by NiiRo AI'
-export const APP_SHORT_NAME = 'myWed'
+export const APP_BRAND_NAME = 'NiiRo Smart Wedding'
+export const APP_SHORT_NAME = 'SmartWedding'
 export const APP_DESCRIPTION =
-  'myWed — stilvolle Einladungen, klare Rückmeldungen und eine Fotogalerie an einem Ort.'
+  'NiiRo Smart Wedding — stilvolle Einladungen, klare Rückmeldungen und eine Fotogalerie an einem Ort.'
+
+export const GALLERY_UPLOAD_MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024
+export const GALLERY_STORAGE_WARNING_BYTES = 10 * 1024 * 1024 * 1024
+export const GALLERY_STORAGE_HARD_LIMIT_BYTES = 20 * 1024 * 1024 * 1024
+export const GALLERY_STORAGE_WARNING_PHOTO_COUNT = 1500
+export const GALLERY_UPLOAD_ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+] as const
+export const GALLERY_UPLOAD_SIZE_ESTIMATE_MULTIPLIER = 1.35
 
 export const DEMO_NAV_ITEMS = [
   { href: '#programm', label: 'Programm' },

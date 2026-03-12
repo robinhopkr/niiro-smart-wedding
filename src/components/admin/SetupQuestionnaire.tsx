@@ -36,7 +36,7 @@ import { Input } from '../ui/Input'
 import { Select } from '../ui/Select'
 import { Textarea } from '../ui/Textarea'
 
-const STORAGE_KEY_PREFIX = 'mywed-setup-questionnaire'
+const STORAGE_KEY_PREFIX = 'niiro-smart-wedding-setup-questionnaire'
 const MAX_IMAGE_DIMENSIONS: Record<'cover' | 'couple' | 'section' | 'vendor', number> = {
   cover: 2400,
   couple: 1800,
@@ -615,7 +615,7 @@ export function SetupQuestionnaire({ initialValues, sessionRole }: SetupQuestion
 
   async function handleFinish() {
     const didSave = await persistQuestionnaire(
-      'Der Fragebogen wurde gespeichert und eure myWed-Einladung ist aktualisiert.',
+      'Der Fragebogen wurde gespeichert und eure NiiRo-Smart-Wedding-Einladung ist aktualisiert.',
       true,
     )
 
@@ -647,7 +647,7 @@ export function SetupQuestionnaire({ initialValues, sessionRole }: SetupQuestion
           onChange={(event) => updateValues({ coupleLabel: event.target.value })}
         />
         <Input
-          helperText="Aus diesem Code baut myWed euren personalisierten Einladungslink."
+          helperText="Aus diesem Code baut NiiRo Smart Wedding euren personalisierten Einladungslink."
           label="Gastcode / Link-Code"
           value={values.guestCode}
           onChange={(event) => updateValues({ guestCode: event.target.value.toUpperCase() })}
@@ -876,7 +876,7 @@ export function SetupQuestionnaire({ initialValues, sessionRole }: SetupQuestion
       <div className="space-y-5">
         <QuestionnaireInfo
           title="Programmpunkte"
-          body="Hier fragt euch myWed nach allen Stationen eures Tages. Die Uhrzeiten werden beim Verlassen des Felds automatisch in ein sauberes Format gebracht."
+          body="Hier fragt euch NiiRo Smart Wedding nach allen Stationen eures Tages. Die Uhrzeiten werden beim Verlassen des Felds automatisch in ein sauberes Format gebracht."
           tone="accent"
         />
         {values.programItems.map((item, index) => {
@@ -1369,7 +1369,7 @@ export function SetupQuestionnaire({ initialValues, sessionRole }: SetupQuestion
 
         <QuestionnaireInfo
           title="Was danach schon live für Gäste sichtbar ist"
-          body="Nach dem Speichern aktualisiert myWed direkt eure Einladung mit Namen, Datum, Begrüßung, Design, Titelbild, Paarfotos, Ablauf, Dresscode, FAQ, optionalen Dienstleistern und optionalen Musikwünschen."
+          body="Nach dem Speichern aktualisiert NiiRo Smart Wedding direkt eure Einladung mit Namen, Datum, Begrüßung, Design, Titelbild, Paarfotos, Ablauf, Dresscode, FAQ, optionalen Dienstleistern und optionalen Musikwünschen."
           tone="accent"
         />
         <div className="grid gap-3 lg:grid-cols-2">
@@ -1451,18 +1451,18 @@ export function SetupQuestionnaire({ initialValues, sessionRole }: SetupQuestion
                 <Badge key={label} variant="neutral">{label}</Badge>
               ))}
             </div>
-            <h1 className="font-display text-section text-charcoal-900">Fragebogen zur Einrichtung von myWed</h1>
+            <h1 className="font-display text-card text-charcoal-900 sm:text-section">Fragebogen zur Einrichtung von NiiRo Smart Wedding</h1>
             <p className="text-body-md text-charcoal-600">
               Dieser Assistent führt euch logisch durch alle wichtigen Inhalte und Einstellungen für euren Gästebereich.
-              Ihr könnt jederzeit vor- und zurückgehen, lokal weitermachen und den Stand zusätzlich in myWed zwischenspeichern.
+              Ihr könnt jederzeit vor- und zurückgehen, lokal weitermachen und den Stand zusätzlich in NiiRo Smart Wedding zwischenspeichern.
             </p>
           </div>
           <div className="min-w-[220px] rounded-[1.6rem] border border-gold-200 bg-gold-50 px-5 py-4">
-            <p className="text-sm font-semibold text-charcoal-900">Euer Fortschritt</p>
+            <p className="text-body-md font-semibold text-charcoal-900">Euer Fortschritt</p>
             <div className="mt-3 h-3 overflow-hidden rounded-full bg-white/80">
               <div className="h-full rounded-full bg-gold-500 transition-all" style={{ width: `${progressPercent}%` }} />
             </div>
-            <p className="mt-3 text-sm leading-6 text-charcoal-600">
+            <p className="mt-3 text-body-md text-charcoal-600">
               Bereits gespeicherte Antworten bleiben beim späteren Fortsetzen erhalten.
             </p>
           </div>
@@ -1472,7 +1472,7 @@ export function SetupQuestionnaire({ initialValues, sessionRole }: SetupQuestion
       <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
         <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
           <div className="surface-card px-5 py-5">
-            <p className="text-sm uppercase tracking-[0.18em] text-sage-700">Schrittübersicht</p>
+            <p className="text-eyebrow text-sage-700">Schrittübersicht</p>
             <div className="mt-4 grid gap-3">
               {SETUP_QUESTIONNAIRE_STEPS.map((step, index) => {
                 const isActive = index === currentStep
@@ -1504,8 +1504,8 @@ export function SetupQuestionnaire({ initialValues, sessionRole }: SetupQuestion
                         {isCompleted ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
                       </span>
                       <div className="min-w-0">
-                        <p className="font-semibold text-charcoal-900">{step.label}</p>
-                        <p className="mt-1 text-sm leading-6 text-charcoal-600">{step.title}</p>
+                        <p className="text-body-md font-semibold text-charcoal-900">{step.label}</p>
+                        <p className="mt-1 text-body-md text-charcoal-600">{step.title}</p>
                       </div>
                     </div>
                   </button>
@@ -1523,8 +1523,8 @@ export function SetupQuestionnaire({ initialValues, sessionRole }: SetupQuestion
         <section className="surface-card px-6 py-6 sm:px-8">
           <div className="flex flex-col gap-4 border-b border-cream-200 pb-6 sm:flex-row sm:items-start sm:justify-between">
             <div className="max-w-3xl">
-              <p className="text-sm uppercase tracking-[0.18em] text-gold-700">{currentStepData.label}</p>
-              <h2 className="mt-3 font-display text-section text-charcoal-900">{currentStepData.title}</h2>
+              <p className="text-eyebrow text-gold-700">{currentStepData.label}</p>
+              <h2 className="mt-3 font-display text-card text-charcoal-900 sm:text-section">{currentStepData.title}</h2>
               <p className="mt-3 text-body-md text-charcoal-600">{currentStepData.description}</p>
             </div>
             <Badge variant="neutral">{currentStep + 1}/{SETUP_QUESTIONNAIRE_STEPS.length}</Badge>
@@ -1547,7 +1547,7 @@ export function SetupQuestionnaire({ initialValues, sessionRole }: SetupQuestion
                 loading={isSaving}
                 type="button"
                 variant="secondary"
-                onClick={() => void persistQuestionnaire('Der Fragebogenstand wurde in myWed gespeichert.')}
+                onClick={() => void persistQuestionnaire('Der Fragebogenstand wurde in NiiRo Smart Wedding gespeichert.')}
               >
                 <Save className="h-4 w-4" />
                 Zwischenspeichern

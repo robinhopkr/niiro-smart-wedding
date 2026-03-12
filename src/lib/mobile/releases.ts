@@ -1,6 +1,6 @@
 import { versionFromReleaseTag } from '@/lib/mobile/versioning'
 
-const DEFAULT_RELEASE_REPO = 'robinhopkr/hochzeits-rsvp'
+const DEFAULT_RELEASE_REPO = 'robinhopkr/niiro-smart-wedding'
 const DEFAULT_RELEASE_TAG_PREFIX = 'mobile-v'
 
 interface GitHubReleaseAsset {
@@ -55,7 +55,7 @@ export async function fetchLatestMobileRelease(): Promise<MobileReleaseInfo | nu
     cache: 'no-store',
     headers: {
       Accept: 'application/vnd.github+json',
-      'User-Agent': 'myWed by NiiRo AI',
+      'User-Agent': 'NiiRo Smart Wedding',
     },
   })
 

@@ -20,8 +20,8 @@ function normalizeReturnUrl(value: string | null | undefined): string {
   }
 
   try {
-    const url = new URL(value, 'https://mywed.local')
-    if (url.origin !== 'https://mywed.local' || !url.pathname.startsWith('/')) {
+    const url = new URL(value, 'https://smartwedding.local')
+    if (url.origin !== 'https://smartwedding.local' || !url.pathname.startsWith('/')) {
       return DEFAULT_RETURN_URL
     }
     return `${url.pathname}${url.search}${url.hash}`
@@ -33,8 +33,6 @@ function normalizeReturnUrl(value: string | null | undefined): string {
 interface LoginFormProps {
   role?: 'couple' | 'planner'
   submitLabel?: string
-  secondarySubmitLabel?: string
-  secondaryReturnUrl?: string
   className?: string
   embedded?: boolean
 }
@@ -42,8 +40,6 @@ interface LoginFormProps {
 export function LoginForm({
   role = 'couple',
   submitLabel = 'Anmelden',
-  secondarySubmitLabel,
-  secondaryReturnUrl,
   className,
   embedded = false,
 }: LoginFormProps) {
@@ -69,7 +65,7 @@ export function LoginForm({
     setValue('role', role, { shouldDirty: false, shouldValidate: false })
   }, [role, setValue])
 
-  async function login(values: LoginSchema, returnUrlOverride?: string) {
+  async function login(values: LoginSchema) {
     setErrorMessage(null)
 
     const response = await fetch('/api/admin/login', {
@@ -91,10 +87,7 @@ export function LoginForm({
     }
 
     const serverNextUrl = normalizeReturnUrl(result.data.nextUrl)
-    const returnUrl =
-      returnUrlOverride && serverNextUrl === DEFAULT_RETURN_URL
-        ? normalizeReturnUrl(returnUrlOverride)
-        : normalizeReturnUrl(serverNextUrl || searchParams.get('returnUrl'))
+    const returnUrl = normalizeReturnUrl(serverNextUrl || searchParams.get('returnUrl'))
     startTransition(() => {
       router.replace(returnUrl)
       router.refresh()
@@ -105,21 +98,11 @@ export function LoginForm({
     await login(values)
   })
 
-  function handleSecondarySubmit() {
-    if (!secondaryReturnUrl) {
-      return
-    }
-
-    void handleSubmit(async (values) => {
-      await login(values, secondaryReturnUrl)
-    })()
-  }
-
   return (
     <form
       className={cn(
-        'mx-auto w-full max-w-lg space-y-5 px-6 py-8 sm:px-10',
-        embedded ? 'rounded-[1.5rem] border border-cream-200 bg-cream-50/70 px-5 py-6 sm:px-6' : 'surface-card',
+        'mx-auto w-full max-w-lg space-y-5',
+        embedded ? 'px-0 py-1' : 'surface-card px-6 py-8 sm:px-10',
         className,
       )}
       noValidate
@@ -133,27 +116,9 @@ export function LoginForm({
           {errorMessage}
         </div>
       ) : null}
-      {secondarySubmitLabel && secondaryReturnUrl ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Button className="w-full" loading={isSubmitting} size="lg" type="submit">
-            {submitLabel}
-          </Button>
-          <Button
-            className="w-full"
-            disabled={isSubmitting}
-            size="lg"
-            type="button"
-            variant="secondary"
-            onClick={handleSecondarySubmit}
-          >
-            {secondarySubmitLabel}
-          </Button>
-        </div>
-      ) : (
-        <Button className="w-full" loading={isSubmitting} size="lg" type="submit">
-          {submitLabel}
-        </Button>
-      )}
+      <Button className="w-full sm:w-auto" loading={isSubmitting} size="lg" type="submit">
+        {submitLabel}
+      </Button>
     </form>
   )
 }

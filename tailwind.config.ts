@@ -77,47 +77,47 @@ const config: Config = {
       },
       fontSize: {
         eyebrow: [
-          'clamp(0.74rem, 0.65rem + 0.25vw, 0.84rem)',
+          'clamp(0.76rem, 0.72rem + 0.12vw, 0.82rem)',
           {
             lineHeight: '1.2',
             letterSpacing: '0.22em',
           },
         ],
         'body-md': [
-          'clamp(0.98rem, 0.92rem + 0.18vw, 1.05rem)',
+          'clamp(0.98rem, 0.96rem + 0.08vw, 1.02rem)',
+          {
+            lineHeight: '1.75',
+          },
+        ],
+        'body-lg': [
+          'clamp(1.02rem, 1rem + 0.14vw, 1.08rem)',
           {
             lineHeight: '1.8',
           },
         ],
-        'body-lg': [
-          'clamp(1.02rem, 0.96rem + 0.32vw, 1.15rem)',
-          {
-            lineHeight: '1.85',
-          },
-        ],
         hero: [
-          'clamp(2.65rem, 7vw, 5.2rem)',
+          'clamp(2.5rem, 5.4vw, 4.7rem)',
           {
             lineHeight: '0.98',
             letterSpacing: '-0.04em',
           },
         ],
         section: [
-          'clamp(1.9rem, 4.2vw, 3rem)',
+          'clamp(1.72rem, 3vw, 2.45rem)',
           {
             lineHeight: '1.08',
             letterSpacing: '-0.03em',
           },
         ],
         metric: [
-          'clamp(2rem, 3vw, 2.8rem)',
+          'clamp(1.85rem, 2.6vw, 2.45rem)',
           {
             lineHeight: '1',
             letterSpacing: '-0.03em',
           },
         ],
         card: [
-          'clamp(1.18rem, 1.55vw, 1.42rem)',
+          'clamp(1.1rem, 1.2vw, 1.28rem)',
           {
             lineHeight: '1.2',
           },

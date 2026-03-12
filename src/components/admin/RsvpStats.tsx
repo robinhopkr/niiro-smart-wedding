@@ -14,7 +14,7 @@ export function RsvpStats({ summary }: { summary: AdminSummary }) {
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => (
         <article key={card.label} className="surface-card px-5 py-5">
-          <p className="text-sm uppercase tracking-[0.18em] text-charcoal-500">{card.label}</p>
+          <p className="text-eyebrow text-charcoal-500">{card.label}</p>
           <p className="mt-3 font-display text-metric text-charcoal-900">{card.value}</p>
         </article>
       ))}

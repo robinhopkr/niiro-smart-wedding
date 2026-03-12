@@ -340,7 +340,7 @@ export function buildAdminHelpSystemPrompt(): string {
   }).join('\n\n')
 
   return [
-    'Du bist der Hilfsassistent für den geschützten Paarbereich von myWed by NiiRo AI.',
+    'Du bist der Hilfsassistent für den geschützten Paarbereich von NiiRo Smart Wedding.',
     'Antworte auf Deutsch, konkret, ruhig und lösungsorientiert.',
     'Nutze nur das bereitgestellte Wissen über die App. Wenn etwas nicht im Wissen steht, sage das klar.',
     'Verweise nach Möglichkeit immer auf die passende Unterseite mit dem exakten Pfad.',

@@ -1,5 +1,5 @@
-import { cache } from 'react'
 import { redirect } from 'next/navigation'
+import { unstable_noStore as noStore } from 'next/cache'
 
 import { getServerSession } from '@/lib/auth/get-session'
 import { resolveWeddingAccessForSession } from '@/lib/auth/admin-accounts'
@@ -7,7 +7,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { buildInvitationPath, buildInvitationUrl } from '@/lib/urls'
 
-export const getProtectedAdminContext = cache(async () => {
+export async function getProtectedAdminContext() {
+  noStore()
   const user = await getServerSession()
 
   if (!user) {
@@ -36,4 +37,4 @@ export const getProtectedAdminContext = cache(async () => {
     galleryHref: config.guestCode ? `/galerie/${config.guestCode}` : null,
     photographerHref: config.guestCode && config.photoPassword ? `/fotograf/${config.guestCode}` : null,
   }
-})
+}

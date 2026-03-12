@@ -1,4 +1,4 @@
-package com.niiro.hochzeitsapp;
+package com.niiro.smartwedding;
 
 import com.getcapacitor.BridgeActivity;
 

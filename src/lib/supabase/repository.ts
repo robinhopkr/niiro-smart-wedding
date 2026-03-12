@@ -1,8 +1,21 @@
+import { randomUUID } from 'node:crypto'
+
 import type { PostgrestError } from '@supabase/supabase-js'
 import type { BucketType } from '@supabase/storage-js'
 
-import { DEFAULT_FAQ_ITEMS, DEFAULT_PROGRAM_ITEMS, ENV, MENU_CHOICE_LABELS } from '@/lib/constants'
+import {
+  DEFAULT_FAQ_ITEMS,
+  DEFAULT_PROGRAM_ITEMS,
+  ENV,
+  GALLERY_STORAGE_HARD_LIMIT_BYTES,
+  GALLERY_STORAGE_WARNING_BYTES,
+  GALLERY_STORAGE_WARNING_PHOTO_COUNT,
+  GALLERY_UPLOAD_SIZE_ESTIMATE_MULTIPLIER,
+  MENU_CHOICE_LABELS,
+} from '@/lib/constants'
+import { buildGalleryUploadAssets } from '@/lib/images/gallery-variants'
 import { isProgramIconName } from '@/lib/program-icons'
+import { deleteR2Objects, isR2Configured, resolveR2ObjectUrl, uploadR2Object } from '@/lib/storage/r2'
 import {
   DEFAULT_WEDDING_FONT_PRESET_ID,
   DEFAULT_WEDDING_TEMPLATE_ID,
@@ -27,6 +40,7 @@ import type {
   FaqItem,
   GalleryCollections,
   GalleryPhoto,
+  GalleryStorageSummary,
   GalleryVisibility,
   MusicRequestEntry,
   MusicWishlistData,
@@ -86,6 +100,7 @@ interface DbClient {
         path: string,
         options?: { limit?: number; sortBy?: { column: string; order: 'asc' | 'desc' } },
       ) => Promise<StorageResult<Array<{ name: string; id?: string | null; created_at?: string | null }>>>
+      download: (path: string) => Promise<StorageResult<Blob>>
       move: (
         fromPath: string,
         toPath: string,
@@ -111,7 +126,8 @@ type AppSettingsRow = Database['public']['Tables']['app_einstellungen']['Row']
 type CoupleAccountRow = Database['public']['Tables']['couple_accounts']['Row']
 type PlannerAccountRow = Database['public']['Tables']['planner_accounts']['Row']
 type PlannerWeddingAccessRow = Database['public']['Tables']['planner_wedding_access']['Row']
-const GALLERY_BUCKET = 'hochzeitsfotos'
+type GalleryMediaRow = Database['public']['Tables']['gallery_media']['Row']
+export const GALLERY_BUCKET = 'hochzeitsfotos'
 const APP_SETTINGS_ID = 1
 const CONTENT_ASSET_PREFIX = 'content'
 const PUBLIC_GALLERY_FOLDER = 'public'
@@ -433,6 +449,60 @@ function toStoragePath(path: string): string {
 
 function buildGalleryPublicUrl(path: string): string {
   return `${ENV.supabaseUrl}/storage/v1/object/public/${GALLERY_BUCKET}/${toStoragePath(path)}`
+}
+
+function isGalleryMediaSupported(config: WeddingConfig): config is WeddingConfig & {
+  source: WeddingSource
+  sourceId: string
+} {
+  return config.source !== 'fallback' && Boolean(config.sourceId)
+}
+
+function mapLegacyGalleryPhoto(
+  filePath: string,
+  fileName: string,
+  createdAt: string | null,
+  visibility: GalleryVisibility,
+): GalleryPhoto {
+  return {
+    name: fileName,
+    path: filePath,
+    publicUrl: buildGalleryPublicUrl(filePath),
+    previewUrl: buildGalleryPublicUrl(filePath),
+    createdAt,
+    visibility,
+    storageProvider: 'supabase',
+    originalPath: filePath,
+  }
+}
+
+async function mapGalleryMediaRowToPhoto(row: GalleryMediaRow): Promise<GalleryPhoto> {
+  if (row.storage_provider === 'r2') {
+    const lightboxKey = row.lightbox_key ?? row.preview_key ?? row.original_key
+    const previewKey = row.preview_key ?? row.lightbox_key ?? row.original_key
+
+    return {
+      name: row.file_name,
+      path: row.original_key,
+      publicUrl: await resolveR2ObjectUrl(lightboxKey, {
+        usePublicUrl: row.visibility === 'public',
+      }),
+      previewUrl: await resolveR2ObjectUrl(previewKey, {
+        usePublicUrl: row.visibility === 'public',
+      }),
+      createdAt: row.created_at,
+      visibility: row.visibility,
+      storageProvider: 'r2',
+      originalPath: row.original_key,
+    }
+  }
+
+  return mapLegacyGalleryPhoto(
+    row.original_key,
+    row.file_name,
+    row.created_at,
+    row.visibility,
+  )
 }
 
 function isMissingBucketError(error: unknown): boolean {
@@ -1265,7 +1335,7 @@ function slugifyGuestCodeBase(value: string): string {
     .replace(/^-+|-+$/g, '')
     .slice(0, 24)
 
-  return normalized || 'MYWED'
+  return normalized || 'SMARTWEDDING'
 }
 
 async function isGuestCodeTaken(supabase: DbClient, guestCode: string): Promise<boolean> {
@@ -1315,6 +1385,9 @@ export async function createWeddingForRegistration(
   const splitCouple = splitCoupleLabel(input.coupleLabel)
   const weddingDate = buildDefaultWeddingDate()
   const rsvpDeadline = buildDefaultRsvpDeadline(weddingDate)
+  const welcomeMessage =
+    'Willkommen zu eurer neuen NiiRo-Smart-Wedding-Hochzeit. Ergänzt jetzt Schritt für Schritt eure Details.'
+  const guestCode = input.guestCode.toUpperCase()
 
   const { data: row, error } = (await query(supabase, 'wedding_config')
     .insert({
@@ -1323,14 +1396,52 @@ export async function createWeddingForRegistration(
       wedding_date: weddingDate,
       venue_name: 'Eure Hochzeitslocation',
       venue_address: 'Adresse ergänzt ihr im Paarbereich',
-      welcome_message:
-        'Willkommen zu eurer neuen myWed-Hochzeit. Ergänzt jetzt Schritt für Schritt eure Details.',
+      welcome_message: welcomeMessage,
       rsvp_deadline: rsvpDeadline,
       dress_code: 'Festlich und entspannt. Genaue Hinweise könnt ihr im Paarbereich festlegen.',
       is_active: false,
     })
     .select('*')
     .single()) as QueryResult<Database['public']['Tables']['wedding_config']['Row']>
+
+  if (error && isMissingRelation(error)) {
+    const legacyTexts: AppSettingsTexts = {
+      welcomeMessage,
+      formDesc: welcomeMessage,
+      einladungStory: welcomeMessage,
+      einladungOrt: 'Eure Hochzeitslocation',
+      einladungAdresse: 'Adresse ergänzt ihr im Paarbereich',
+      guestCode,
+      dressCodeNote: 'Festlich und entspannt. Genaue Hinweise könnt ihr im Paarbereich festlegen.',
+      menuoptionen: ['meat', 'fish', 'vegetarian', 'vegan'],
+    }
+    const legacyQuestions: Record<string, Json> = {
+      customQuestions: [],
+      disabledQuestions: [],
+    }
+    const { data: legacyRow, error: legacyError } = (await query(supabase, 'hochzeiten')
+      .insert({
+        user_id: randomUUID(),
+        brautpaar_name: input.coupleLabel,
+        gastcode: guestCode,
+        hochzeitsdatum: weddingDate,
+        rsvp_deadline: rsvpDeadline,
+        fragen: legacyQuestions,
+        texte: legacyTexts,
+      })
+      .select('*')
+      .single()) as QueryResult<Database['public']['Tables']['hochzeiten']['Row']>
+
+    if (legacyError) {
+      throw legacyError
+    }
+
+    if (!legacyRow) {
+      throw new Error('Die Hochzeit konnte nicht angelegt werden.')
+    }
+
+    return mapLegacyConfig(legacyRow)
+  }
 
   if (error) {
     throw error
@@ -1344,9 +1455,8 @@ export async function createWeddingForRegistration(
     await query(supabase, 'wedding_content').upsert(
       buildWeddingContentPayload(row.id, {
         texte: {
-          guestCode: input.guestCode.toUpperCase(),
-          welcomeMessage:
-            'Willkommen zu eurer neuen myWed-Hochzeit. Ergänzt jetzt Schritt für Schritt eure Details.',
+          guestCode,
+          welcomeMessage,
           probe: undefined,
         },
       }),
@@ -1359,9 +1469,8 @@ export async function createWeddingForRegistration(
 
   return applyConfigOverlayToConfig(mapModernConfig(row), {
     texte: {
-      guestCode: input.guestCode.toUpperCase(),
-      welcomeMessage:
-        'Willkommen zu eurer neuen myWed-Hochzeit. Ergänzt jetzt Schritt für Schritt eure Details.',
+      guestCode,
+      welcomeMessage,
     },
   })
 }
@@ -1545,6 +1654,122 @@ export async function getLinkedPlannerForWedding(
   }
 
   return null
+}
+
+async function listGalleryMediaRows(
+  supabase: DbClient,
+  config: WeddingConfig,
+  visibility?: GalleryVisibility,
+): Promise<GalleryMediaRow[]> {
+  if (!isGalleryMediaSupported(config)) {
+    return []
+  }
+
+  let galleryQuery = query(supabase, 'gallery_media')
+    .select('*')
+    .eq('wedding_source', config.source)
+    .eq('wedding_source_id', config.sourceId)
+    .order('created_at', { ascending: false }) as SupabaseQuery
+
+  if (visibility) {
+    galleryQuery = galleryQuery.eq('visibility', visibility)
+  }
+
+  const { data: rowsRaw, error } = (await galleryQuery) as QueryResult<GalleryMediaRow[]>
+  const rows = rowsRaw ?? []
+
+  if (error && !isMissingRelation(error)) {
+    throw error
+  }
+
+  return rows
+}
+
+async function getGalleryMediaRowByOriginalKey(
+  supabase: DbClient,
+  config: WeddingConfig,
+  originalKey: string,
+): Promise<GalleryMediaRow | null> {
+  if (!isGalleryMediaSupported(config)) {
+    return null
+  }
+
+  const { data: rowsRaw, error } = (await query(supabase, 'gallery_media')
+    .select('*')
+    .eq('wedding_source', config.source)
+    .eq('wedding_source_id', config.sourceId)
+    .eq('original_key', originalKey)
+    .limit(1)) as QueryResult<GalleryMediaRow[]>
+  const rows = rowsRaw ?? []
+
+  if (rows.length) {
+    const row = rows[0]
+    if (row) {
+      return row
+    }
+  }
+
+  if (error && !isMissingRelation(error)) {
+    throw error
+  }
+
+  return null
+}
+
+async function createGalleryMediaRow(
+  supabase: DbClient,
+  input: Database['public']['Tables']['gallery_media']['Insert'],
+): Promise<GalleryMediaRow> {
+  const { data: row, error } = (await query(supabase, 'gallery_media')
+    .insert(input)
+    .select('*')
+    .single()) as QueryResult<GalleryMediaRow>
+
+  if (error) {
+    throw error
+  }
+
+  if (!row) {
+    throw new Error('Der Galerieeintrag konnte nicht gespeichert werden.')
+  }
+
+  return row
+}
+
+async function updateGalleryMediaVisibility(
+  supabase: DbClient,
+  galleryMediaId: string,
+  visibility: GalleryVisibility,
+): Promise<GalleryMediaRow> {
+  const { data: row, error } = (await query(supabase, 'gallery_media')
+    .update({
+      visibility,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', galleryMediaId)
+    .select('*')
+    .single()) as QueryResult<GalleryMediaRow>
+
+  if (error) {
+    throw error
+  }
+
+  if (!row) {
+    throw new Error('Der Galerieeintrag konnte nicht aktualisiert werden.')
+  }
+
+  return row
+}
+
+async function deleteGalleryMediaRow(
+  supabase: DbClient,
+  galleryMediaId: string,
+): Promise<void> {
+  const { error } = await query(supabase, 'gallery_media').delete().eq('id', galleryMediaId)
+
+  if (error && !isMissingRelation(error)) {
+    throw error
+  }
 }
 
 function doesCompatibilityRowMatchConfig(config: WeddingConfig, row: AppSettingsRow | null): boolean {
@@ -2634,6 +2859,46 @@ export async function getWeddingConfigByGuestCode(
   return null
 }
 
+export async function listAllManagedWeddingConfigs(supabase: DbClient): Promise<WeddingConfig[]> {
+  const { data: modernRowsRaw, error: modernError } = (await query(supabase, 'wedding_config')
+    .select('*')
+    .order('wedding_date', { ascending: true })) as QueryResult<
+    Database['public']['Tables']['wedding_config']['Row'][]
+  >
+  const modernRows = modernRowsRaw ?? []
+
+  if (modernError && !isMissingRelation(modernError)) {
+    throw modernError
+  }
+
+  const modernConfigs = await Promise.all(
+    modernRows.map(async (row) => {
+      const baseConfig = mapModernConfig(row)
+      const overlayRow = await getConfigOverlayRow(supabase, baseConfig)
+      return applyConfigOverlayToConfig(baseConfig, overlayRow)
+    }),
+  )
+
+  const { data: legacyRowsRaw, error: legacyError } = (await query(supabase, 'hochzeiten')
+    .select('*')
+    .order('hochzeitsdatum', { ascending: true })) as QueryResult<LegacyWeddingRow[]>
+  const legacyRows = legacyRowsRaw ?? []
+
+  if (legacyError && !isMissingRelation(legacyError)) {
+    throw legacyError
+  }
+
+  const legacyConfigs = await Promise.all(
+    legacyRows.map(async (row) => {
+      const baseConfig = mapLegacyConfig(row)
+      const overlayRow = await getConfigOverlayRow(supabase, baseConfig)
+      return applyConfigOverlayToConfig(baseConfig, overlayRow)
+    }),
+  )
+
+  return [...modernConfigs, ...legacyConfigs]
+}
+
 export async function getWeddingEditorValues(
   supabase: DbClient,
   config: WeddingConfig,
@@ -2726,17 +2991,12 @@ async function listGalleryPhotosForPath(
         if (!retry.error) {
           return (retry.data ?? [])
             .filter((file) => file.id)
-            .map((file) => {
-              const filePath = `${path}/${file.name}`
-
-              return {
-                name: file.name,
-                path: filePath,
-                publicUrl: buildGalleryPublicUrl(filePath),
-                createdAt: file.created_at ?? null,
-                visibility,
-              }
-            })
+            .map((file) => mapLegacyGalleryPhoto(
+              `${path}/${file.name}`,
+              file.name,
+              file.created_at ?? null,
+              visibility,
+            ))
         }
       }
 
@@ -2753,17 +3013,12 @@ async function listGalleryPhotosForPath(
 
   return (data ?? [])
     .filter((file) => file.id)
-    .map((file) => {
-      const filePath = `${path}/${file.name}`
-
-      return {
-        name: file.name,
-        path: filePath,
-        publicUrl: buildGalleryPublicUrl(filePath),
-        createdAt: file.created_at ?? null,
-        visibility,
-      }
-    })
+    .map((file) => mapLegacyGalleryPhoto(
+      `${path}/${file.name}`,
+      file.name,
+      file.created_at ?? null,
+      visibility,
+    ))
 }
 
 export async function getGalleryCollections(
@@ -2777,15 +3032,115 @@ export async function getGalleryCollections(
     }
   }
 
-  const [legacyPublicPhotos, publicFolderPhotos, privateFolderPhotos] = await Promise.all([
+  const [galleryMediaPublicRows, galleryMediaPrivateRows, legacyPublicPhotos, publicFolderPhotos, privateFolderPhotos] = await Promise.all([
+    listGalleryMediaRows(supabase, config, 'public'),
+    listGalleryMediaRows(supabase, config, 'private'),
+    listGalleryPhotosForPath(supabase, config.sourceId, 'public'),
+    listGalleryPhotosForPath(supabase, `${config.sourceId}/${PUBLIC_GALLERY_FOLDER}`, 'public'),
+    listGalleryPhotosForPath(supabase, `${config.sourceId}/${PRIVATE_GALLERY_FOLDER}`, 'private'),
+  ])
+  const [galleryMediaPublicPhotos, galleryMediaPrivatePhotos] = await Promise.all([
+    Promise.all(galleryMediaPublicRows.map((row) => mapGalleryMediaRowToPhoto(row))),
+    Promise.all(galleryMediaPrivateRows.map((row) => mapGalleryMediaRowToPhoto(row))),
+  ])
+
+  return {
+    publicPhotos: sortGalleryPhotos([
+      ...galleryMediaPublicPhotos,
+      ...legacyPublicPhotos,
+      ...publicFolderPhotos,
+    ]),
+    privatePhotos: sortGalleryPhotos([...galleryMediaPrivatePhotos, ...privateFolderPhotos]),
+  }
+}
+
+export async function getGalleryStorageSummary(
+  supabase: DbClient,
+  config: WeddingConfig,
+): Promise<GalleryStorageSummary> {
+  if (!config.sourceId || !supabase.storage) {
+    return {
+      totalPhotos: 0,
+      publicPhotoCount: 0,
+      privatePhotoCount: 0,
+      managedPhotoCount: 0,
+      legacyPhotoCount: 0,
+      originalBytes: 0,
+      derivedBytes: 0,
+      totalManagedBytes: 0,
+      warningThresholdBytes: GALLERY_STORAGE_WARNING_BYTES,
+      hardLimitBytes: GALLERY_STORAGE_HARD_LIMIT_BYTES,
+      warningPhotoCount: GALLERY_STORAGE_WARNING_PHOTO_COUNT,
+      usesR2: isR2Configured(),
+      warningLevel: 'ok',
+      warningMessages: [],
+    }
+  }
+
+  const [galleryMediaPublicRows, galleryMediaPrivateRows, legacyPublicPhotos, publicFolderPhotos, privateFolderPhotos] = await Promise.all([
+    listGalleryMediaRows(supabase, config, 'public'),
+    listGalleryMediaRows(supabase, config, 'private'),
     listGalleryPhotosForPath(supabase, config.sourceId, 'public'),
     listGalleryPhotosForPath(supabase, `${config.sourceId}/${PUBLIC_GALLERY_FOLDER}`, 'public'),
     listGalleryPhotosForPath(supabase, `${config.sourceId}/${PRIVATE_GALLERY_FOLDER}`, 'private'),
   ])
 
+  const galleryMediaRows = [...galleryMediaPublicRows, ...galleryMediaPrivateRows]
+  const publicPhotoCount =
+    galleryMediaPublicRows.length + legacyPublicPhotos.length + publicFolderPhotos.length
+  const privatePhotoCount = galleryMediaPrivateRows.length + privateFolderPhotos.length
+  const totalPhotos = publicPhotoCount + privatePhotoCount
+  const managedPhotoCount = galleryMediaRows.length
+  const legacyPhotoCount = Math.max(0, totalPhotos - managedPhotoCount)
+  const originalBytes = galleryMediaRows.reduce((sum, row) => sum + Number(row.original_bytes ?? 0), 0)
+  const derivedBytes = galleryMediaRows.reduce(
+    (sum, row) => sum + Number(row.preview_bytes ?? 0) + Number(row.lightbox_bytes ?? 0),
+    0,
+  )
+  const totalManagedBytes = originalBytes + derivedBytes
+  const warningMessages: string[] = []
+  let warningLevel: GalleryStorageSummary['warningLevel'] = 'ok'
+
+  if (totalManagedBytes >= GALLERY_STORAGE_HARD_LIMIT_BYTES) {
+    warningLevel = 'limit'
+    warningMessages.push(
+      'Das Galerie-Limit dieser Hochzeit ist erreicht. Bitte löscht Bilder oder ladet keine weiteren Originale hoch.',
+    )
+  } else if (totalManagedBytes >= GALLERY_STORAGE_WARNING_BYTES) {
+    warningLevel = 'warning'
+    warningMessages.push(
+      'Die Galerie nähert sich 10 GB verwaltetem Speicher. Plant Löschungen oder einen Komplettdownload ein.',
+    )
+  }
+
+  if (totalPhotos >= GALLERY_STORAGE_WARNING_PHOTO_COUNT) {
+    warningLevel = warningLevel === 'limit' ? 'limit' : 'warning'
+    warningMessages.push(
+      `Die Galerie enthält bereits ${totalPhotos} Fotos. Ab etwa ${GALLERY_STORAGE_WARNING_PHOTO_COUNT} Bildern wird die Pflege deutlich aufwendiger.`,
+    )
+  }
+
+  if (legacyPhotoCount > 0) {
+    warningMessages.push(
+      `${legacyPhotoCount} ältere Fotos liegen noch im bisherigen Speicherpfad und sind in der Byte-Auswertung nicht vollständig enthalten.`,
+    )
+  }
+
   return {
-    publicPhotos: sortGalleryPhotos([...legacyPublicPhotos, ...publicFolderPhotos]),
-    privatePhotos: sortGalleryPhotos(privateFolderPhotos),
+    totalPhotos,
+    publicPhotoCount,
+    privatePhotoCount,
+    managedPhotoCount,
+    legacyPhotoCount,
+    originalBytes,
+    derivedBytes,
+    totalManagedBytes,
+    warningThresholdBytes: GALLERY_STORAGE_WARNING_BYTES,
+    hardLimitBytes: GALLERY_STORAGE_HARD_LIMIT_BYTES,
+    warningPhotoCount: GALLERY_STORAGE_WARNING_PHOTO_COUNT,
+    usesR2: managedPhotoCount > 0 || isR2Configured(),
+    warningLevel,
+    warningMessages,
   }
 }
 
@@ -2814,6 +3169,71 @@ export async function uploadGalleryFiles(
 ): Promise<void> {
   if (!config.sourceId || !supabase.storage) {
     throw new Error('Die Galerie ist aktuell nicht verfügbar.')
+  }
+
+  const currentStorageSummary = await getGalleryStorageSummary(supabase, config)
+  const projectedAdditionalBytes = files.reduce(
+    (sum, file) => sum + Math.ceil(file.body.byteLength * GALLERY_UPLOAD_SIZE_ESTIMATE_MULTIPLIER),
+    0,
+  )
+
+  if (currentStorageSummary.totalManagedBytes + projectedAdditionalBytes > GALLERY_STORAGE_HARD_LIMIT_BYTES) {
+    throw new Error(
+      'Dieser Upload würde das Galerie-Limit von 20 GB überschreiten. Bitte löscht zunächst Bilder oder verteilt den Upload auf weniger Originaldateien.',
+    )
+  }
+
+  if (isGalleryMediaSupported(config) && isR2Configured()) {
+    for (const file of files) {
+      const assets = await buildGalleryUploadAssets({
+        config,
+        visibility,
+        fileName: file.name,
+        contentType: file.contentType,
+        body: file.body,
+      })
+
+      await uploadR2Object({
+        key: assets.original.key,
+        body: assets.original.body,
+        contentType: assets.original.contentType,
+        cacheControl: 'private, max-age=0, no-store',
+      })
+      await uploadR2Object({
+        key: assets.preview.key,
+        body: assets.preview.body,
+        contentType: assets.preview.contentType,
+        cacheControl: 'public, max-age=31536000, immutable',
+      })
+      await uploadR2Object({
+        key: assets.lightbox.key,
+        body: assets.lightbox.body,
+        contentType: assets.lightbox.contentType,
+        cacheControl: 'public, max-age=31536000, immutable',
+      })
+
+      await createGalleryMediaRow(supabase, {
+        wedding_source: config.source,
+        wedding_source_id: config.sourceId,
+        visibility,
+        storage_provider: 'r2',
+        file_name: file.name,
+        original_key: assets.original.key,
+        preview_key: assets.preview.key,
+        lightbox_key: assets.lightbox.key,
+        original_content_type: assets.original.contentType,
+        preview_content_type: assets.preview.contentType,
+        lightbox_content_type: assets.lightbox.contentType,
+        width: assets.width,
+        height: assets.height,
+        original_bytes: assets.original.sizeBytes,
+        preview_bytes: assets.preview.sizeBytes,
+        lightbox_bytes: assets.lightbox.sizeBytes,
+        uploaded_by: 'photographer',
+      })
+    }
+
+    return
   }
 
   const targetFolder =
@@ -2850,6 +3270,36 @@ export async function uploadGalleryFiles(
       }
     }
   }
+}
+
+export async function downloadGalleryPhotoBlob(
+  supabase: DbClient,
+  config: WeddingConfig,
+  path: string,
+): Promise<Blob> {
+  if (!config.sourceId || !supabase.storage) {
+    throw new Error('Die Galerie ist aktuell nicht verfügbar.')
+  }
+
+  if (!path.startsWith(`${config.sourceId}/`)) {
+    throw new Error('Ungültiger Dateipfad.')
+  }
+
+  const { data, error } = await supabase.storage.from(GALLERY_BUCKET).download(path)
+
+  if (error) {
+    if (isMissingBucketError(error)) {
+      throw new Error('Die Fotogalerie ist noch nicht eingerichtet.')
+    }
+
+    throw error
+  }
+
+  if (!data) {
+    throw new Error('Das Foto konnte nicht geladen werden.')
+  }
+
+  return data
 }
 
 export async function uploadContentImageFile(
@@ -2911,6 +3361,31 @@ export async function deleteGalleryPhoto(
     throw new Error('Die Galerie ist aktuell nicht verfügbar.')
   }
 
+  const galleryMedia = await getGalleryMediaRowByOriginalKey(supabase, config, path)
+
+  if (galleryMedia) {
+    if (galleryMedia.storage_provider === 'r2') {
+      await deleteR2Objects(
+        [galleryMedia.original_key, galleryMedia.preview_key, galleryMedia.lightbox_key].filter(
+          (key): key is string => Boolean(key),
+        ),
+      )
+    } else {
+      const { error } = await supabase.storage.from(GALLERY_BUCKET).remove([galleryMedia.original_key])
+
+      if (error) {
+        if (isMissingBucketError(error)) {
+          throw new Error('Die Fotogalerie ist noch nicht eingerichtet.')
+        }
+
+        throw error
+      }
+    }
+
+    await deleteGalleryMediaRow(supabase, galleryMedia.id)
+    return
+  }
+
   if (!path.startsWith(`${config.sourceId}/`)) {
     throw new Error('Ungültiger Dateipfad.')
   }
@@ -2934,6 +3409,17 @@ export async function moveGalleryPhoto(
 ): Promise<GalleryPhoto> {
   if (!config.sourceId || !supabase.storage) {
     throw new Error('Die Galerie ist aktuell nicht verfügbar.')
+  }
+
+  const galleryMedia = await getGalleryMediaRowByOriginalKey(supabase, config, path)
+
+  if (galleryMedia) {
+    if (galleryMedia.visibility === targetVisibility) {
+      throw new Error('Das Foto liegt bereits in diesem Bereich.')
+    }
+
+    const updatedRow = await updateGalleryMediaVisibility(supabase, galleryMedia.id, targetVisibility)
+    return mapGalleryMediaRowToPhoto(updatedRow)
   }
 
   const currentVisibility = getGalleryVisibilityForPath(config, path)
@@ -2977,8 +3463,11 @@ export async function moveGalleryPhoto(
     name: destinationPath.split('/').at(-1) ?? fileName,
     path: destinationPath,
     publicUrl: buildGalleryPublicUrl(destinationPath),
+    previewUrl: buildGalleryPublicUrl(destinationPath),
     createdAt: new Date().toISOString(),
     visibility: targetVisibility,
+    storageProvider: 'supabase',
+    originalPath: destinationPath,
   }
 }
 

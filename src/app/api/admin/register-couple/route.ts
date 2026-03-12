@@ -33,7 +33,7 @@ export async function POST(
     const response = NextResponse.json<ApiResponse<CoupleRegistrationResponse>>({
       success: true,
       data: {
-        nextUrl: '/admin/kauf',
+        nextUrl: result.nextUrl,
         registered: true,
       },
       message: 'Euer Brautpaar-Konto wurde angelegt.',

@@ -9,7 +9,12 @@ import { Section } from '@/components/ui/Section'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { getPhotoSessionFromCookieStore } from '@/lib/auth/photo-session'
 import { createClient } from '@/lib/supabase/server'
-import { getGalleryCollections, getWeddingConfigByGuestCode } from '@/lib/supabase/repository'
+import {
+  getGalleryCollections,
+  getGalleryStorageSummary,
+  getWeddingConfigByGuestCode,
+} from '@/lib/supabase/repository'
+import { getWeddingGalleryExpiredMessage, isWeddingRetentionExpired } from '@/lib/wedding-lifecycle'
 
 interface PhotographerPageProps {
   params: Promise<{
@@ -28,7 +33,11 @@ export default async function PhotographerPage({ params }: PhotographerPageProps
 
   const cookieStore = await cookies()
   const session = getPhotoSessionFromCookieStore(cookieStore, config.sourceId)
-  const galleryCollections = await getGalleryCollections(supabase, config)
+  const [galleryCollections, storageSummary] = await Promise.all([
+    getGalleryCollections(supabase, config),
+    getGalleryStorageSummary(supabase, config),
+  ])
+  const isExpired = isWeddingRetentionExpired(config.weddingDate)
 
   return (
     <main className="min-h-screen bg-cream-50">
@@ -48,12 +57,18 @@ export default async function PhotographerPage({ params }: PhotographerPageProps
           </p>
         </div>
 
-        {session ? (
+        {isExpired ? (
+          <div className="surface-card mx-auto max-w-2xl px-6 py-8 text-center">
+            <h2 className="font-display text-card text-charcoal-900">Galerie archiviert</h2>
+            <p className="mt-3 text-charcoal-600">{getWeddingGalleryExpiredMessage()}</p>
+          </div>
+        ) : session ? (
           <PhotographerPanel
             coupleLabel={config.coupleLabel}
             guestCode={resolvedParams.guestCode}
             galleryCollections={galleryCollections}
             publicGalleryHref={`/galerie/${resolvedParams.guestCode}`}
+            storageSummary={storageSummary}
             sharePrivateWithGuests={config.sharePrivateGalleryWithGuests}
           />
         ) : config.photoPassword ? (

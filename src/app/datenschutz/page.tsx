@@ -4,14 +4,14 @@ import { LegalPageLayout } from '@/components/legal/LegalPageLayout'
 import { LEGAL } from '@/lib/legal'
 
 export const metadata: Metadata = {
-  title: 'Datenschutz | myWed by NiiRo AI',
+  title: 'Datenschutz | NiiRo Smart Wedding',
 }
 
 export default function DatenschutzPage() {
   return (
     <LegalPageLayout
       title="Datenschutzerklärung"
-      intro="Hinweise zur Verarbeitung personenbezogener Daten bei der Nutzung von myWed by NiiRo AI."
+      intro="Hinweise zur Verarbeitung personenbezogener Daten bei der Nutzung von NiiRo Smart Wedding."
     >
       <h2>1. Verantwortlicher</h2>
       <p>{LEGAL.companyName}</p>
@@ -21,7 +21,7 @@ export default function DatenschutzPage() {
 
       <h2>2. Welche Daten verarbeitet werden</h2>
       <p>
-        Beim Besuch und bei der Nutzung von myWed können insbesondere folgende Daten verarbeitet werden:
+        Beim Besuch und bei der Nutzung von NiiRo Smart Wedding können insbesondere folgende Daten verarbeitet werden:
       </p>
       <ul>
         <li>technische Zugriffsdaten und Server-Logs</li>
@@ -48,7 +48,7 @@ export default function DatenschutzPage() {
 
       <h2>5. Cookies und lokale Speicherung</h2>
       <p>
-        myWed verwendet nach aktuellem Stand keine Marketing- oder Tracking-Cookies. Eingesetzt werden
+        NiiRo Smart Wedding verwendet nach aktuellem Stand keine Marketing- oder Tracking-Cookies. Eingesetzt werden
         nur technisch notwendige Speicherungen, etwa für Logins, App-Funktionalität und lokale
         Zwischenspeicherungen.
       </p>

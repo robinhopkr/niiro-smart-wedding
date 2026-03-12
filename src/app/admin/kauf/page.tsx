@@ -98,7 +98,7 @@ export default async function PurchasePage({ searchParams }: PurchasePageProps) 
   return (
     <Section className="space-y-8">
       <div className="mx-auto max-w-3xl text-center">
-        <SectionHeading as="h1">myWed freischalten</SectionHeading>
+        <SectionHeading as="h1">NiiRo Smart Wedding freischalten</SectionHeading>
         <p className="mt-4 text-charcoal-600">
           Der Gästebereich bleibt kostenlos. Für euren geschützten Paarbereich wird die Hochzeit einmalig per Stripe freigeschaltet.
         </p>

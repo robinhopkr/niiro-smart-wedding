@@ -2,6 +2,9 @@ name: Mobile iOS
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'mobile-v*'
 
 permissions:
   contents: write
@@ -23,9 +26,35 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Derive iOS version metadata
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          if [[ "$TAG_NAME" == mobile-v* ]]; then
+            VERSION_NAME="${TAG_NAME#mobile-v}"
+          else
+            VERSION_NAME="1.0.0"
+          fi
+          BUILD_NUMBER=$(( GITHUB_RUN_NUMBER * 10 + GITHUB_RUN_ATTEMPT ))
+          echo "IOS_VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+          echo "IOS_BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
+
+      - name: Resolve iOS export method
+        env:
+          IOS_EXPORT_METHOD: ${{ vars.IOS_EXPORT_METHOD }}
+          GITHUB_REF: ${{ github.ref }}
+        run: |
+          DEFAULT_EXPORT_METHOD="ad-hoc"
+          if [[ "$GITHUB_REF" == refs/tags/mobile-v* ]]; then
+            DEFAULT_EXPORT_METHOD="app-store"
+          fi
+          echo "IOS_EXPORT_METHOD_RESOLVED=${IOS_EXPORT_METHOD:-$DEFAULT_EXPORT_METHOD}" >> "$GITHUB_ENV"
+
       - name: Sync Capacitor assets
         env:
-          CAPACITOR_SERVER_URL: https://mywed.niiro.ai
+          CAPACITOR_SERVER_URL: ${{ vars.CAPACITOR_SERVER_URL || 'https://smartwedding.niiro.ai' }}
         run: npm run mobile:sync
 
       - name: Fail fast if iOS signing secrets are missing
@@ -65,16 +94,15 @@ jobs:
 
       - name: Create export options
         env:
-          IOS_EXPORT_METHOD: ${{ vars.IOS_EXPORT_METHOD }}
+          IOS_EXPORT_METHOD_RESOLVED: ${{ env.IOS_EXPORT_METHOD_RESOLVED }}
         run: |
-          EXPORT_METHOD="${IOS_EXPORT_METHOD:-ad-hoc}"
           cat <<EOF > ios/App/ExportOptions.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
             <key>method</key>
-            <string>${EXPORT_METHOD}</string>
+            <string>${IOS_EXPORT_METHOD_RESOLVED}</string>
             <key>signingStyle</key>
             <string>automatic</string>
             <key>stripSwiftSymbols</key>
@@ -86,15 +114,18 @@ jobs:
           EOF
 
       - name: Build and export IPA
+        env:
+          IOS_VERSION_NAME: ${{ env.IOS_VERSION_NAME }}
+          IOS_BUILD_NUMBER: ${{ env.IOS_BUILD_NUMBER }}
         run: |
           cd ios/App
-          xcodebuild -project App.xcodeproj -scheme App -configuration Release -destination generic/platform=iOS -archivePath build/App.xcarchive clean archive
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release -destination generic/platform=iOS -archivePath build/App.xcarchive MARKETING_VERSION="$IOS_VERSION_NAME" CURRENT_PROJECT_VERSION="$IOS_BUILD_NUMBER" clean archive
           xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build/export -exportOptionsPlist ExportOptions.plist
 
       - name: Upload iOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: niiro-hochzeitsapp-ios
+          name: niiro-smart-wedding-ios
           path: |
             ios/App/build/App.xcarchive
             ios/App/build/export/*.ipa
@@ -107,4 +138,30 @@ jobs:
         run: |
           IPA_FILE=$(find ios/App/build/export -name "*.ipa" | head -n 1)
           gh release view "$TAG_NAME" >/dev/null 2>&1 || gh release create "$TAG_NAME" --generate-notes --title "$TAG_NAME"
-          gh release upload "$TAG_NAME" "$IPA_FILE#niiro-hochzeitsapp.ipa" --clobber
+          gh release upload "$TAG_NAME" "$IPA_FILE#niiro-smart-wedding.ipa" --clobber
+
+      - name: Validate App Store Connect upload config
+        if: env.IOS_EXPORT_METHOD_RESOLVED == 'app-store'
+        env:
+          APP_STORE_CONNECT_USERNAME: ${{ secrets.APP_STORE_CONNECT_USERNAME }}
+          APP_STORE_CONNECT_APP_SPECIFIC_PASSWORD: ${{ secrets.APP_STORE_CONNECT_APP_SPECIFIC_PASSWORD }}
+        run: |
+          missing=0
+          for secret_name in APP_STORE_CONNECT_USERNAME APP_STORE_CONNECT_APP_SPECIFIC_PASSWORD; do
+            if [ -z "${!secret_name}" ]; then
+              echo "::error title=Missing App Store Connect upload secret::$secret_name is required for App Store / TestFlight uploads."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Upload IPA to App Store Connect
+        if: env.IOS_EXPORT_METHOD_RESOLVED == 'app-store'
+        env:
+          APP_STORE_CONNECT_USERNAME: ${{ secrets.APP_STORE_CONNECT_USERNAME }}
+          APP_STORE_CONNECT_APP_SPECIFIC_PASSWORD: ${{ secrets.APP_STORE_CONNECT_APP_SPECIFIC_PASSWORD }}
+        run: |
+          IPA_FILE=$(find ios/App/build/export -name "*.ipa" | head -n 1)
+          xcrun altool --upload-app --type ios --file "$IPA_FILE" --username "$APP_STORE_CONNECT_USERNAME" --password "$APP_STORE_CONNECT_APP_SPECIFIC_PASSWORD"

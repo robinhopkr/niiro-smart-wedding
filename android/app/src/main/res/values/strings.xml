@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">myWed by NiiRo AI</string>
-    <string name="title_activity_main">myWed by NiiRo AI</string>
-    <string name="package_name">com.niiro.hochzeitsapp</string>
-    <string name="custom_url_scheme">com.niiro.hochzeitsapp</string>
+    <string name="app_name">NiiRo Smart Wedding</string>
+    <string name="title_activity_main">NiiRo Smart Wedding</string>
+    <string name="package_name">com.niiro.smartwedding</string>
+    <string name="custom_url_scheme">com.niiro.smartwedding</string>
 </resources>

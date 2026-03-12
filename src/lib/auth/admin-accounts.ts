@@ -29,6 +29,7 @@ import {
   type CoupleAccount,
   type PlannerAccount,
 } from '@/lib/supabase/repository'
+import { getWeddingRetentionExpiredMessage, isWeddingRetentionExpired } from '@/lib/wedding-lifecycle'
 import type { PlannerWeddingSummary, WeddingConfig, WeddingSource } from '@/types/wedding'
 
 function getRequiredAdminClient() {
@@ -76,7 +77,8 @@ function isLegacyCoupleLogin(input: {
     return false
   }
 
-  return normalizeEmail(input.email) === configuredEmail && input.password === configuredPassword
+  const normalizedEmail = normalizeEmail(input.email)
+  return normalizedEmail === configuredEmail && input.password === configuredPassword
 }
 
 async function buildLegacyCoupleSession(
@@ -131,6 +133,10 @@ export async function resolveWeddingAccessForSession(
     throw new Error('Die ausgewählte Hochzeit konnte nicht mehr geladen werden.')
   }
 
+  if (session.role === 'couple' && isWeddingRetentionExpired(config.weddingDate)) {
+    throw new Error(getWeddingRetentionExpiredMessage())
+  }
+
   const coupleAccount = await getCoupleAccountByWeddingRef(
     supabase,
     session.weddingSource,
@@ -154,6 +160,7 @@ export async function registerCoupleAdmin(input: {
   email: string
   password: string
 }): Promise<{
+  nextUrl: string
   session: AdminSession
   sessionToken: string
 }> {
@@ -177,7 +184,7 @@ export async function registerCoupleAdmin(input: {
   }
 
   if (wedding.source === 'fallback') {
-    throw new Error('Die Hochzeit konnte nicht als bearbeitbare myWed-Hochzeit angelegt werden.')
+    throw new Error('Die Hochzeit konnte nicht als bearbeitbare NiiRo-Smart-Wedding-Hochzeit angelegt werden.')
   }
 
   const account = await createCoupleAccount(supabase, {
@@ -194,7 +201,13 @@ export async function registerCoupleAdmin(input: {
     throw new Error('Die Sitzung konnte nicht erstellt werden.')
   }
 
-  return { session, sessionToken }
+  const billingAccess = await getBillingAccessState(supabase, wedding, input.email)
+
+  return {
+    nextUrl: billingAccess.requiresPayment ? '/admin/kauf' : '/admin/uebersicht',
+    session,
+    sessionToken,
+  }
 }
 
 export async function registerPlannerAdmin(input: {
@@ -284,6 +297,10 @@ export async function loginAdminAccount(input: {
 
     if (!config) {
       throw new Error('Die zugehörige Hochzeit konnte nicht geladen werden.')
+    }
+
+    if (isWeddingRetentionExpired(config.weddingDate)) {
+      throw new Error(getWeddingRetentionExpiredMessage())
     }
 
     const billingAccess = await getBillingAccessState(supabase, config, account.email)
@@ -396,7 +413,7 @@ export async function selectPlannerWedding(
   const billingAccess = await getBillingAccessState(supabase, config, coupleAccount?.email ?? null)
 
   if (billingAccess.requiresPayment) {
-    throw new Error('Dieses Brautpaar hat myWed noch nicht freigeschaltet.')
+    throw new Error('Dieses Brautpaar hat NiiRo Smart Wedding noch nicht freigeschaltet.')
   }
 
   const nextSession = withSelectedWedding(session, input.weddingSource, input.weddingSourceId)

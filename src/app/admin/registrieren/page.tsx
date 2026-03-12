@@ -34,10 +34,10 @@ export default async function AdminRegistrationPage({
   return (
     <Section className="space-y-8">
       <div className="mx-auto max-w-3xl text-center">
-        <SectionHeading as="h1">Konto für myWed erstellen</SectionHeading>
+        <SectionHeading as="h1">Konto für NiiRo Smart Wedding erstellen</SectionHeading>
         <p className="mt-4 text-charcoal-600">
           Brautpaare registrieren ihre Hochzeit selbst. Wedding Planner erhalten eine eigene Kundennummer
-          und sehen später alle freigegebenen Brautpaare in einer Auswahl.
+          und sehen später kostenlos alle freigegebenen Brautpaare in einer Auswahl.
         </p>
         <p className="mt-2 text-sm text-charcoal-600">
           Der Paarbereich kostet regulär {pricing.standardPriceLabel} inkl. MwSt.
@@ -66,7 +66,7 @@ export default async function AdminRegistrationPage({
             <p className="text-sm uppercase tracking-[0.18em] text-sage-700">Wedding Planner</p>
             <h2 className="font-display text-card text-charcoal-900">Planner-Konto erstellen</h2>
             <p className="text-charcoal-600">
-              Ihr erhaltet eine Kundennummer. Diese gibt das Brautpaar bei sich ein, damit die Hochzeit in eurer Auswahl erscheint.
+              Die Registrierung ist kostenlos. Ihr erhaltet eine Kundennummer. Diese gibt das Brautpaar bei sich ein, damit die Hochzeit in eurer Auswahl erscheint.
             </p>
           </div>
           <div className="mt-6">

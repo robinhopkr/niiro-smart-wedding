@@ -168,7 +168,7 @@ export function WeddingDesignSection({
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h4 className="font-display text-card text-charcoal-900">10 myWed-Templates</h4>
+            <h4 className="font-display text-card text-charcoal-900">10 NiiRo-Smart-Wedding-Templates</h4>
             <p className="text-body-md text-charcoal-600">
               Von klassisch-elegant bis editorial-modern, immer passend für Hochzeiten.
             </p>

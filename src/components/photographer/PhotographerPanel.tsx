@@ -8,9 +8,15 @@ import { startTransition, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/Badge'
+import { formatFileSize } from '@/lib/utils/files'
 import { formatGermanDateTime } from '@/lib/utils/date'
 import type { ApiResponse } from '@/types/api'
-import type { GalleryCollections, GalleryPhoto, GalleryVisibility } from '@/types/wedding'
+import type {
+  GalleryCollections,
+  GalleryPhoto,
+  GalleryStorageSummary,
+  GalleryVisibility,
+} from '@/types/wedding'
 
 import { Button } from '../ui/Button'
 import { ExternalLink } from '../ui/ExternalLink'
@@ -20,6 +26,7 @@ interface PhotographerPanelProps {
   coupleLabel: string
   publicGalleryHref: string
   galleryCollections: GalleryCollections
+  storageSummary: GalleryStorageSummary
   sharePrivateWithGuests: boolean
 }
 
@@ -28,6 +35,7 @@ export function PhotographerPanel({
   coupleLabel,
   publicGalleryHref,
   galleryCollections,
+  storageSummary,
   sharePrivateWithGuests,
 }: PhotographerPanelProps) {
   const router = useRouter()
@@ -149,7 +157,7 @@ export function PhotographerPanel({
                       alt={photo.name}
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                      src={photo.publicUrl}
+                      src={photo.previewUrl ?? photo.publicUrl}
                       unoptimized
                     />
                   </div>
@@ -233,7 +241,7 @@ export function PhotographerPanel({
             </Button>
           </div>
           <p className="mt-4 text-sm text-charcoal-500">
-            Unterstützt werden Bilddateien bis 50 MB. Öffentliche Uploads sehen alle Gäste sofort in der
+            Unterstützt werden Bilddateien bis 15 MB. Öffentliche Uploads sehen alle Gäste sofort in der
             Galerie. Private Uploads landen nur im Paarbereich, außer das Brautpaar gibt sie explizit frei.
           </p>
         </article>
@@ -260,6 +268,25 @@ export function PhotographerPanel({
           <div className="mt-5 flex flex-wrap gap-2">
             <Badge variant="neutral">{galleryCollections.publicPhotos.length} öffentlich</Badge>
             <Badge variant="neutral">{galleryCollections.privatePhotos.length} privat</Badge>
+            <Badge variant="neutral">{formatFileSize(storageSummary.totalManagedBytes)} verwaltet</Badge>
+          </div>
+          <div className="mt-5 rounded-[1.35rem] bg-cream-50 px-4 py-4 text-body-md text-charcoal-700">
+            <p className="font-semibold text-charcoal-900">Cloudflare-R2-Speicher</p>
+            <p className="mt-2">
+              Originale: {formatFileSize(storageSummary.originalBytes)} · Webvarianten:{' '}
+              {formatFileSize(storageSummary.derivedBytes)}
+            </p>
+            <p className="mt-2">
+              Warnung ab {formatFileSize(storageSummary.warningThresholdBytes)}, hartes Limit bei{' '}
+              {formatFileSize(storageSummary.hardLimitBytes)}.
+            </p>
+            {storageSummary.warningMessages.length ? (
+              <ul className="mt-3 space-y-2 text-sm text-charcoal-600">
+                {storageSummary.warningMessages.map((message) => (
+                  <li key={message}>• {message}</li>
+                ))}
+              </ul>
+            ) : null}
           </div>
         </article>
       </div>

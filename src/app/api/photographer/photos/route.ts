@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { getPhotoSessionFromCookieStore } from '@/lib/auth/photo-session'
+import {
+  GALLERY_UPLOAD_ALLOWED_MIME_TYPES,
+  GALLERY_UPLOAD_MAX_FILE_SIZE_BYTES,
+} from '@/lib/constants'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createPublicClient } from '@/lib/supabase/public'
 import {
@@ -9,10 +13,9 @@ import {
   uploadGalleryFiles,
 } from '@/lib/supabase/repository'
 import { photographerDeleteSchema } from '@/lib/validations/photographer.schema'
+import { getWeddingGalleryExpiredMessage, isWeddingRetentionExpired } from '@/lib/wedding-lifecycle'
 import type { ApiResponse } from '@/types/api'
 import type { GalleryVisibility } from '@/types/wedding'
-
-const MAX_FILE_SIZE = 50 * 1024 * 1024
 
 async function getAuthorizedConfig(request: NextRequest, guestCode: string) {
   const supabase = createAdminClient() ?? createPublicClient()
@@ -66,6 +69,17 @@ export async function POST(
     )
   }
 
+  if (isWeddingRetentionExpired(config.weddingDate)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: getWeddingGalleryExpiredMessage(),
+        code: 'GALLERY_EXPIRED',
+      },
+      { status: 403 },
+    )
+  }
+
   const imageFiles = files.filter((file): file is File => file instanceof File)
   if (!imageFiles.length) {
     return NextResponse.json(
@@ -79,22 +93,22 @@ export async function POST(
   }
 
   for (const file of imageFiles) {
-    if (!file.type.startsWith('image/')) {
+    if (!GALLERY_UPLOAD_ALLOWED_MIME_TYPES.includes(file.type as (typeof GALLERY_UPLOAD_ALLOWED_MIME_TYPES)[number])) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Es können nur Bilddateien hochgeladen werden.',
+          error: 'Erlaubt sind JPG, PNG, WebP und HEIC/HEIF.',
           code: 'INVALID_FILE_TYPE',
         },
         { status: 422 },
       )
     }
 
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > GALLERY_UPLOAD_MAX_FILE_SIZE_BYTES) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Ein Foto ist größer als 50 MB.',
+          error: 'Ein Foto ist größer als 15 MB.',
           code: 'FILE_TOO_LARGE',
         },
         { status: 422 },
@@ -163,6 +177,17 @@ export async function DELETE(
         code: 'UNAUTHORIZED',
       },
       { status: 401 },
+    )
+  }
+
+  if (isWeddingRetentionExpired(config.weddingDate)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: getWeddingGalleryExpiredMessage(),
+        code: 'GALLERY_EXPIRED',
+      },
+      { status: 403 },
     )
   }
 

@@ -149,7 +149,7 @@ export function AdminGalleryManager({
                         alt={photo.name}
                         className="object-cover transition duration-300 hover:scale-[1.02]"
                         sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 24rem"
-                        src={photo.publicUrl}
+                        src={photo.previewUrl ?? photo.publicUrl}
                         unoptimized
                       />
                     </div>
