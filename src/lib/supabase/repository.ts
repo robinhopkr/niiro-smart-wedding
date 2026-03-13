@@ -3103,7 +3103,7 @@ function mapModernRsvps(
   detailMap: Map<string, StoredRsvpHouseholdDetail>,
 ): RsvpRecord[] {
   return rows.map((row) => {
-    const details = detailMap.get(row.id)
+    const details = detailMap.get(String(row.id))
 
     return {
       id: row.id,
@@ -3130,7 +3130,7 @@ function mapLegacyRsvps(
   detailMap: Map<string, StoredRsvpHouseholdDetail>,
 ): RsvpRecord[] {
   return rows.map((row) => {
-    const details = detailMap.get(row.id)
+    const details = detailMap.get(String(row.id))
 
     return {
       id: row.id,
