@@ -42,6 +42,7 @@ export function AdminHelpAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_ASSISTANT_MESSAGE])
   const [draft, setDraft] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const quickQuestions = ADMIN_HELP_QUICK_QUESTIONS.slice(0, 3)
 
   async function sendMessage(question: string) {
     const trimmedQuestion = question.trim()
@@ -109,12 +110,12 @@ export function AdminHelpAssistant() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-5">
-      <div className="flex shrink-0 flex-wrap gap-3">
-        {ADMIN_HELP_QUICK_QUESTIONS.map((question) => (
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <div className="flex shrink-0 flex-wrap gap-2">
+        {quickQuestions.map((question) => (
           <button
             key={question}
-            className="rounded-full border border-gold-300 bg-white px-4 py-2 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
+            className="rounded-full border border-gold-300 bg-white px-3 py-2 text-sm font-semibold leading-5 text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
             type="button"
             onClick={() => void sendMessage(question)}
           >
@@ -123,7 +124,7 @@ export function AdminHelpAssistant() {
         ))}
       </div>
 
-      <div className="surface-card flex min-h-0 flex-1 flex-col px-5 py-5">
+      <div className="surface-card flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-4 md:px-5 md:py-5">
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
           {messages.map((message, index) => (
             <article
@@ -174,18 +175,19 @@ export function AdminHelpAssistant() {
         </div>
 
         <form
-          className="mt-4 shrink-0 border-t border-cream-200 pt-4"
+          className="mt-4 shrink-0 border-t border-cream-200 bg-white/95 pt-4"
           onSubmit={(event) => {
             event.preventDefault()
             void sendMessage(draft)
           }}
         >
-          <div className="space-y-4">
+          <div className="space-y-3">
             <Textarea
-              label="Frage an den Assistenten"
+              className="min-h-[7.5rem] resize-none"
+              label="Eigene Frage"
               maxLength={4000}
               placeholder="Zum Beispiel: Wo bearbeite ich den Dresscode oder wie übernehme ich RSVP-Antworten in den Tischplan?"
-              rows={3}
+              rows={4}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
             />

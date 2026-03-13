@@ -32,6 +32,7 @@ export function RsvpTable({
               <th className="px-5 py-4 font-semibold">Gast</th>
               <th className="px-5 py-4 font-semibold">Status</th>
               <th className="px-5 py-4 font-semibold">Personen</th>
+              <th className="px-5 py-4 font-semibold">Kinder / Hochstühle</th>
               <th className="px-5 py-4 font-semibold">Essensvarianten</th>
               <th className="px-5 py-4 font-semibold">Allergien & Unverträglichkeiten</th>
               <th className="px-5 py-4 font-semibold">Nachricht</th>
@@ -52,6 +53,11 @@ export function RsvpTable({
                   </Badge>
                 </td>
                 <td className="px-5 py-4 text-charcoal-700">{rsvp.totalGuests}</td>
+                <td className="px-5 py-4 text-charcoal-700">
+                  {rsvp.smallChildrenCount > 0
+                    ? `${rsvp.smallChildrenCount} / ${rsvp.highChairCount}`
+                    : '0 / 0'}
+                </td>
                 <td className="px-5 py-4 text-charcoal-700">{rsvp.menuChoice ?? '–'}</td>
                 <td className="px-5 py-4 text-charcoal-700">{rsvp.dietaryNotes ?? '–'}</td>
                 <td className="px-5 py-4 text-charcoal-700">{rsvp.message ?? '–'}</td>

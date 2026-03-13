@@ -9,11 +9,11 @@ import {
   getActiveWeddingConfig,
   getCoupleAccountByWeddingRef,
   getWeddingConfigBySourceRef,
-  saveStoredBillingRecord,
 } from '@/lib/supabase/repository'
 import type { WeddingSource } from '@/types/wedding'
 
 import { retrieveBillingCheckoutSession } from './stripe'
+import { persistBillingAccessState } from './service-utils'
 
 function normalizeEmail(email: string | null | undefined): string | null {
   const normalized = email?.trim().toLowerCase()
@@ -88,12 +88,19 @@ export async function syncBillingFromCheckoutSession(session: Stripe.Checkout.Se
     throw new Error('Die zugehörige Hochzeit für den Stripe-Checkout wurde nicht gefunden.')
   }
 
-  await saveStoredBillingRecord(supabase, config, {
+  await persistBillingAccessState(config, {
     status: 'paid',
+    provider: 'stripe',
     email: adminEmail,
     paidAt: new Date().toISOString(),
     stripeCheckoutSessionId: session.id,
     stripePaymentIntentId: resolvePaymentIntentId(session.payment_intent),
+    googlePlayPurchaseToken: null,
+    googlePlayOrderId: null,
+    googlePlayProductId: null,
+    googlePlayPackageName: null,
+    googlePlayAcknowledgedAt: null,
+    expiresAt: null,
   })
 }
 

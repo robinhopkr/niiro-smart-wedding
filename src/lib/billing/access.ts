@@ -3,10 +3,12 @@ import 'server-only'
 import { DEFAULT_BILLING_BYPASS_EMAILS } from '@/lib/billing/constants'
 import { ENV } from '@/lib/constants'
 import {
+  getCoupleAccountByWeddingRef,
   getStoredBillingRecord,
   type StoredBillingRecord,
 } from '@/lib/supabase/repository'
 import type { WeddingConfig } from '@/types/wedding'
+import { isGooglePlayBillingConfigured } from './google-play'
 
 function normalizeEmail(email: string | null | undefined): string | null {
   const normalized = email?.trim().toLowerCase()
@@ -45,7 +47,7 @@ export function isBillingBypassedEmail(email: string | null | undefined): boolea
 }
 
 export function isBillingConfigured(): boolean {
-  return Boolean(process.env.STRIPE_SECRET_KEY?.trim())
+  return Boolean(process.env.STRIPE_SECRET_KEY?.trim()) || isGooglePlayBillingConfigured()
 }
 
 export interface BillingAccessState {
@@ -54,6 +56,7 @@ export interface BillingAccessState {
   hasPaid: boolean
   isBypassed: boolean
   paidAt: string | null
+  provider: StoredBillingRecord['provider']
   requiresPayment: boolean
   status: StoredBillingRecord['status']
 }
@@ -73,6 +76,7 @@ export function buildBillingAccessState(
     hasPaid,
     isBypassed,
     paidAt: billingRecord.paidAt,
+    provider: billingRecord.provider,
     requiresPayment: Boolean(normalizedAdminEmail) && !isBypassed && !hasPaid,
     status: billingRecord.status,
   }
@@ -84,5 +88,23 @@ export async function getBillingAccessState(
   adminEmailOverride?: string | null,
 ): Promise<BillingAccessState> {
   const billingRecord = await getStoredBillingRecord(supabase, config)
-  return buildBillingAccessState(adminEmailOverride ?? getConfiguredAdminEmail(), billingRecord)
+  const normalizedOverride = normalizeEmail(adminEmailOverride)
+
+  if (normalizedOverride) {
+    return buildBillingAccessState(normalizedOverride, billingRecord)
+  }
+
+  if (config.source !== 'fallback' && config.sourceId) {
+    const coupleAccount = await getCoupleAccountByWeddingRef(supabase, config.source, config.sourceId)
+
+    if (coupleAccount?.email) {
+      return buildBillingAccessState(coupleAccount.email, billingRecord)
+    }
+
+    if (config.source === 'legacy') {
+      return buildBillingAccessState(getConfiguredAdminEmail(), billingRecord)
+    }
+  }
+
+  return buildBillingAccessState(null, billingRecord)
 }

@@ -167,6 +167,50 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['planner_wedding_access']['Insert']>
         Relationships: []
       }
+      billing_entitlements: {
+        Row: {
+          id: string
+          wedding_source: 'modern' | 'legacy'
+          wedding_source_id: string
+          status: 'paid' | 'unpaid'
+          provider: 'stripe' | 'google_play' | 'legacy'
+          email: string | null
+          paid_at: string | null
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          google_play_purchase_token: string | null
+          google_play_order_id: string | null
+          google_play_product_id: string | null
+          google_play_package_name: string | null
+          google_play_acknowledged_at: string | null
+          expires_at: string | null
+          metadata: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          wedding_source: 'modern' | 'legacy'
+          wedding_source_id: string
+          status?: 'paid' | 'unpaid'
+          provider?: 'stripe' | 'google_play' | 'legacy'
+          email?: string | null
+          paid_at?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          google_play_purchase_token?: string | null
+          google_play_order_id?: string | null
+          google_play_product_id?: string | null
+          google_play_package_name?: string | null
+          google_play_acknowledged_at?: string | null
+          expires_at?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['billing_entitlements']['Insert']>
+        Relationships: []
+      }
       gallery_media: {
         Row: {
           id: string
@@ -273,6 +317,30 @@ export interface Database {
           submitted_at?: string
         }
         Update: Partial<Database['public']['Tables']['rsvps']['Insert']>
+        Relationships: []
+      }
+      rsvp_household_details: {
+        Row: {
+          id: string
+          wedding_source: 'modern' | 'legacy'
+          wedding_source_id: string
+          rsvp_record_id: string
+          small_children_count: number
+          high_chair_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          wedding_source: 'modern' | 'legacy'
+          wedding_source_id: string
+          rsvp_record_id: string
+          small_children_count?: number
+          high_chair_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['rsvp_household_details']['Insert']>
         Relationships: []
       }
       hochzeiten: {

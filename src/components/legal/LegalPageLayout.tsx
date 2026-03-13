@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import { getServerSession } from '@/lib/auth/get-session'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { Section } from '@/components/ui/Section'
@@ -12,7 +13,9 @@ interface LegalPageLayoutProps {
   children: React.ReactNode
 }
 
-export function LegalPageLayout({ title, intro, children }: LegalPageLayoutProps) {
+export async function LegalPageLayout({ title, intro, children }: LegalPageLayoutProps) {
+  const session = await getServerSession()
+
   return (
     <main className="min-h-screen bg-cream-50">
       <Header
@@ -23,6 +26,7 @@ export function LegalPageLayout({ title, intro, children }: LegalPageLayoutProps
           { href: '/admin/login?role=planner', label: 'Login Wedding Planner', variant: 'secondary' },
           { href: '/admin/login?role=couple', label: 'Login Brautpaare', variant: 'primary' },
         ]}
+        showLogoutAction={Boolean(session)}
         showBrandMark
       />
       <Section className="space-y-8">

@@ -18,7 +18,9 @@ export type GuestCategory =
   | 'vendors'
   | 'other'
 
-export type SeatingTableKind = 'guest' | 'service' | 'couple'
+export type SeatingTableKind = 'guest' | 'child' | 'service' | 'couple'
+export type SeatingTableShape = 'round' | 'oval' | 'long' | 'square'
+export type PlanningGuestKind = 'adult' | 'child'
 
 export interface CouplePhoto {
   id: string
@@ -109,6 +111,8 @@ export interface RsvpRecord {
   plusOne: boolean
   plusOneName: string | null
   totalGuests: number
+  smallChildrenCount: number
+  highChairCount: number
   menuChoice: string | null
   plusOneMenu: string | null
   dietaryNotes: string | null
@@ -124,6 +128,8 @@ export interface RsvpFormValues {
   plusOne: boolean
   plusOneName: string
   totalGuests: number
+  smallChildrenCount: number
+  highChairCount: number
   menuChoices: MenuChoice[]
   dietaryNotes: string
   message: string
@@ -157,21 +163,37 @@ export interface MusicWishlistData {
 export interface PlanningGuest {
   id: string
   name: string
+  kind: PlanningGuestKind
   category: GuestCategory
+  householdId: string | null
   groupLabel: string | null
+  requiresHighChair: boolean
   notes: string | null
+}
+
+export interface BuffetSong {
+  id: string
+  title: string
+  artist: string | null
+  sortOrder: number
 }
 
 export interface SeatingTable {
   id: string
   name: string
   kind: SeatingTableKind
+  shape: SeatingTableShape
+  buffetSongId: string | null
   seatCount: number
   seatAssignments: Array<string | null>
 }
 
 export interface SeatingPlanData {
   isPublished: boolean
+  buffetMode: {
+    enabled: boolean
+    songs: BuffetSong[]
+  }
   guests: PlanningGuest[]
   tables: SeatingTable[]
 }

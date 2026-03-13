@@ -53,8 +53,9 @@ export function LocationMap({ address, embedUrl }: { address: string; embedUrl: 
   return (
     <div className="surface-card h-full overflow-hidden">
       {!hasUsableAddress ? (
-        <div className="flex min-h-[280px] flex-col justify-between bg-[linear-gradient(180deg,rgba(255,252,247,0.98)_0%,rgba(250,243,232,0.92)_100%)] px-6 py-8">
-          <div className="space-y-4">
+        <div className="relative flex min-h-[280px] flex-col justify-between overflow-hidden bg-gradient-to-b from-cream-50/95 to-cream-100/85 px-6 py-8">
+          <div className="absolute -left-10 top-0 h-36 w-36 rounded-full bg-gold-100/60 blur-3xl" />
+          <div className="relative space-y-4">
             <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-gold-600 shadow-elegant">
               <MapPinned className="h-5 w-5" />
             </span>
@@ -67,14 +68,16 @@ export function LocationMap({ address, embedUrl }: { address: string; embedUrl: 
               Bis dahin nutzt gern die Kartenlinks auf der linken Seite.
             </p>
           </div>
-          <div className="rounded-[1.25rem] border border-cream-200 bg-white/80 px-4 py-4 text-sm text-charcoal-500">
+          <div className="relative rounded-[1.25rem] border border-cream-200 bg-white/80 px-4 py-4 text-sm text-charcoal-500">
             Diese Fläche wechselt automatisch zur interaktiven Karte, sobald eine echte Adresse
             gespeichert ist.
           </div>
         </div>
       ) : !isMapLoaded ? (
-        <div className="flex min-h-[280px] flex-col justify-between bg-[radial-gradient(circle_at_top_left,rgba(212,154,29,0.12),transparent_32%),linear-gradient(180deg,rgba(255,252,247,0.98)_0%,rgba(250,243,232,0.92)_100%)] px-6 py-8">
-          <div className="space-y-4">
+        <div className="relative flex min-h-[280px] flex-col justify-between overflow-hidden bg-gradient-to-b from-cream-50/95 to-cream-100/85 px-6 py-8">
+          <div className="absolute -left-10 top-0 h-36 w-36 rounded-full bg-gold-100/70 blur-3xl" />
+          <div className="absolute -right-8 bottom-0 h-32 w-32 rounded-full bg-sage-100/60 blur-3xl" />
+          <div className="relative space-y-4">
             <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-gold-600 shadow-elegant">
               <MapPinned className="h-5 w-5" />
             </span>
@@ -100,8 +103,9 @@ export function LocationMap({ address, embedUrl }: { address: string; embedUrl: 
           </div>
         </div>
       ) : hasMapError ? (
-        <div className="flex min-h-[320px] flex-col justify-between bg-[linear-gradient(180deg,rgba(255,252,247,0.98)_0%,rgba(250,243,232,0.92)_100%)] px-6 py-8">
-          <div className="space-y-4">
+        <div className="relative flex min-h-[320px] flex-col justify-between overflow-hidden bg-gradient-to-b from-cream-50/95 to-cream-100/85 px-6 py-8">
+          <div className="absolute -left-10 top-0 h-36 w-36 rounded-full bg-gold-100/60 blur-3xl" />
+          <div className="relative space-y-4">
             <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-gold-600 shadow-elegant">
               <MapPinned className="h-5 w-5" />
             </span>
@@ -116,13 +120,13 @@ export function LocationMap({ address, embedUrl }: { address: string; embedUrl: 
           </div>
           <div className="flex flex-wrap gap-3">
             <ExternalLink
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
+              className="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
               href={googleMapsUrl}
             >
               In Google Maps öffnen
             </ExternalLink>
             <ExternalLink
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
+              className="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900"
               href={openStreetMapUrl}
             >
               In OpenStreetMap öffnen

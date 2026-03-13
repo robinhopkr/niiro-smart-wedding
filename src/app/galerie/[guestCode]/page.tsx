@@ -2,11 +2,13 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { GalleryGrid } from '@/components/gallery/GalleryGrid'
+import { AdminReturnBar } from '@/components/layout/AdminReturnBar'
 import { Footer } from '@/components/layout/Footer'
 import { Header } from '@/components/layout/Header'
 import { DownloadLink } from '@/components/ui/DownloadLink'
 import { Section } from '@/components/ui/Section'
 import { SectionHeading } from '@/components/ui/SectionHeading'
+import { getServerSession } from '@/lib/auth/get-session'
 import {
   DEMO_GALLERY_PHOTOS,
   DEMO_GUEST_CODE,
@@ -25,6 +27,7 @@ interface GalleryPageProps {
 export default async function GalleryPage({ params }: GalleryPageProps) {
   const resolvedParams = await params
   const normalizedGuestCode = resolvedParams.guestCode.trim().toUpperCase()
+  const session = await getServerSession()
 
   if (normalizedGuestCode === DEMO_GUEST_CODE) {
     return (
@@ -37,7 +40,9 @@ export default async function GalleryPage({ params }: GalleryPageProps) {
             { href: '/admin/login?role=couple', label: 'Login für Brautpaare', variant: 'primary' },
           ]}
           navItems={[]}
+          showLogoutAction={Boolean(session)}
         />
+        {session ? <AdminReturnBar sessionRole={session.role} /> : null}
 
         <Section className="space-y-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -95,7 +100,9 @@ export default async function GalleryPage({ params }: GalleryPageProps) {
           { href: '/admin/login?role=couple', label: 'Login für Brautpaare', variant: 'primary' },
         ]}
         navItems={[]}
+        showLogoutAction={Boolean(session)}
       />
+      {session ? <AdminReturnBar sessionRole={session.role} /> : null}
 
       <Section className="space-y-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">

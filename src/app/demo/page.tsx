@@ -20,6 +20,10 @@ export default function DemoPage() {
       programItems={DEMO_PROGRAM_ITEMS}
       seatingPlanData={{
         isPublished: false,
+        buffetMode: {
+          enabled: false,
+          songs: [],
+        },
         guests: [],
         tables: [],
       }}

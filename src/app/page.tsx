@@ -6,11 +6,14 @@ import { FeatureGridSection } from '@/components/sections/FeatureGridSection'
 import { HowItWorksSection } from '@/components/sections/HowItWorksSection'
 import { ProductCtaSection } from '@/components/sections/ProductCtaSection'
 import { ProductHeroSection } from '@/components/sections/ProductHeroSection'
+import { getServerSession } from '@/lib/auth/get-session'
 import { APP_BRAND_NAME, MARKETING_NAV_ITEMS } from '@/lib/constants'
 
 export const revalidate = 3600
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getServerSession()
+
   return (
     <main className="min-h-screen bg-cream-50">
       <Header
@@ -20,6 +23,7 @@ export default function HomePage() {
           { href: '/admin/login?role=planner', label: 'Login Wedding Planner', variant: 'secondary' },
           { href: '/admin/login?role=couple', label: 'Login Brautpaare', variant: 'primary' },
         ]}
+        showLogoutAction={Boolean(session)}
         showBrandMark
       />
       <ProductHeroSection />

@@ -29,8 +29,14 @@ export function AdminDashboardShell({
       <Header
         brandHref="/admin/uebersicht"
         brandLabel={`${config.coupleLabel} · Paarbereich`}
-        ctaHref={guestInviteHref}
-        ctaLabel="Gästeseite öffnen"
+        actionLinks={
+          sessionRole === 'planner'
+            ? [
+                { href: '/admin/hochzeiten', label: 'Zur Planner-Startseite', variant: 'secondary' as const },
+                { href: guestInviteHref, label: 'Gästeseite öffnen', variant: 'primary' as const },
+              ]
+            : [{ href: guestInviteHref, label: 'Gästeseite öffnen', variant: 'primary' as const }]
+        }
         navItems={[]}
         showBrandMark
       />

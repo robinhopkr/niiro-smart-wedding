@@ -93,6 +93,28 @@ export function RsvpForm({
             type="number"
             {...register('totalGuests', { valueAsNumber: true })}
           />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Wie viele kleine Kinder kommen mit?"
+              helperText="Optional. Kleine Kinder werden für Sitzplan und Buffet separat berücksichtigt."
+              error={errors.smallChildrenCount?.message}
+              inputMode="numeric"
+              min={0}
+              max={10}
+              type="number"
+              {...register('smallChildrenCount', { valueAsNumber: true })}
+            />
+            <Input
+              label="Wie viele Hochstühle werden benötigt?"
+              helperText="Optional. Bitte nur Hochstühle für kleine Kinder angeben."
+              error={errors.highChairCount?.message}
+              inputMode="numeric"
+              min={0}
+              max={10}
+              type="number"
+              {...register('highChairCount', { valueAsNumber: true })}
+            />
+          </div>
           <Controller
             control={control}
             name="menuChoices"

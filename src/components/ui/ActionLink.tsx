@@ -37,7 +37,7 @@ export function ActionLink({
   return (
     <Link
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-full font-semibold transition duration-200',
+        'inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap transition duration-200',
         variantClasses[variant],
         sizeClasses[size],
         className,

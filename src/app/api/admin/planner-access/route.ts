@@ -36,12 +36,17 @@ export async function POST(
   const parseResult = plannerCustomerNumberSchema.safeParse(rawBody)
 
   if (!parseResult.success) {
+    const flattened = parseResult.error.flatten()
+    const consentError = flattened.fieldErrors.privacyConsentConfirmed?.[0]
+
     return NextResponse.json(
       {
         success: false,
-        error: 'Bitte gib eine gültige Kundennummer ein.',
+        error:
+          consentError ??
+          'Bitte gib eine gültige Kundennummer ein.',
         code: 'VALIDATION_ERROR',
-        details: parseResult.error.flatten(),
+        details: flattened,
       },
       { status: 422 },
     )

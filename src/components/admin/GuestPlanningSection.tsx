@@ -1,17 +1,44 @@
 'use client'
 
-import { Building2, Heart, Minus, Plus, Save, Sparkles, Trash2, Users, WandSparkles } from 'lucide-react'
+import {
+  Baby,
+  Building2,
+  FileDown,
+  Heart,
+  Minus,
+  Music4,
+  Plus,
+  Save,
+  Sparkles,
+  Trash2,
+  Users,
+  WandSparkles,
+} from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { startTransition, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { SeatingPlanVisualizer, type SeatingPlanVisualTable } from '@/components/seating/SeatingPlanVisualizer'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { GUEST_CATEGORY_LABELS, GUEST_CATEGORY_OPTIONS } from '@/lib/constants'
+import {
+  SEATING_TABLE_KIND_LABELS,
+  SEATING_TABLE_SHAPE_LABELS,
+  SEATING_TABLE_SHAPE_OPTIONS,
+  getDefaultSeatCountForKind,
+  getDefaultTableName,
+  getDefaultTableShapeForKind,
+  getTableBadgeVariant,
+  type SeatingViewMode,
+} from '@/lib/seating-plan'
 import type { ApiResponse } from '@/types/api'
-import type { GuestCategory, PlanningGuest, RsvpRecord, SeatingPlanData, SeatingTable } from '@/types/wedding'
+import type { BuffetSong, GuestCategory, PlanningGuest, RsvpRecord, SeatingPlanData, SeatingTable } from '@/types/wedding'
 
+const COUPLE_GROUP_LABEL = 'Brautpaar'
+const selectClassName =
+  'min-h-11 rounded-2xl border border-cream-300 bg-white px-4 py-3 text-base text-charcoal-900 outline-none transition focus:border-gold-500'
 const CATEGORY_PRIORITY: Record<GuestCategory, number> = {
   vendors: 7,
   bridal_party: 6,
@@ -24,52 +51,14 @@ const CATEGORY_PRIORITY: Record<GuestCategory, number> = {
   other: 0,
 }
 
-const TABLE_KIND_LABELS: Record<SeatingTable['kind'], string> = {
-  guest: 'Gästetisch',
-  service: 'Dienstleistertisch',
-  couple: 'Brautpaartisch',
-}
-
-const COUPLE_GROUP_LABEL = 'Brautpaar'
-
-function getDefaultSeatCountForKind(kind: SeatingTable['kind']): number {
-  if (kind === 'couple') {
-    return 2
-  }
-
-  return kind === 'service' ? 6 : 8
-}
-
-function getDefaultTableName(kind: SeatingTable['kind'], index: number): string {
-  if (kind === 'guest') {
-    return `Tisch ${index}`
-  }
-
-  const baseLabel = TABLE_KIND_LABELS[kind]
-  return index > 1 ? `${baseLabel} ${index}` : baseLabel
-}
-
-function getTableBadgeVariant(kind: SeatingTable['kind']): 'attending' | 'declined' | 'neutral' {
-  if (kind === 'service') {
-    return 'attending'
-  }
-
-  return kind === 'couple' ? 'declined' : 'neutral'
-}
-
-function createId(prefix: string): string {
+function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-function createGuest(overrides: Partial<PlanningGuest> = {}): PlanningGuest {
-  return {
-    id: createId('guest'),
-    name: '',
-    category: 'other',
-    groupLabel: null,
-    notes: null,
-    ...overrides,
-  }
+function normalizeSeatAssignments(seatAssignments: Array<string | null>, seatCount: number) {
+  const next = seatAssignments.slice(0, seatCount).map((entry) => entry || null)
+  while (next.length < seatCount) next.push(null)
+  return next
 }
 
 function buildCoupleGuests(coupleNames: string[]): PlanningGuest[] {
@@ -79,368 +68,195 @@ function buildCoupleGuests(coupleNames: string[]): PlanningGuest[] {
     .map((name, index) => ({
       id: `couple-${index + 1}`,
       name,
+      kind: 'adult' as const,
       category: 'bridal_party' as const,
+      householdId: null,
       groupLabel: COUPLE_GROUP_LABEL,
+      requiresHighChair: false,
       notes: null,
     }))
 }
 
-function ensureCoupleGuests(existingGuests: PlanningGuest[], coupleNames: string[]): PlanningGuest[] {
+function ensureCoupleGuests(guests: PlanningGuest[], coupleNames: string[]) {
   const coupleGuests = buildCoupleGuests(coupleNames)
   const coupleIds = new Set(coupleGuests.map((guest) => guest.id))
-  const existingById = new Map(existingGuests.map((guest) => [guest.id, guest]))
-  const otherGuests = existingGuests.filter((guest) => !coupleIds.has(guest.id))
-
-  const mergedCoupleGuests = coupleGuests.map((guest) => ({
-    ...guest,
-    notes: existingById.get(guest.id)?.notes ?? null,
-  }))
-
-  return [...mergedCoupleGuests, ...otherGuests]
+  const guestById = new Map(guests.map((guest) => [guest.id, guest]))
+  return [
+    ...coupleGuests.map((guest) => ({ ...guest, notes: guestById.get(guest.id)?.notes ?? null })),
+    ...guests.filter((guest) => !coupleIds.has(guest.id)),
+  ]
 }
 
-function normalizeSeatAssignments(seatAssignments: Array<string | null>, seatCount: number): Array<string | null> {
-  const nextAssignments = seatAssignments.slice(0, seatCount).map((entry) => entry || null)
-
-  while (nextAssignments.length < seatCount) {
-    nextAssignments.push(null)
-  }
-
-  return nextAssignments
-}
-
-function createTable(
-  index: number,
-  kind: SeatingTable['kind'] = 'guest',
-  seatCount = getDefaultSeatCountForKind(kind),
-): SeatingTable {
+function createTable(index: number, kind: SeatingTable['kind'] = 'guest', seatCount = getDefaultSeatCountForKind(kind)): SeatingTable {
   return {
     id: createId('table'),
     name: getDefaultTableName(kind, index),
     kind,
+    shape: getDefaultTableShapeForKind(kind),
+    buffetSongId: null,
     seatCount,
     seatAssignments: Array.from({ length: seatCount }, () => null),
   }
 }
 
-function normalizeName(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, ' ')
-}
+function buildRsvpGuests(rsvp: RsvpRecord, guestById: Map<string, PlanningGuest>): PlanningGuest[] {
+  if (!rsvp.isAttending) return []
+  const label = `${rsvp.guestName.trim()} Haushalt`
+  const leadName = rsvp.guestName.trim() || 'Hauptgast'
+  const namedAdults = [rsvp.guestName, rsvp.plusOneName]
+    .filter((entry): entry is string => Boolean(entry?.trim()))
+    .map((entry) => entry.trim())
+  const adultCount = Math.max(1, rsvp.totalGuests - rsvp.smallChildrenCount)
 
-function buildImportedGuests(rsvps: RsvpRecord[], existingGuests: PlanningGuest[]): PlanningGuest[] {
-  const knownNames = new Set(existingGuests.map((guest) => normalizeName(guest.name)))
-  const importedGuests: PlanningGuest[] = []
-
-  rsvps.forEach((rsvp) => {
-    if (!rsvp.isAttending) {
-      return
-    }
-
-    const groupLabel = rsvp.totalGuests > 1 ? rsvp.guestName.trim() : null
-    const names = [rsvp.guestName, rsvp.plusOneName].filter((entry): entry is string => Boolean(entry?.trim()))
-
-    names.forEach((name, index) => {
-      const normalizedName = normalizeName(name)
-      if (knownNames.has(normalizedName)) {
-        return
-      }
-
-      knownNames.add(normalizedName)
-      importedGuests.push(
-        createGuest({
-          name: name.trim(),
-          category: rsvp.totalGuests === 1 ? 'single' : 'other',
-          groupLabel: groupLabel && index < rsvp.totalGuests ? groupLabel : null,
-        }),
-      )
-    })
-
-    const unnamedGuests = Math.max(0, rsvp.totalGuests - names.length)
-    for (let index = 0; index < unnamedGuests; index += 1) {
-      const placeholderName = `Begleitung von ${rsvp.guestName.trim()} ${index + 1}`
-      const normalizedName = normalizeName(placeholderName)
-
-      if (knownNames.has(normalizedName)) {
-        continue
-      }
-
-      knownNames.add(normalizedName)
-      importedGuests.push(
-        createGuest({
-          name: placeholderName,
-          category: 'other',
-          groupLabel: groupLabel ?? rsvp.guestName.trim(),
-        }),
-      )
+  const adults = Array.from({ length: adultCount }, (_, index) => {
+    const id = `rsvp-${rsvp.id}-adult-${index + 1}`
+    const existing = guestById.get(id)
+    return {
+      id,
+      name: namedAdults[index] ?? `Begleitung von ${leadName} ${index - namedAdults.length + 1}`,
+      kind: 'adult' as const,
+      category: existing?.category ?? (adultCount === 1 && rsvp.smallChildrenCount === 0 ? 'single' : 'other'),
+      householdId: rsvp.id,
+      groupLabel: existing?.groupLabel ?? label,
+      requiresHighChair: false,
+      notes: existing?.notes ?? null,
     }
   })
 
-  return importedGuests
+  const children = Array.from({ length: rsvp.smallChildrenCount }, (_, index) => {
+    const id = `rsvp-${rsvp.id}-child-${index + 1}`
+    const existing = guestById.get(id)
+    return {
+      id,
+      name: `Kind ${index + 1} von ${leadName}`,
+      kind: 'child' as const,
+      category: 'children' as const,
+      householdId: rsvp.id,
+      groupLabel: label,
+      requiresHighChair: index < rsvp.highChairCount,
+      notes: existing?.notes ?? null,
+    }
+  })
+
+  return [...adults, ...children]
 }
 
-interface SeatingGroup {
-  guestIds: string[]
-  category: GuestCategory
+function syncGuestsFromRsvps(rsvps: RsvpRecord[], existingGuests: PlanningGuest[], coupleNames: string[]) {
+  const guestById = new Map(existingGuests.map((guest) => [guest.id, guest]))
+  const coupleIds = new Set(buildCoupleGuests(coupleNames).map((guest) => guest.id))
+  const manualGuests = existingGuests.filter((guest) => !coupleIds.has(guest.id) && !guest.householdId)
+  return ensureCoupleGuests([...manualGuests, ...rsvps.flatMap((rsvp) => buildRsvpGuests(rsvp, guestById))], coupleNames)
 }
 
-function buildSeatingGroups(guests: PlanningGuest[]): SeatingGroup[] {
-  const groupedGuests = new Map<string, PlanningGuest[]>()
-
+function buildGroups(guests: PlanningGuest[]) {
+  const grouped = new Map<string, PlanningGuest[]>()
   guests.forEach((guest) => {
-    const key = guest.groupLabel?.trim().toLowerCase() ? `group:${guest.groupLabel.trim().toLowerCase()}` : `guest:${guest.id}`
-    const currentGuests = groupedGuests.get(key) ?? []
-    currentGuests.push(guest)
-    groupedGuests.set(key, currentGuests)
+    const key = guest.householdId ? `household:${guest.householdId}` : guest.groupLabel ? `group:${guest.groupLabel}` : `guest:${guest.id}`
+    grouped.set(key, [...(grouped.get(key) ?? []), guest])
   })
-
-  return Array.from(groupedGuests.values()).map((groupGuests) => ({
+  return Array.from(grouped.values()).map((groupGuests) => ({
     guestIds: groupGuests.map((guest) => guest.id),
-    category: groupGuests
-      .slice()
-      .sort((left, right) => CATEGORY_PRIORITY[right.category] - CATEGORY_PRIORITY[left.category])[0]?.category ?? 'other',
+    category: groupGuests.sort((left, right) => CATEGORY_PRIORITY[right.category] - CATEGORY_PRIORITY[left.category])[0]?.category ?? 'other',
   }))
 }
 
-function getAssignedGuests(table: SeatingTable, guestById: Map<string, PlanningGuest>): PlanningGuest[] {
-  return table.seatAssignments
+function scoreTable(table: SeatingTable, guestIds: string[], category: GuestCategory, guestById: Map<string, PlanningGuest>) {
+  if (table.kind === 'couple') return Number.NEGATIVE_INFINITY
+  const remainingSeats = table.seatAssignments.filter((entry) => !entry).length
+  if (remainingSeats < guestIds.length) return Number.NEGATIVE_INFINITY
+  const seatedGuests = table.seatAssignments
     .map((guestId) => (guestId ? guestById.get(guestId) ?? null : null))
     .filter((guest): guest is PlanningGuest => Boolean(guest))
-}
-
-function assignGroupToTable(table: SeatingTable, guestIds: string[]): SeatingTable {
-  const nextAssignments = [...table.seatAssignments]
-  let pointer = 0
-
-  for (let seatIndex = 0; seatIndex < nextAssignments.length && pointer < guestIds.length; seatIndex += 1) {
-    if (!nextAssignments[seatIndex]) {
-      nextAssignments[seatIndex] = guestIds[pointer] ?? null
-      pointer += 1
-    }
-  }
-
-  return {
-    ...table,
-    seatAssignments: nextAssignments,
-  }
-}
-
-function scoreTable(table: SeatingTable, group: SeatingGroup, guestById: Map<string, PlanningGuest>): number {
-  if (table.kind === 'couple') {
-    return Number.NEGATIVE_INFINITY
-  }
-
-  const assignedGuests = getAssignedGuests(table, guestById)
-  const remainingSeats = table.seatAssignments.filter((entry) => !entry).length
-
-  if (remainingSeats < group.guestIds.length) {
-    return Number.NEGATIVE_INFINITY
-  }
-
-  const sameCategoryCount = assignedGuests.filter((guest) => guest.category === group.category).length
-  const remainingAfter = remainingSeats - group.guestIds.length
-  const occupiedCount = assignedGuests.length
-
-  let score = sameCategoryCount * 14 - remainingAfter
-
-  if (group.category === 'vendors') {
-    score += table.kind === 'service' ? 80 : -18
+  const sameCategoryCount = seatedGuests.filter((guest) => guest.category === category).length
+  let score = sameCategoryCount * 14 - (remainingSeats - guestIds.length)
+  if (category === 'vendors') {
+    score += table.kind === 'service' ? 80 : table.kind === 'child' ? -24 : -18
+  } else if (category === 'children') {
+    score += table.kind === 'child' ? 60 : table.kind === 'service' ? -20 : 8
   } else {
-    score += table.kind === 'service' ? -14 : 4
+    score += table.kind === 'service' ? -14 : table.kind === 'child' ? -6 : 4
   }
-
-  if (group.category === 'single') {
-    score += occupiedCount > 0 ? 12 : 0
-    score += table.kind === 'guest' ? 6 : -10
-  } else if (occupiedCount === 0) {
-    score += 6
-  }
-
+  score += category === 'single' ? (seatedGuests.length > 0 ? 12 : 0) + (table.kind === 'guest' ? 6 : -10) : seatedGuests.length === 0 ? 6 : 0
   return score
 }
 
-function createAutomaticAssignments(
-  guests: PlanningGuest[],
-  tables: SeatingTable[],
-): SeatingTable[] {
+function createAutomaticAssignments(guests: PlanningGuest[], tables: SeatingTable[]) {
   const guestById = new Map(guests.map((guest) => [guest.id, guest]))
   const preservedAssignments = new Set(
     tables
       .filter((table) => table.kind === 'couple')
-      .flatMap((table) =>
-        normalizeSeatAssignments(table.seatAssignments, table.seatCount).filter(
-          (guestId): guestId is string => {
-            if (!guestId) {
-              return false
-            }
-
-            return guestById.has(guestId)
-          },
-        ),
-      ),
+      .flatMap((table) => normalizeSeatAssignments(table.seatAssignments, table.seatCount).filter((guestId): guestId is string => Boolean(guestId && guestById.has(guestId)))),
   )
   const guestsToAssign = guests.filter((guest) => !preservedAssignments.has(guest.id))
-  const totalSeats = tables
-    .filter((table) => table.kind !== 'couple')
-    .reduce((count, table) => count + table.seatCount, 0)
+  const totalSeats = tables.filter((table) => table.kind !== 'couple').reduce((count, table) => count + table.seatCount, 0)
+  if (totalSeats < guestsToAssign.length) throw new Error('Es gibt zu wenig Sitzplätze für alle Gäste.')
 
-  if (totalSeats < guestsToAssign.length) {
-    throw new Error('Es gibt zu wenig Sitzplätze für alle Gäste.')
-  }
+  const nextTables = tables.map((table) =>
+    table.kind === 'couple'
+      ? { ...table, seatAssignments: normalizeSeatAssignments(table.seatAssignments, table.seatCount).map((guestId) => (guestId && guestById.has(guestId) ? guestId : null)) }
+      : { ...table, seatAssignments: Array.from({ length: table.seatCount }, () => null) },
+  )
 
-  const emptyTables: SeatingTable[] = tables.map((table) => {
-    if (table.kind === 'couple') {
-      return {
-        ...table,
-        seatAssignments: normalizeSeatAssignments(table.seatAssignments, table.seatCount).map((guestId) =>
-          guestId && guestById.has(guestId) ? guestId : null,
-        ),
-      }
-    }
-
-    return {
-      ...table,
-      seatAssignments: Array.from({ length: table.seatCount }, () => null),
-    }
-  })
-
-  const groups = buildSeatingGroups(guestsToAssign)
-  const serviceGroups = groups.filter((group) => group.category === 'vendors')
-  const singleGroups = groups.filter((group) => group.category === 'single')
-  const coreGroups = groups
-    .filter((group) => group.category !== 'vendors' && group.category !== 'single')
-    .sort((left, right) => {
-      const categoryDelta = CATEGORY_PRIORITY[right.category] - CATEGORY_PRIORITY[left.category]
-      if (categoryDelta !== 0) {
-        return categoryDelta
-      }
-
-      return right.guestIds.length - left.guestIds.length
-    })
-
-  const orderedGroups = [...serviceGroups, ...coreGroups, ...singleGroups]
+  const groups = buildGroups(guestsToAssign)
+  const orderedGroups = [
+    ...groups.filter((group) => group.category === 'vendors'),
+    ...groups.filter((group) => group.category !== 'vendors' && group.category !== 'single').sort((left, right) => CATEGORY_PRIORITY[right.category] - CATEGORY_PRIORITY[left.category] || right.guestIds.length - left.guestIds.length),
+    ...groups.filter((group) => group.category === 'single'),
+  ]
 
   orderedGroups.forEach((group) => {
-    const rankedTables = emptyTables
-      .map((table, index) => ({
-        index,
-        score: scoreTable(table, group, guestById),
-      }))
+    const target = nextTables
+      .map((table, index) => ({ index, score: scoreTable(table, group.guestIds, group.category, guestById) }))
       .sort((left, right) => right.score - left.score)
-
-    const bestTable = rankedTables.find((table) => Number.isFinite(table.score))
-
-    if (!bestTable) {
-      throw new Error('Nicht alle Gäste konnten automatisch an die vorhandenen Tische verteilt werden.')
+      .find((entry) => Number.isFinite(entry.score))
+    if (!target) throw new Error('Nicht alle Gäste konnten automatisch an die vorhandenen Tische verteilt werden.')
+    const nextAssignments = [...nextTables[target.index]!.seatAssignments]
+    let pointer = 0
+    for (let seatIndex = 0; seatIndex < nextAssignments.length && pointer < group.guestIds.length; seatIndex += 1) {
+      if (!nextAssignments[seatIndex]) nextAssignments[seatIndex] = group.guestIds[pointer++] ?? null
     }
-
-    emptyTables[bestTable.index] = assignGroupToTable(emptyTables[bestTable.index]!, group.guestIds)
+    nextTables[target.index] = { ...nextTables[target.index]!, seatAssignments: nextAssignments }
   })
 
-  return emptyTables
+  return nextTables
 }
 
-function getAssignedGuestIds(tables: SeatingTable[]): Set<string> {
-  return new Set(
-    tables.flatMap((table) => table.seatAssignments.filter((guestId): guestId is string => Boolean(guestId))),
-  )
+function buildHouseholds(guests: PlanningGuest[]) {
+  const households = new Map<string, { id: string; label: string; adults: number; children: number; highChairs: number; names: string[] }>()
+  guests.forEach((guest) => {
+    if (!guest.householdId) return
+    const current = households.get(guest.householdId) ?? { id: guest.householdId, label: guest.groupLabel?.trim() || guest.name, adults: 0, children: 0, highChairs: 0, names: [] }
+    if (guest.kind === 'child') {
+      current.children += 1
+      if (guest.requiresHighChair) current.highChairs += 1
+    } else {
+      current.adults += 1
+      current.names.push(guest.name)
+      if (!current.label || current.label === COUPLE_GROUP_LABEL) current.label = guest.name
+    }
+    households.set(guest.householdId, current)
+  })
+  return Array.from(households.values()).filter((household) => household.adults > 0).sort((left, right) => left.label.localeCompare(right.label, 'de'))
 }
 
-function normalizePlanningData(values: SeatingPlanData): SeatingPlanData {
-  const guests = values.guests
-    .map((guest) => ({
-      ...guest,
-      name: guest.name.trim(),
-      groupLabel: guest.groupLabel?.trim() || null,
-      notes: guest.notes?.trim() || null,
-    }))
+function normalizePlanningData(plan: SeatingPlanData): SeatingPlanData {
+  const songs = plan.buffetMode.songs
+    .map((song, index) => ({ ...song, title: song.title.trim(), artist: song.artist?.trim() || null, sortOrder: Number.isFinite(song.sortOrder) ? Math.max(0, Math.round(song.sortOrder)) : index + 1 }))
+    .filter((song) => song.title)
+    .sort((left, right) => left.sortOrder - right.sortOrder || left.title.localeCompare(right.title, 'de'))
+  const validSongIds = new Set(songs.map((song) => song.id))
+  const guests: PlanningGuest[] = plan.guests
+    .map((guest): PlanningGuest => ({ ...guest, name: guest.name.trim(), kind: guest.kind === 'child' ? 'child' : 'adult', category: guest.kind === 'child' ? 'children' : guest.category, householdId: guest.householdId?.trim() || null, groupLabel: guest.groupLabel?.trim() || null, requiresHighChair: guest.kind === 'child' && guest.requiresHighChair, notes: guest.notes?.trim() || null }))
     .filter((guest) => guest.name)
-
   const validGuestIds = new Set(guests.map((guest) => guest.id))
-
-  const tables = values.tables
-    .map((table) => {
-      const seatCount = Math.min(24, Math.max(1, Math.round(table.seatCount)))
-      const seatAssignments = normalizeSeatAssignments(table.seatAssignments, seatCount).map((guestId) =>
-        guestId && validGuestIds.has(guestId) ? guestId : null,
-      )
-
-      return {
-        ...table,
-        name: table.name.trim(),
-        seatCount,
-        seatAssignments,
-      }
-    })
+  const tables = plan.tables
+    .map((table) => ({ ...table, name: table.name.trim(), buffetSongId: table.buffetSongId && validSongIds.has(table.buffetSongId) ? table.buffetSongId : null, seatCount: Math.min(24, Math.max(1, Math.round(table.seatCount))), seatAssignments: normalizeSeatAssignments(table.seatAssignments, Math.min(24, Math.max(1, Math.round(table.seatCount)))).map((guestId) => (guestId && validGuestIds.has(guestId) ? guestId : null)) }))
     .filter((table) => table.name)
-
-  return {
-    isPublished: values.isPublished === true,
-    guests,
-    tables,
-  }
+  return { isPublished: plan.isPublished === true, buffetMode: { enabled: plan.buffetMode.enabled === true, songs }, guests, tables }
 }
 
-function SeatingPreview({
-  tables,
-  guestNamesById,
-}: {
-  tables: SeatingTable[]
-  guestNamesById: Map<string, string>
-}) {
-  if (!tables.length) {
-    return (
-      <div className="rounded-[1.75rem] border border-dashed border-cream-300 bg-cream-50 px-5 py-6 text-sm text-charcoal-600">
-        Sobald ihr Tische anlegt, erscheint hier eine visuelle Vorschau eures Tischplans.
-      </div>
-    )
-  }
-
-  return (
-    <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr))]">
-      {tables.map((table) => {
-        const occupiedSeats = table.seatAssignments.filter(Boolean).length
-
-        return (
-          <article key={table.id} className="surface-card flex h-full min-w-0 flex-col px-5 py-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <h4 className="text-safe-wrap font-display text-card text-charcoal-900">{table.name}</h4>
-                <p className="mt-1 text-sm text-charcoal-500">
-                  {TABLE_KIND_LABELS[table.kind]}
-                </p>
-              </div>
-              <Badge variant={getTableBadgeVariant(table.kind)}>
-                {occupiedSeats}/{table.seatCount} belegt
-              </Badge>
-            </div>
-
-            <div className="mt-5 flex items-center justify-center">
-              <div className="flex h-40 w-40 items-center justify-center rounded-full border border-gold-200 bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.18),_rgba(255,255,255,0.96)_58%)] text-center shadow-sm">
-                <div className="space-y-1 px-6">
-                  <p className="font-display text-xl text-charcoal-900">{table.name}</p>
-                  <p className="text-sm text-charcoal-600">
-                    {table.seatCount} Plätze
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-2 sm:grid-cols-2">
-              {table.seatAssignments.map((guestId, seatIndex) => (
-                <div
-                  key={`${table.id}-preview-seat-${seatIndex}`}
-                  className="rounded-full border border-cream-200 bg-cream-50 px-3 py-2 text-sm text-charcoal-700"
-                >
-                  <span className="font-semibold text-charcoal-900">Platz {seatIndex + 1}:</span>{' '}
-                  {guestId ? guestNamesById.get(guestId) ?? 'Zugewiesen' : 'Frei'}
-                </div>
-              ))}
-            </div>
-          </article>
-        )
-      })}
-    </div>
-  )
+function getGuestOptionLabel(guest: PlanningGuest) {
+  return `${guest.name} · ${guest.kind === 'child' ? guest.requiresHighChair ? 'Kind · Hochstuhl' : 'Kind' : GUEST_CATEGORY_LABELS[guest.category]}`
 }
 
 export function GuestPlanningSection({
@@ -453,26 +269,21 @@ export function GuestPlanningSection({
   rsvps: RsvpRecord[]
 }) {
   const router = useRouter()
-  const [plan, setPlan] = useState<SeatingPlanData>(() => ({
-    ...initialData,
-    guests: ensureCoupleGuests(initialData.guests, coupleNames),
-  }))
+  const [plan, setPlan] = useState<SeatingPlanData>(() => ({ ...initialData, buffetMode: initialData.buffetMode ?? { enabled: false, songs: [] }, guests: ensureCoupleGuests(initialData.guests, coupleNames) }))
   const [isSaving, setIsSaving] = useState(false)
+  const [isDownloadingBuffetPdf, setIsDownloadingBuffetPdf] = useState(false)
   const [guestTableCountDraft, setGuestTableCountDraft] = useState(0)
   const [guestSeatCountDraft, setGuestSeatCountDraft] = useState(8)
-  const coupleGuestIds = useMemo(
-    () => new Set(buildCoupleGuests(coupleNames).map((guest) => guest.id)),
-    [coupleNames],
-  )
-
-  const assignedGuestIds = useMemo(() => getAssignedGuestIds(plan.tables), [plan.tables])
-  const unassignedGuests = useMemo(
-    () => plan.guests.filter((guest) => !assignedGuestIds.has(guest.id)),
-    [assignedGuestIds, plan.guests],
-  )
-  const guestNamesById = useMemo(
-    () => new Map(plan.guests.map((guest) => [guest.id, guest.name])),
-    [plan.guests],
+  const [previewMode, setPreviewMode] = useState<SeatingViewMode>('2d')
+  const coupleGuestIds = useMemo(() => new Set(buildCoupleGuests(coupleNames).map((guest) => guest.id)), [coupleNames])
+  const guestById = useMemo(() => new Map(plan.guests.map((guest) => [guest.id, guest])), [plan.guests])
+  const buffetSongsById = useMemo(() => new Map(plan.buffetMode.songs.map((song) => [song.id, song])), [plan.buffetMode.songs])
+  const assignedGuestIds = useMemo(() => new Set(plan.tables.flatMap((table) => table.seatAssignments.filter((guestId): guestId is string => Boolean(guestId)))), [plan.tables])
+  const households = useMemo(() => buildHouseholds(plan.guests), [plan.guests])
+  const unassignedGuests = useMemo(() => plan.guests.filter((guest) => !assignedGuestIds.has(guest.id)), [assignedGuestIds, plan.guests])
+  const previewTables = useMemo<SeatingPlanVisualTable[]>(
+    () => plan.tables.map((table) => ({ ...table, buffetSongLabel: table.buffetSongId ? buffetSongsById.get(table.buffetSongId)?.title ?? null : null, seats: table.seatAssignments.map((guestId, seatIndex) => ({ key: `${table.id}-seat-${seatIndex + 1}`, label: guestId ? guestById.get(guestId)?.name ?? null : null, kind: guestId ? guestById.get(guestId)?.kind ?? 'adult' : 'adult', requiresHighChair: guestId ? guestById.get(guestId)?.requiresHighChair ?? false : false })) })),
+    [buffetSongsById, guestById, plan.tables],
   )
 
   useEffect(() => {
@@ -482,179 +293,132 @@ export function GuestPlanningSection({
   }, [plan.tables])
 
   useEffect(() => {
-    setPlan((current) => ({
-      ...current,
-      guests: ensureCoupleGuests(current.guests, coupleNames),
-    }))
+    setPlan((current) => ({ ...current, guests: ensureCoupleGuests(current.guests, coupleNames) }))
   }, [coupleNames])
 
   function updateGuest(guestId: string, patch: Partial<PlanningGuest>) {
     setPlan((current) => ({
       ...current,
-      guests: current.guests.map((guest) => (guest.id === guestId ? { ...guest, ...patch } : guest)),
-    }))
-  }
-
-  function removeGuest(guestId: string) {
-    setPlan((current) => ({
-      ...current,
-      guests: current.guests.filter((guest) => guest.id !== guestId),
-      tables: current.tables.map((table) => ({
-        ...table,
-        seatAssignments: table.seatAssignments.map((entry) => (entry === guestId ? null : entry)),
-      })),
+      guests: current.guests.map((guest) =>
+        guest.id === guestId
+          ? {
+              ...guest,
+              ...patch,
+              category: guest.kind === 'child' ? 'children' : patch.category ?? guest.category,
+              requiresHighChair: guest.kind === 'child' ? patch.requiresHighChair ?? guest.requiresHighChair : false,
+            }
+          : guest,
+      ),
     }))
   }
 
   function updateTable(tableId: string, patch: Partial<SeatingTable>) {
     setPlan((current) => ({
       ...current,
-      tables: current.tables.map((table) => {
-        if (table.id !== tableId) {
-          return table
-        }
-
-        const nextSeatCount = patch.seatCount ?? table.seatCount
-        return {
-          ...table,
-          ...patch,
-          seatAssignments: normalizeSeatAssignments(
-            patch.seatAssignments ?? table.seatAssignments,
-            nextSeatCount,
-          ),
-        }
-      }),
+      tables: current.tables.map((table) =>
+        table.id === tableId
+          ? { ...table, ...patch, seatAssignments: normalizeSeatAssignments(patch.seatAssignments ?? table.seatAssignments, patch.seatCount ?? table.seatCount) }
+          : table,
+      ),
     }))
   }
 
-  function removeTable(tableId: string) {
-    setPlan((current) => ({
-      ...current,
-      tables: current.tables.filter((table) => table.id !== tableId),
-    }))
-  }
-
-  function importGuestsFromRsvps() {
-    const importedGuests = buildImportedGuests(rsvps, ensureCoupleGuests(plan.guests, coupleNames))
-
-    if (!importedGuests.length) {
-      toast.message('Es konnten keine neuen Gäste aus den RSVP-Antworten übernommen werden.')
+  function syncGuestsToRsvpState() {
+    const attending = rsvps.filter((rsvp) => rsvp.isAttending)
+    if (!attending.length) {
+      toast.message('Es liegen noch keine Zusagen vor, die in den Tischplan übernommen werden können.')
       return
     }
 
-    setPlan((current) => ({
-      ...current,
-      guests: ensureCoupleGuests([...current.guests, ...importedGuests], coupleNames),
-    }))
-    toast.success(`${importedGuests.length} Gäste aus den RSVP-Antworten übernommen.`)
-  }
-
-  function addTable(kind: SeatingTable['kind']) {
-    setPlan((current) => ({
-      ...current,
-      tables: [
-        ...current.tables,
-        createTable(
-          current.tables.filter((table) => table.kind === kind).length + 1,
-          kind,
-        ),
-      ],
-    }))
-  }
-
-  function adjustTableSeatCount(tableId: string, delta: number) {
-    setPlan((current) => ({
-      ...current,
-      tables: current.tables.map((table) => {
-        if (table.id !== tableId) {
-          return table
-        }
-
-        const nextSeatCount = Math.min(24, Math.max(1, table.seatCount + delta))
-
-        if (nextSeatCount === table.seatCount) {
-          return table
-        }
-
-        return {
-          ...table,
-          seatCount: nextSeatCount,
-          seatAssignments: normalizeSeatAssignments(table.seatAssignments, nextSeatCount),
-        }
-      }),
-    }))
-  }
-
-  function applyGuestTableLayout() {
-    const nextGuestTableCount = Math.max(0, Math.min(24, Math.round(guestTableCountDraft || 0)))
-    const nextSeatCount = Math.max(1, Math.min(24, Math.round(guestSeatCountDraft || 1)))
-
     setPlan((current) => {
-      const guestTables = current.tables.filter((table) => table.kind === 'guest')
-      const nonGuestTables = current.tables.filter((table) => table.kind !== 'guest')
-      const nextGuestTables = guestTables.slice(0, nextGuestTableCount).map((table) => ({
-        ...table,
-        seatCount: nextSeatCount,
-        seatAssignments: normalizeSeatAssignments(table.seatAssignments, nextSeatCount),
-      }))
-
-      while (nextGuestTables.length < nextGuestTableCount) {
-        nextGuestTables.push(createTable(nextGuestTables.length + 1, 'guest', nextSeatCount))
-      }
-
+      const nextGuests = syncGuestsFromRsvps(attending, current.guests, coupleNames)
+      const validGuestIds = new Set(nextGuests.map((guest) => guest.id))
       return {
         ...current,
-        tables: [...nextGuestTables, ...nonGuestTables],
+        guests: nextGuests,
+        tables: current.tables.map((table) => ({
+          ...table,
+          seatAssignments: table.seatAssignments.map((guestId) => (guestId && validGuestIds.has(guestId) ? guestId : null)),
+        })),
       }
     })
 
-    toast.success('Das Tischlayout wurde aktualisiert.')
+    toast.success('RSVP-Haushalte inklusive Kinder und Hochstühle wurden synchronisiert.')
   }
 
-  function runAutomaticSeating() {
-    try {
-      const normalizedPlan = normalizePlanningData(plan)
-      const nextTables = createAutomaticAssignments(normalizedPlan.guests, normalizedPlan.tables)
-
-      setPlan((current) => ({
-        ...current,
-        guests: normalizedPlan.guests,
-        tables: nextTables,
+  function updateHouseholdCounts(householdId: string, childCount: number, highChairCount: number) {
+    setPlan((current) => {
+      const adults = current.guests.filter((guest) => guest.householdId === householdId && guest.kind === 'adult')
+      const existingChildren = current.guests.filter((guest) => guest.householdId === householdId && guest.kind === 'child')
+      if (!adults.length) return current
+      const nextChildCount = Math.max(0, Math.min(10, Math.round(childCount || 0)))
+      const nextHighChairCount = Math.max(0, Math.min(nextChildCount, Math.round(highChairCount || 0)))
+      const removedIds = new Set(existingChildren.slice(nextChildCount).map((guest) => guest.id))
+      const leadName = adults[0]?.name ?? 'Hauptgast'
+      const label = adults[0]?.groupLabel?.trim() || `${leadName} Haushalt`
+      const nextChildren: PlanningGuest[] = Array.from({ length: nextChildCount }, (_, index) => ({
+        id: existingChildren[index]?.id ?? `rsvp-${householdId}-child-${index + 1}`,
+        name: `Kind ${index + 1} von ${leadName}`,
+        kind: 'child',
+        category: 'children',
+        householdId,
+        groupLabel: label,
+        requiresHighChair: index < nextHighChairCount,
+        notes: existingChildren[index]?.notes ?? null,
       }))
-      toast.success('Der smarte Sitzvorschlag wurde erstellt.')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Der Sitzvorschlag konnte nicht erstellt werden.')
+      return {
+        ...current,
+        guests: current.guests.filter((guest) => !(guest.householdId === householdId && guest.kind === 'child')).concat(nextChildren),
+        tables: current.tables.map((table) => ({
+          ...table,
+          seatAssignments: table.seatAssignments.map((guestId) => (guestId && removedIds.has(guestId) ? null : guestId)),
+        })),
+      }
+    })
+  }
+
+  async function downloadBuffetPdf() {
+    setIsDownloadingBuffetPdf(true)
+    try {
+      const response = await fetch('/api/admin/buffet-song-plan-pdf')
+      if (!response.ok) {
+        const result = (await response.json().catch(() => null)) as ApiResponse<null> | null
+        toast.error(result && !result.success ? result.error : 'Der PDF-Download konnte nicht gestartet werden.')
+        return
+      }
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      const contentDisposition = response.headers.get('content-disposition') ?? ''
+      const fileName = contentDisposition.match(/filename=\"?([^\";]+)\"?/)?.[1] ?? 'buffet-songplan.pdf'
+      anchor.href = url
+      anchor.download = fileName
+      anchor.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Der PDF-Download konnte nicht gestartet werden.')
+    } finally {
+      setIsDownloadingBuffetPdf(false)
     }
   }
 
   async function savePlanning() {
     setIsSaving(true)
-
     try {
-      const payload = normalizePlanningData({
-        ...plan,
-        guests: ensureCoupleGuests(plan.guests, coupleNames),
-      })
+      const payload = normalizePlanningData({ ...plan, guests: ensureCoupleGuests(plan.guests, coupleNames) })
       const response = await fetch('/api/admin/seating-plan', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-
       const result = (await response.json()) as ApiResponse<SeatingPlanData>
-
       if (!response.ok || !result.success) {
         toast.error(result.success ? 'Speichern fehlgeschlagen.' : result.error)
         return
       }
-
-      setPlan(result.data)
+      setPlan({ ...result.data, guests: ensureCoupleGuests(result.data.guests, coupleNames) })
       toast.success(result.message ?? 'RSVP-Gäste und Tischplan wurden gespeichert.')
-      startTransition(() => {
-        router.refresh()
-      })
+      startTransition(() => router.refresh())
     } catch {
       toast.error('RSVP-Gäste und Tischplan konnten gerade nicht gespeichert werden.')
     } finally {
@@ -668,22 +432,32 @@ export function GuestPlanningSection({
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2">
             <Badge variant="neutral">{plan.guests.length} Teilnehmende</Badge>
+            <Badge variant="neutral">{households.length} RSVP-Haushalte</Badge>
             <Badge variant="neutral">{plan.tables.length} Tische</Badge>
             <Badge variant="neutral">{unassignedGuests.length} unzugeordnet</Badge>
           </div>
           <p className="max-w-3xl text-body-md text-charcoal-600">
-            Der Tischplan arbeitet mit den Zusagen aus dem Bereich RSVP. Übernommen werden nur Gäste aus
-            echten RSVP-Antworten; das Brautpaar wird hier automatisch ergänzt. Die smarte Sitzverteilung
-            setzt ähnliche Gruppen zusammen und berücksichtigt Dienstleister bevorzugt am
-            Dienstleistertisch.
+            Erwachsene, Kinder und Hochstühle werden pro Haushalt geführt. Die smarte Sitzverteilung setzt Kinder zunächst passend, ihr könnt sie danach aber auch bewusst an Kindertische, zu Großeltern oder an andere Tische umsetzen.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Button type="button" variant="secondary" onClick={importGuestsFromRsvps}>
+          <Button type="button" variant="secondary" onClick={syncGuestsToRsvpState}>
             <Users className="h-4 w-4" />
             Aus RSVP synchronisieren
           </Button>
-          <Button type="button" variant="secondary" onClick={runAutomaticSeating}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              try {
+                const normalizedPlan = normalizePlanningData(plan)
+                setPlan((current) => ({ ...current, buffetMode: normalizedPlan.buffetMode, guests: normalizedPlan.guests, tables: createAutomaticAssignments(normalizedPlan.guests, normalizedPlan.tables) }))
+                toast.success('Der smarte Sitzvorschlag wurde erstellt.')
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : 'Der Sitzvorschlag konnte nicht erstellt werden.')
+              }
+            }}
+          >
             <WandSparkles className="h-4 w-4" />
             Smarte Sitzverteilung
           </Button>
@@ -698,26 +472,11 @@ export function GuestPlanningSection({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
             <h3 className="font-display text-card text-charcoal-900">Sitzplan für Gäste veröffentlichen</h3>
-            <p className="max-w-3xl text-body-md text-charcoal-600">
-              Standardmaessig bleibt der Sitzplan privat und nur im Paarbereich sichtbar. Erst wenn ihr
-              diese Option aktiviert und speichert, erscheint er auf der Gästeseite.
-            </p>
-            <p className="text-sm text-charcoal-500">
-              Dienstleistertische bleiben weiterhin nur intern für euch sichtbar.
-            </p>
+            <p className="max-w-3xl text-body-md text-charcoal-600">Standardmäßig bleibt der Sitzplan privat. Erst wenn ihr speichert und diese Option aktiviert, erscheint er im Gästebereich.</p>
+            <p className="text-sm text-charcoal-500">Dienstleistertische bleiben weiterhin nur intern sichtbar.</p>
           </div>
           <label className="flex min-h-11 items-center gap-3 rounded-full border border-gold-300 bg-white px-4 py-3 text-sm font-semibold text-charcoal-900">
-            <input
-              checked={plan.isPublished}
-              className="h-4 w-4 accent-gold-500"
-              type="checkbox"
-              onChange={(event) =>
-                setPlan((current) => ({
-                  ...current,
-                  isPublished: event.target.checked,
-                }))
-              }
-            />
+            <input checked={plan.isPublished} className="h-4 w-4 accent-gold-500" type="checkbox" onChange={(event) => setPlan((current) => ({ ...current, isPublished: event.target.checked }))} />
             {plan.isPublished ? 'Für Gäste sichtbar' : 'Privat'}
           </label>
         </div>
@@ -725,348 +484,235 @@ export function GuestPlanningSection({
 
       <div className="space-y-5">
         <div>
-          <h3 className="font-display text-card text-charcoal-900">RSVP-Teilnehmende</h3>
-          <p className="mt-2 text-body-md text-charcoal-600">
-            Diese Liste speist den Tischplan. Sie wird aus euren Zusagen übernommen; das Brautpaar steht
-            automatisch mit drin. Kategorien und Gruppen helfen bei der automatischen Verteilung.
-          </p>
+          <h3 className="font-display text-card text-charcoal-900">RSVP-Haushalte</h3>
+          <p className="mt-2 text-body-md text-charcoal-600">Hier passt ihr kleine Kinder und Hochstühle pro Haushalt an. Die Kinder-Sitzplätze werden automatisch erzeugt.</p>
         </div>
-
-        {plan.guests.length ? (
-          <div className="space-y-4">
-            {plan.guests.map((guest) => {
-              const isCoupleGuest = coupleGuestIds.has(guest.id)
-
-              return (
-                <article key={guest.id} className="rounded-[1.6rem] border border-cream-200 bg-white px-5 py-5 shadow-sm">
-                  <div className="grid gap-4 xl:grid-cols-[1.15fr_0.95fr_0.9fr_auto]">
-                    <Input
-                      disabled={isCoupleGuest}
-                      helperText={isCoupleGuest ? 'Automatisch aus dem Brautpaarprofil übernommen.' : undefined}
-                      label="Name"
-                      value={guest.name}
-                      onChange={(event) => updateGuest(guest.id, { name: event.target.value })}
-                    />
-                    <label className="flex flex-col gap-2 text-sm font-medium text-charcoal-700">
-                      <span>Kategorie</span>
-                      <select
-                        disabled={isCoupleGuest}
-                        className="min-h-11 rounded-2xl border border-cream-300 bg-white px-4 py-3 text-base text-charcoal-900 outline-none transition focus:border-gold-500"
-                        value={guest.category}
-                        onChange={(event) =>
-                          updateGuest(guest.id, { category: event.target.value as GuestCategory })
-                        }
-                      >
-                        {GUEST_CATEGORY_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <Input
-                      label="Gruppe / Haushalt"
-                      disabled={isCoupleGuest}
-                      helperText={
-                        isCoupleGuest
-                          ? 'Dieser Eintrag gehört fest zum Brautpaar.'
-                          : 'Optional, z. B. Familie Müller oder Paar Anna & Tim.'
-                      }
-                      value={guest.groupLabel ?? ''}
-                      onChange={(event) =>
-                        updateGuest(guest.id, { groupLabel: event.target.value || null })
-                      }
-                    />
-                    <div className="flex items-end">
-                      {isCoupleGuest ? (
-                        <Badge variant="declined">Brautpaar</Badge>
-                      ) : (
-                        <Button type="button" variant="ghost" onClick={() => removeGuest(guest.id)}>
-                          <Trash2 className="h-4 w-4" />
-                          Entfernen
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_auto]">
-                    <Input
-                      label="Notiz"
-                      helperText={
-                        isCoupleGuest
-                          ? 'Optional, z. B. Sitzwünsche oder Hinweis zum Brautpaartisch.'
-                          : 'Optional, z. B. spricht vor allem mit Tisch 3 oder braucht ruhige Ecke.'
-                      }
-                      value={guest.notes ?? ''}
-                      onChange={(event) => updateGuest(guest.id, { notes: event.target.value || null })}
-                    />
-                    <div className="flex items-end justify-start lg:justify-end">
-                      <Badge variant={assignedGuestIds.has(guest.id) ? 'attending' : 'neutral'}>
-                        {assignedGuestIds.has(guest.id) ? 'zugewiesen' : 'offen'}
-                      </Badge>
-                    </div>
-                  </div>
-                </article>
-              )
-            })}
+        {households.length ? (
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]">
+            {households.map((household) => (
+              <article key={household.id} className="rounded-[1.6rem] border border-cream-200 bg-white px-5 py-5 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <h4 className="font-display text-card text-charcoal-900">{household.label}</h4>
+                  <Badge variant="neutral">{household.adults} Erwachsene</Badge>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-charcoal-500">{household.names.join(', ')}</p>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <Input label="Kleine Kinder" inputMode="numeric" max={10} min={0} type="number" value={household.children} onChange={(event) => updateHouseholdCounts(household.id, Number(event.target.value) || 0, household.highChairs)} />
+                  <Input label="Benötigte Hochstühle" inputMode="numeric" max={household.children} min={0} type="number" value={household.highChairs} onChange={(event) => updateHouseholdCounts(household.id, household.children, Number(event.target.value) || 0)} />
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Badge variant={household.children ? 'attending' : 'neutral'}>{household.children ? `${household.children} Kinder` : 'Keine Kinder'}</Badge>
+                  {household.highChairs ? <Badge variant="declined">{household.highChairs} Hochstühle</Badge> : null}
+                </div>
+              </article>
+            ))}
           </div>
         ) : (
-          <div className="rounded-[1.75rem] border border-dashed border-cream-300 bg-cream-50 px-5 py-6 text-sm text-charcoal-600">
-            Noch keine RSVP-Gäste übernommen. Nutzt oben die Synchronisierung aus dem Bereich RSVP; das
-            Brautpaar wird automatisch ergänzt.
-          </div>
+          <div className="rounded-[1.75rem] border border-dashed border-cream-300 bg-cream-50 px-5 py-6 text-sm text-charcoal-600">Sobald Zusagen vorliegen und synchronisiert wurden, könnt ihr hier Kinder und Hochstühle pro Haushalt feinjustieren.</div>
         )}
+      </div>
+
+      <div className="space-y-5">
+        <div>
+          <h3 className="font-display text-card text-charcoal-900">Buffet-Aufrufe nach Songs</h3>
+          <p className="mt-2 text-body-md text-charcoal-600">Optional könnt ihr Songs bestimmten Tischen zuordnen. Wenn der Song gespielt wird, ist das der Aufruf für den ersten Gang ans Buffet.</p>
+        </div>
+        <div className="rounded-[1.75rem] border border-cream-200 bg-white px-5 py-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <label className="flex min-h-11 items-center gap-3 rounded-full border border-gold-300 bg-cream-50 px-4 py-3 text-sm font-semibold text-charcoal-900">
+              <input checked={plan.buffetMode.enabled} className="h-4 w-4 accent-gold-500" type="checkbox" onChange={(event) => setPlan((current) => ({ ...current, buffetMode: { ...current.buffetMode, enabled: event.target.checked } }))} />
+              Buffet-Modus aktiv
+            </label>
+            <div className="flex flex-wrap gap-3">
+              <Button type="button" variant="secondary" onClick={() => setPlan((current) => ({ ...current, buffetMode: { ...current.buffetMode, songs: [...current.buffetMode.songs, { id: createId('buffet-song'), title: '', artist: null, sortOrder: current.buffetMode.songs.length + 1 }] } }))}>
+                <Music4 className="h-4 w-4" />
+                Song hinzufügen
+              </Button>
+              <Button disabled={!plan.buffetMode.songs.length} loading={isDownloadingBuffetPdf} type="button" variant="secondary" onClick={downloadBuffetPdf}>
+                <FileDown className="h-4 w-4" />
+                Songliste als PDF
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-5">
+        <div>
+          <h3 className="font-display text-card text-charcoal-900">Teilnehmende</h3>
+          <p className="mt-2 text-body-md text-charcoal-600">Hier könnt ihr Kategorien und Notizen für die automatische Sitzverteilung pflegen. Kinderplätze bleiben systemseitig an ihre RSVP-Haushalte gebunden.</p>
+        </div>
+        <div className="space-y-4">
+          {plan.guests.map((guest) => {
+            const isCoupleGuest = coupleGuestIds.has(guest.id)
+            const isGeneratedChild = guest.kind === 'child' && Boolean(guest.householdId)
+            const isLocked = isCoupleGuest || isGeneratedChild
+
+            return (
+              <article key={guest.id} className="rounded-[1.6rem] border border-cream-200 bg-white px-5 py-5 shadow-sm">
+                <div className="grid gap-4 xl:grid-cols-[1.15fr_0.95fr_auto]">
+                  <Input label="Name" disabled={isLocked} helperText={isCoupleGuest ? 'Automatisch aus dem Brautpaarprofil übernommen.' : isGeneratedChild ? 'Wird aus dem RSVP-Haushalt erzeugt.' : undefined} value={guest.name} onChange={(event) => updateGuest(guest.id, { name: event.target.value })} />
+                  <label className="flex flex-col gap-2 text-sm font-medium text-charcoal-700">
+                    <span>Kategorie</span>
+                    <select disabled={isLocked} className={selectClassName} value={guest.category} onChange={(event) => updateGuest(guest.id, { category: event.target.value as GuestCategory })}>
+                      {GUEST_CATEGORY_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="flex items-end justify-start gap-2">
+                    {guest.kind === 'child' ? <Badge variant="attending">Kind</Badge> : null}
+                    {guest.requiresHighChair ? <Badge variant="declined">Hochstuhl</Badge> : null}
+                    {isCoupleGuest ? <Badge variant="declined">Brautpaar</Badge> : guest.householdId ? <Badge variant="neutral">RSVP-Haushalt</Badge> : <Button type="button" variant="ghost" onClick={() => setPlan((current) => ({ ...current, guests: current.guests.filter((entry) => entry.id !== guest.id), tables: current.tables.map((table) => ({ ...table, seatAssignments: table.seatAssignments.map((entry) => (entry === guest.id ? null : entry)) })) }))}><Trash2 className="h-4 w-4" />Entfernen</Button>}
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Input label="Notiz" helperText={isGeneratedChild ? 'Optional, z. B. Kinderstuhl oder Nähe zur Familie.' : 'Optional, z. B. Sitzwunsch oder besondere Gruppierung.'} value={guest.notes ?? ''} onChange={(event) => updateGuest(guest.id, { notes: event.target.value || null })} />
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      </div>
+      {plan.buffetMode.enabled && plan.buffetMode.songs.length ? (
+        <div className="space-y-4">
+          {plan.buffetMode.songs.map((song, index) => (
+            <article key={song.id} className="rounded-[1.45rem] border border-cream-200 bg-cream-50 px-4 py-4">
+              <div className="grid gap-4 xl:grid-cols-[0.55fr_1fr_1fr_auto]">
+                <Input label="Reihenfolge" inputMode="numeric" min={1} type="number" value={song.sortOrder} onChange={(event) => setPlan((current) => ({ ...current, buffetMode: { ...current.buffetMode, songs: current.buffetMode.songs.map((entry) => (entry.id === song.id ? { ...entry, sortOrder: Number(event.target.value) || index + 1 } : entry)) } }))} />
+                <Input label="Songtitel" value={song.title} onChange={(event) => setPlan((current) => ({ ...current, buffetMode: { ...current.buffetMode, songs: current.buffetMode.songs.map((entry) => (entry.id === song.id ? { ...entry, title: event.target.value } : entry)) } }))} />
+                <Input label="Interpret" value={song.artist ?? ''} onChange={(event) => setPlan((current) => ({ ...current, buffetMode: { ...current.buffetMode, songs: current.buffetMode.songs.map((entry) => (entry.id === song.id ? { ...entry, artist: event.target.value || null } : entry)) } }))} />
+                <div className="flex items-end">
+                  <Button type="button" variant="ghost" onClick={() => setPlan((current) => ({ ...current, buffetMode: { ...current.buffetMode, songs: current.buffetMode.songs.filter((entry) => entry.id !== song.id).map((entry, songIndex) => ({ ...entry, sortOrder: songIndex + 1 })) }, tables: current.tables.map((table) => ({ ...table, buffetSongId: table.buffetSongId === song.id ? null : table.buffetSongId })) }))}>
+                    <Trash2 className="h-4 w-4" />
+                    Entfernen
+                  </Button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h4 className="font-display text-card text-charcoal-900">Visuelle Vorschau in 2D und 3D</h4>
+            <p className="mt-2 max-w-3xl text-body-md text-charcoal-600">So wirkt euer Sitzplan aktuell im Paarbereich. Tischformen, Kinderplätze, Hochstühle und Buffet-Songs werden direkt sichtbar.</p>
+          </div>
+          <div className="inline-flex flex-wrap gap-2 rounded-full border border-cream-200 bg-white p-1 shadow-sm">
+            {(['2d', '3d'] as const).map((mode) => (
+              <Button key={mode} type="button" size="sm" variant={previewMode === mode ? 'primary' : 'ghost'} onClick={() => setPreviewMode(mode)}>
+                {mode === '2d' ? '2D Ansicht' : '3D Ansicht'}
+              </Button>
+            ))}
+          </div>
+        </div>
+        {previewTables.length ? <SeatingPlanVisualizer mode={previewMode} showEmptySeats tables={previewTables} /> : <div className="rounded-[1.75rem] border border-dashed border-cream-300 bg-cream-50 px-5 py-6 text-sm text-charcoal-600">Sobald ihr Tische anlegt, erscheint hier eine visuelle Vorschau eures Tischplans.</div>}
       </div>
 
       <div id="sitzplan" className="space-y-5 border-t border-cream-200 pt-8">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h3 className="font-display text-card text-charcoal-900">Sitzplan</h3>
-            <p className="mt-2 text-body-md text-charcoal-600">
-              Legt beliebig viele Tische mit individueller Sitzplatzanzahl an. Teilnehmende lassen sich
-              manuell zuordnen oder per smarter Verteilung automatisch setzen.
-            </p>
+            <p className="mt-2 text-body-md text-charcoal-600">Legt beliebig viele Tische an, konfiguriert Form und Sitzplätze und ordnet danach Personen, Kinder und Buffet-Songs zu.</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button type="button" variant="secondary" onClick={() => addTable('guest')}>
-              <Plus className="h-4 w-4" />
-              Tisch hinzufügen
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => addTable('couple')}>
-              <Heart className="h-4 w-4" />
-              Brautpaartisch
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => addTable('service')}>
-              <Building2 className="h-4 w-4" />
-              Dienstleistertisch
-            </Button>
+            <Button type="button" variant="secondary" onClick={() => setPlan((current) => ({ ...current, tables: [...current.tables, createTable(current.tables.filter((table) => table.kind === 'guest').length + 1, 'guest')] }))}><Plus className="h-4 w-4" />Tisch hinzufügen</Button>
+            <Button type="button" variant="secondary" onClick={() => setPlan((current) => ({ ...current, tables: [...current.tables, createTable(current.tables.filter((table) => table.kind === 'child').length + 1, 'child')] }))}><Baby className="h-4 w-4" />Kindertisch</Button>
+            <Button type="button" variant="secondary" onClick={() => setPlan((current) => ({ ...current, tables: [...current.tables, createTable(current.tables.filter((table) => table.kind === 'couple').length + 1, 'couple')] }))}><Heart className="h-4 w-4" />Brautpaartisch</Button>
+            <Button type="button" variant="secondary" onClick={() => setPlan((current) => ({ ...current, tables: [...current.tables, createTable(current.tables.filter((table) => table.kind === 'service').length + 1, 'service')] }))}><Building2 className="h-4 w-4" />Dienstleistertisch</Button>
           </div>
         </div>
-
         <div className="rounded-[1.75rem] border border-cream-200 bg-cream-50/70 px-5 py-5 shadow-sm">
-          <div className="space-y-2">
-            <h4 className="font-display text-card text-charcoal-900">Grundlayout der Gästetische</h4>
-            <p className="max-w-3xl text-body-md text-charcoal-600">
-              Legt hier zuerst die Anzahl eurer normalen Gästetische und die Standardzahl der
-              Sitzplätze fest. Darunter könnt ihr jeden Tisch weiterhin individuell anpassen.
-            </p>
-          </div>
-
           <div className="mt-5 grid gap-4 xl:grid-cols-3">
             <div className="flex h-full flex-col rounded-[1.5rem] border border-cream-200 bg-white px-4 py-4 shadow-sm">
-              <Input
-                label="Anzahl Gästetische"
-                inputMode="numeric"
-                max={24}
-                min={0}
-                type="number"
-                value={guestTableCountDraft}
-                onChange={(event) => setGuestTableCountDraft(Number(event.target.value) || 0)}
-              />
-              <p className="mt-3 text-sm leading-6 text-charcoal-500">
-                Erstellt oder reduziert damit die Anzahl eurer normalen Gästetische.
-              </p>
+              <Input label="Anzahl Gästetische" inputMode="numeric" max={24} min={0} type="number" value={guestTableCountDraft} onChange={(event) => setGuestTableCountDraft(Number(event.target.value) || 0)} />
+              <p className="mt-3 text-sm leading-6 text-charcoal-500">Erstellt oder reduziert damit die Anzahl eurer normalen Gästetische.</p>
             </div>
-
             <div className="flex h-full flex-col rounded-[1.5rem] border border-cream-200 bg-white px-4 py-4 shadow-sm">
-              <Input
-                label="Sitzplätze pro Gästetisch"
-                inputMode="numeric"
-                max={24}
-                min={1}
-                type="number"
-                value={guestSeatCountDraft}
-                onChange={(event) => setGuestSeatCountDraft(Number(event.target.value) || 1)}
-              />
-              <p className="mt-3 text-sm leading-6 text-charcoal-500">
-                Diese Zahl gilt als Standard für alle normalen Gästetische.
-              </p>
+              <Input label="Sitzplätze pro Gästetisch" inputMode="numeric" max={24} min={1} type="number" value={guestSeatCountDraft} onChange={(event) => setGuestSeatCountDraft(Number(event.target.value) || 1)} />
+              <p className="mt-3 text-sm leading-6 text-charcoal-500">Diese Zahl gilt als Standard für alle normalen Gästetische.</p>
             </div>
-
             <div className="flex h-full flex-col rounded-[1.5rem] border border-gold-200 bg-gold-50 px-4 py-4 shadow-sm">
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-charcoal-900">Layout übernehmen</p>
-                <p className="text-sm leading-6 text-charcoal-500">
-                  Wendet die beiden Werte gesammelt auf alle normalen Gästetische an. Einzelne
-                  Tische könnt ihr darunter weiter individuell anpassen.
-                </p>
+                <p className="text-sm leading-6 text-charcoal-500">Wendet die beiden Werte gesammelt auf alle normalen Gästetische an.</p>
               </div>
               <div className="mt-auto pt-4">
-                <Button className="w-full" type="button" variant="secondary" onClick={applyGuestTableLayout}>
-                  Layout anwenden
-                </Button>
+                <Button className="w-full" type="button" variant="secondary" onClick={() => setPlan((current) => {
+                  const nextTableCount = Math.max(0, Math.min(24, Math.round(guestTableCountDraft || 0)))
+                  const nextSeatCount = Math.max(1, Math.min(24, Math.round(guestSeatCountDraft || 1)))
+                  const guestTables = current.tables.filter((table) => table.kind === 'guest')
+                  const otherTables = current.tables.filter((table) => table.kind !== 'guest')
+                  const nextGuestTables = guestTables.slice(0, nextTableCount).map((table) => ({ ...table, seatCount: nextSeatCount, seatAssignments: normalizeSeatAssignments(table.seatAssignments, nextSeatCount) }))
+                  while (nextGuestTables.length < nextTableCount) nextGuestTables.push(createTable(nextGuestTables.length + 1, 'guest', nextSeatCount))
+                  return { ...current, tables: [...nextGuestTables, ...otherTables] }
+                })}>Layout anwenden</Button>
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <h4 className="font-display text-card text-charcoal-900">Visuelle Vorschau</h4>
-            <p className="mt-2 text-body-md text-charcoal-600">
-              So wirkt euer Tischplan aktuell im Paarbereich. Freie Plätze und bereits gesetzte Personen
-              sind direkt sichtbar.
-            </p>
-          </div>
-          <SeatingPreview guestNamesById={guestNamesById} tables={plan.tables} />
         </div>
 
         {plan.tables.length ? (
           <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,34rem),1fr))]">
             {plan.tables.map((table, tableIndex) => {
-              const assignedElsewhere = new Set(
-                plan.tables.flatMap((entry) =>
-                  entry.id === table.id
-                    ? []
-                    : entry.seatAssignments.filter((guestId): guestId is string => Boolean(guestId)),
-                ),
-              )
-
+              const assignedElsewhere = new Set(plan.tables.flatMap((entry) => (entry.id === table.id ? [] : entry.seatAssignments.filter((guestId): guestId is string => Boolean(guestId)))))
               return (
                 <article key={table.id} className="surface-card px-5 py-5 sm:px-6">
                   <div className="flex flex-col gap-4 border-b border-cream-200 pb-5">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0 space-y-2">
                         <div className="flex flex-wrap items-center gap-3">
-                          <h4 className="text-safe-wrap font-display text-card text-charcoal-900">
-                            {table.name.trim() || `Tisch ${tableIndex + 1}`}
-                          </h4>
-                          <Badge variant={getTableBadgeVariant(table.kind)}>
-                            {TABLE_KIND_LABELS[table.kind]}
-                          </Badge>
+                          <h4 className="text-safe-wrap font-display text-card text-charcoal-900">{table.name.trim() || `Tisch ${tableIndex + 1}`}</h4>
+                          <Badge variant={getTableBadgeVariant(table.kind)}>{SEATING_TABLE_KIND_LABELS[table.kind]}</Badge>
+                          <Badge variant="neutral">{SEATING_TABLE_SHAPE_LABELS[table.shape]}</Badge>
+                          {table.buffetSongId ? <Badge variant="attending">Buffet: {buffetSongsById.get(table.buffetSongId)?.title ?? 'Song'}</Badge> : null}
                         </div>
-                        <p className="max-w-2xl text-sm leading-6 text-charcoal-600">
-                          Konfiguriert hier Namen, Tischtyp und Sitzplätze. Danach könnt ihr die
-                          Gäste direkt den einzelnen Plätzen zuordnen.
-                        </p>
+                        <p className="max-w-2xl text-sm leading-6 text-charcoal-600">Konfiguriert hier Namen, Tischtyp, Form und Sitzplätze. Danach könnt ihr die Gäste direkt den einzelnen Plätzen zuordnen.</p>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <Button
-                          disabled={table.seatCount <= 1}
-                          type="button"
-                          variant="secondary"
-                          onClick={() => adjustTableSeatCount(table.id, -1)}
-                        >
-                          <Minus className="h-4 w-4" />
-                          Platz entfernen
-                        </Button>
-                        <Button
-                          disabled={table.seatCount >= 24}
-                          type="button"
-                          variant="secondary"
-                          onClick={() => adjustTableSeatCount(table.id, 1)}
-                        >
-                          <Plus className="h-4 w-4" />
-                          Platz hinzufügen
-                        </Button>
-                        <Button type="button" variant="ghost" onClick={() => removeTable(table.id)}>
-                          <Trash2 className="h-4 w-4" />
-                          Entfernen
-                        </Button>
+                        <Button disabled={table.seatCount <= 1} type="button" variant="secondary" onClick={() => updateTable(table.id, { seatCount: table.seatCount - 1 })}><Minus className="h-4 w-4" />Platz entfernen</Button>
+                        <Button disabled={table.seatCount >= 24} type="button" variant="secondary" onClick={() => updateTable(table.id, { seatCount: table.seatCount + 1 })}><Plus className="h-4 w-4" />Platz hinzufügen</Button>
+                        <Button type="button" variant="ghost" onClick={() => setPlan((current) => ({ ...current, tables: current.tables.filter((entry) => entry.id !== table.id) }))}><Trash2 className="h-4 w-4" />Entfernen</Button>
                       </div>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      <Input
-                        label="Tischname"
-                        value={table.name}
-                        onChange={(event) => updateTable(table.id, { name: event.target.value })}
-                      />
-                      <label className="flex flex-col gap-2 text-sm font-medium text-charcoal-700">
-                        <span>Tischtyp</span>
-                        <select
-                          className="min-h-11 rounded-2xl border border-cream-300 bg-white px-4 py-3 text-base text-charcoal-900 outline-none transition focus:border-gold-500"
-                          value={table.kind}
-                          onChange={(event) =>
-                            updateTable(table.id, { kind: event.target.value as SeatingTable['kind'] })
-                          }
-                        >
-                          <option value="guest">Gästetisch</option>
-                          <option value="couple">Brautpaartisch</option>
-                          <option value="service">Dienstleistertisch</option>
-                        </select>
-                      </label>
-                      <Input
-                        label="Sitzplätze"
-                        inputMode="numeric"
-                        max={24}
-                        min={1}
-                        type="number"
-                        value={table.seatCount}
-                        onChange={(event) =>
-                          updateTable(table.id, {
-                            seatCount: Number(event.target.value) || 1,
-                          })
-                        }
-                      />
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                      <Input label="Tischname" value={table.name} onChange={(event) => updateTable(table.id, { name: event.target.value })} />
+                      <label className="flex flex-col gap-2 text-sm font-medium text-charcoal-700"><span>Tischtyp</span><select className={selectClassName} value={table.kind} onChange={(event) => updateTable(table.id, { kind: event.target.value as SeatingTable['kind'], shape: getDefaultTableShapeForKind(event.target.value as SeatingTable['kind']) })}><option value="guest">Gästetisch</option><option value="child">Kindertisch</option><option value="couple">Brautpaartisch</option><option value="service">Dienstleistertisch</option></select></label>
+                      <label className="flex flex-col gap-2 text-sm font-medium text-charcoal-700"><span>Tischform</span><select className={selectClassName} value={table.shape} onChange={(event) => updateTable(table.id, { shape: event.target.value as SeatingTable['shape'] })}>{SEATING_TABLE_SHAPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                      <Input label="Sitzplätze" inputMode="numeric" max={24} min={1} type="number" value={table.seatCount} onChange={(event) => updateTable(table.id, { seatCount: Number(event.target.value) || 1 })} />
+                      <label className="flex flex-col gap-2 text-sm font-medium text-charcoal-700"><span>Buffet-Song</span><select className={selectClassName} value={table.buffetSongId ?? ''} onChange={(event) => updateTable(table.id, { buffetSongId: event.target.value || null })}><option value="">Noch kein Song</option>{plan.buffetMode.songs.map((song) => <option key={song.id} value={song.id}>{song.sortOrder}. {song.title}{song.artist ? ` · ${song.artist}` : ''}</option>)}</select></label>
                     </div>
                   </div>
 
                   <div className="mt-5 grid gap-4 md:grid-cols-2">
-                    {table.seatAssignments.map((guestId, seatIndex) => (
-                      <label
-                        key={`${table.id}-seat-${seatIndex}`}
-                        className="flex min-w-0 flex-col gap-2 text-sm font-medium text-charcoal-700"
-                      >
+                    {normalizeSeatAssignments(table.seatAssignments, table.seatCount).map((guestId, seatIndex) => (
+                      <label key={`${table.id}-seat-${seatIndex}`} className="flex min-w-0 flex-col gap-2 text-sm font-medium text-charcoal-700">
                         <span>Platz {seatIndex + 1}</span>
-                        <select
-                          className="min-h-11 rounded-2xl border border-cream-300 bg-white px-4 py-3 text-base text-charcoal-900 outline-none transition focus:border-gold-500"
-                          value={guestId ?? ''}
-                          onChange={(event) =>
-                            updateTable(table.id, {
-                              seatAssignments: table.seatAssignments.map((entry, index) =>
-                                index === seatIndex ? event.target.value || null : entry,
-                              ),
-                            })
-                          }
-                        >
+                        <select className={selectClassName} value={guestId ?? ''} onChange={(event) => updateTable(table.id, { seatAssignments: normalizeSeatAssignments(table.seatAssignments, table.seatCount).map((entry, index) => (index === seatIndex ? event.target.value || null : entry)) })}>
                           <option value="">Nicht besetzt</option>
-                          {plan.guests.map((guest) => {
-                            const isDisabled =
-                              assignedElsewhere.has(guest.id) && guest.id !== guestId
-
-                            return (
-                              <option key={guest.id} disabled={isDisabled} value={guest.id}>
-                                {guest.name} · {GUEST_CATEGORY_LABELS[guest.category]}
-                              </option>
-                            )
-                          })}
+                          {plan.guests.map((guest) => <option key={guest.id} disabled={assignedElsewhere.has(guest.id) && guest.id !== guestId} value={guest.id}>{getGuestOptionLabel(guest)}</option>)}
                         </select>
                       </label>
                     ))}
-                  </div>
-
-                  <div className="mt-5 rounded-[1.4rem] bg-cream-50 px-4 py-4 text-sm text-charcoal-600">
-                    {table.kind === 'service'
-                      ? 'Dieser Tisch ist ideal für Fotografen, DJ, Band, Videografen oder weitere Dienstleister.'
-                      : table.kind === 'couple'
-                        ? 'Der Brautpaartisch wird von der smarten Sitzverteilung bewusst nicht automatisch belegt. Ihr könnt ihn bei Bedarf manuell bestücken.'
-                        : `Dieser Gästetisch hat ${table.seatAssignments.filter(Boolean).length} von ${table.seatCount} Plätzen belegt. Einzelne Plätze könnt ihr hier direkt hinzufügen oder entfernen.`}
                   </div>
                 </article>
               )
             })}
           </div>
         ) : (
-          <div className="rounded-[1.75rem] border border-dashed border-cream-300 bg-cream-50 px-5 py-6 text-sm text-charcoal-600">
-            Noch keine Tische angelegt. Ihr könnt normale Gästetische, einen Brautpaartisch und zusätzlich einen Dienstleistertisch erstellen.
-          </div>
+          <div className="rounded-[1.75rem] border border-dashed border-cream-300 bg-cream-50 px-5 py-6 text-sm text-charcoal-600">Noch keine Tische angelegt. Ihr könnt normale Gästetische, Kindertische, einen Brautpaartisch und zusätzlich einen Dienstleistertisch erstellen.</div>
         )}
 
         {unassignedGuests.length ? (
           <div className="rounded-[1.75rem] border border-cream-200 bg-white px-5 py-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <Sparkles className="h-4 w-4 text-gold-600" />
-              <p className="font-semibold text-charcoal-900">Noch nicht zugeordnet</p>
-            </div>
+            <div className="flex items-center gap-3"><Sparkles className="h-4 w-4 text-gold-600" /><p className="font-semibold text-charcoal-900">Noch nicht zugeordnet</p></div>
             <div className="mt-4 flex flex-wrap gap-2">
-              {unassignedGuests.map((guest) => (
-                <span
-                  key={guest.id}
-                  className="inline-flex items-center rounded-full bg-cream-100 px-3 py-2 text-sm text-charcoal-700"
-                >
-                  {guest.name} · {GUEST_CATEGORY_LABELS[guest.category]}
-                </span>
-              ))}
+              {unassignedGuests.map((guest) => <span key={guest.id} className="inline-flex items-center rounded-full bg-cream-100 px-3 py-2 text-sm text-charcoal-700">{getGuestOptionLabel(guest)}</span>)}
             </div>
           </div>
         ) : null}

@@ -29,7 +29,7 @@ export function RadioGroup({ name, label, options, value, onChange, error }: Rad
               className={cn(
                 'flex min-h-11 cursor-pointer flex-col justify-center rounded-3xl border px-4 py-4 transition',
                 checked
-                  ? 'border-gold-500 bg-gold-50 text-charcoal-900'
+                  ? 'border-gold-500 bg-gold-100/80 text-charcoal-900 shadow-gold'
                   : 'border-cream-300 bg-white text-charcoal-700 hover:border-gold-300',
               )}
             >

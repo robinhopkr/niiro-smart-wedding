@@ -17,6 +17,7 @@ export const BILLING_PRODUCT_DESCRIPTION =
 export const BILLING_STANDARD_PRICE_LOOKUP_KEY = 'niiro-smart-wedding-couple-access-one-time-eur'
 export const BILLING_PROMO_PRICE_LOOKUP_KEY = 'niiro-smart-wedding-couple-access-promo-eur'
 export const BILLING_STATEMENT_DESCRIPTOR_SUFFIX = 'SMARTWEDDING'
+export const GOOGLE_PLAY_COUPLE_ACCESS_PRODUCT_ID = 'niiro_smart_wedding_couple_access'
 
 export const DEFAULT_BILLING_BYPASS_EMAILS = [
   'robin_kolb@yahoo.com',

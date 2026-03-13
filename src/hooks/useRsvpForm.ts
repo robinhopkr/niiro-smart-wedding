@@ -20,6 +20,8 @@ export function useRsvpForm(mode: 'demo' | 'live' = 'live', guestCode?: string |
       plusOne: false,
       plusOneName: '',
       totalGuests: 1,
+      smallChildrenCount: 0,
+      highChairCount: 0,
       menuChoices: [],
       dietaryNotes: '',
       message: '',
@@ -52,7 +54,14 @@ export function useRsvpForm(mode: 'demo' | 'live' = 'live', guestCode?: string |
     }
 
     if (step === 2) {
-      const valid = await form.trigger(['plusOne', 'plusOneName', 'totalGuests', 'menuChoices'])
+      const valid = await form.trigger([
+        'plusOne',
+        'plusOneName',
+        'totalGuests',
+        'smallChildrenCount',
+        'highChairCount',
+        'menuChoices',
+      ])
       if (!valid) {
         return
       }

@@ -17,9 +17,21 @@ export const plannerWeddingSelectionSchema = z.object({
   weddingSourceId: z.string().trim().min(1, 'Bitte wähle eine Hochzeit aus.'),
 })
 
-export const plannerCustomerNumberSchema = z.object({
-  customerNumber: z.string().trim().max(80),
-})
+export const plannerCustomerNumberSchema = z
+  .object({
+    customerNumber: z.string().trim().max(80),
+    privacyConsentConfirmed: z.boolean().optional().default(false),
+  })
+  .superRefine((value, context) => {
+    if (value.customerNumber && !value.privacyConsentConfirmed) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'Bitte bestätigt zuerst den Datenschutzhinweis zur Wedding-Planer-Verknüpfung.',
+        path: ['privacyConsentConfirmed'],
+      })
+    }
+  })
 
 export type CoupleRegistrationSchema = z.infer<typeof coupleRegistrationSchema>
 export type PlannerRegistrationSchema = z.infer<typeof plannerRegistrationSchema>

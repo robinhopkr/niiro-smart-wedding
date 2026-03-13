@@ -3,10 +3,12 @@ import { notFound } from 'next/navigation'
 
 import { PhotographerPanel } from '@/components/photographer/PhotographerPanel'
 import { PhotographerLoginForm } from '@/components/forms/PhotographerLoginForm'
+import { AdminReturnBar } from '@/components/layout/AdminReturnBar'
 import { Footer } from '@/components/layout/Footer'
 import { Header } from '@/components/layout/Header'
 import { Section } from '@/components/ui/Section'
 import { SectionHeading } from '@/components/ui/SectionHeading'
+import { getServerSession } from '@/lib/auth/get-session'
 import { getPhotoSessionFromCookieStore } from '@/lib/auth/photo-session'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -25,6 +27,7 @@ interface PhotographerPageProps {
 export default async function PhotographerPage({ params }: PhotographerPageProps) {
   const resolvedParams = await params
   const supabase = await createClient()
+  const adminSession = await getServerSession()
   const config = await getWeddingConfigByGuestCode(supabase, resolvedParams.guestCode)
 
   if (!config?.sourceId) {
@@ -47,7 +50,9 @@ export default async function PhotographerPage({ params }: PhotographerPageProps
         ctaHref={`/galerie/${resolvedParams.guestCode}`}
         ctaLabel="Öffentliche Galerie"
         navItems={[]}
+        showLogoutAction={Boolean(adminSession)}
       />
+      {adminSession ? <AdminReturnBar sessionRole={adminSession.role} /> : null}
 
       <Section className="space-y-8">
         <div className="mx-auto max-w-3xl text-center">

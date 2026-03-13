@@ -17,13 +17,13 @@ import {
   createWeddingForRegistration,
   findClaimableWeddingForRegistration,
   generateUniqueGuestCode,
-  getActiveWeddingConfig,
   getCoupleAccountByEmail,
   getCoupleAccountByWeddingRef,
   getLinkedPlannerForWedding,
   getPlannerAccountByCustomerNumber,
   getPlannerAccountByEmail,
   getWeddingConfigBySourceRef,
+  getWeddingConfigByGuestCode,
   isPlannerLinkedToWedding,
   listPlannerWeddingAccessRows,
   type CoupleAccount,
@@ -66,6 +66,21 @@ function normalizeEmail(value: string): string {
   return value.trim().toLowerCase()
 }
 
+const LEGACY_COUPLE_SESSION_ALIASES: Record<
+  string,
+  {
+    guestCode: string
+    weddingSource: WeddingSource
+    weddingSourceId: string
+  }
+> = {
+  'robin_kolb@yahoo.com': {
+    guestCode: 'ANINA-ROBIN-2026',
+    weddingSource: 'legacy',
+    weddingSourceId: '72003e4d-6898-4c16-9b55-c3493cfb4267',
+  },
+}
+
 function isLegacyCoupleLogin(input: {
   email: string
   password: string
@@ -85,19 +100,46 @@ async function buildLegacyCoupleSession(
   supabase: ReturnType<typeof getRequiredAdminClient>,
   email: string,
 ): Promise<AdminSession> {
-  const config = await getActiveWeddingConfig(supabase)
+  const normalizedEmail = normalizeEmail(email)
+  const alias = LEGACY_COUPLE_SESSION_ALIASES[normalizedEmail]
 
-  if (config.source === 'fallback' || !config.sourceId) {
-    throw new Error('Für den Legacy-Login konnte keine bearbeitbare Hochzeit gefunden werden.')
+  if (alias) {
+    const config = await getWeddingConfigBySourceRef(
+      supabase,
+      alias.weddingSource,
+      alias.weddingSourceId,
+    )
+
+    if (
+      config &&
+      config.source === alias.weddingSource &&
+      config.sourceId === alias.weddingSourceId
+    ) {
+      return {
+        accountId: `legacy-couple:${normalizedEmail}`,
+        email: normalizedEmail,
+        role: 'couple',
+        weddingSource: alias.weddingSource,
+        weddingSourceId: alias.weddingSourceId,
+      }
+    }
+
+    const fallbackConfig = await getWeddingConfigByGuestCode(supabase, alias.guestCode)
+
+    if (fallbackConfig && fallbackConfig.source !== 'fallback' && fallbackConfig.sourceId) {
+      return {
+        accountId: `legacy-couple:${normalizedEmail}`,
+        email: normalizedEmail,
+        role: 'couple',
+        weddingSource: fallbackConfig.source,
+        weddingSourceId: fallbackConfig.sourceId,
+      }
+    }
   }
 
-  return {
-    accountId: `legacy-couple:${normalizeEmail(email)}`,
-    email: normalizeEmail(email),
-    role: 'couple',
-    weddingSource: config.source,
-    weddingSourceId: config.sourceId,
-  }
+  throw new Error(
+    'Für diesen Legacy-Login ist keine feste Hochzeit hinterlegt. Bitte meldet euch mit eurem eigenen Brautpaar-Konto an.',
+  )
 }
 
 async function generatePlannerCustomerNumber(): Promise<string> {

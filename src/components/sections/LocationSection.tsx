@@ -13,7 +13,7 @@ function createMapsLink(baseUrl: string, address: string): string {
 }
 
 function linkClassName(): string {
-  return 'inline-flex min-h-11 items-center justify-center rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900'
+  return 'inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border border-gold-300 bg-white px-5 py-3 text-sm font-semibold text-charcoal-800 transition hover:border-gold-500 hover:text-charcoal-900'
 }
 
 export function LocationSection({
@@ -41,7 +41,7 @@ export function LocationSection({
               <span className="text-safe-wrap">{config.venueAddress}</span>
             </address>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="flex flex-wrap gap-3">
             <ExternalLink className={linkClassName()} href={googleUrl}>
               Google Maps
             </ExternalLink>

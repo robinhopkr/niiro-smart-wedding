@@ -52,21 +52,21 @@ export function AdminHelpWidget() {
             <motion.aside
               id="admin-help-widget"
               aria-label="Hilfe-Assistent"
-              className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom,0px))] top-[max(1rem,calc(env(safe-area-inset-top,0px)+4.5rem))] z-[70] flex flex-col overflow-hidden rounded-[2rem] border border-cream-200 bg-white shadow-elegant md:inset-x-auto md:top-auto md:bottom-6 md:right-6 md:max-h-[82vh] md:w-[min(34rem,calc(100vw-3rem))]"
+              className="fixed inset-x-3 bottom-[max(0.5rem,env(safe-area-inset-bottom,0px))] top-[max(0.5rem,calc(env(safe-area-inset-top,0px)+0.5rem))] z-[70] flex flex-col overflow-hidden rounded-[2rem] border border-cream-200 bg-white shadow-elegant md:inset-x-auto md:top-auto md:bottom-6 md:right-6 md:max-h-[82vh] md:w-[min(34rem,calc(100vw-3rem))]"
               initial={{ opacity: 0, y: 24, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 24, scale: 0.98 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
             >
-              <div className="flex shrink-0 items-start justify-between gap-4 border-b border-cream-200 px-5 py-5">
+              <div className="flex shrink-0 items-start justify-between gap-4 border-b border-cream-200 px-5 py-4 md:py-5">
                 <div>
                   <p className="text-sm uppercase tracking-[0.18em] text-gold-700">Hilfe im Paarbereich</p>
                   <h2 className="mt-2 font-display text-card text-charcoal-900">Assistent</h2>
-                  <p className="mt-2 text-sm leading-6 text-charcoal-600">
+                  <p className="mt-2 text-sm leading-6 text-charcoal-600 md:block">
                     Hier könnt ihr direkt Fragen zu Inhalten, Tischplan, RSVP, Galerie oder Zugängen stellen.
                   </p>
                   <Link
-                    className="mt-3 inline-flex text-sm font-semibold text-gold-700 hover:text-gold-800"
+                    className="mt-2 inline-flex text-sm font-semibold text-gold-700 hover:text-gold-800 md:mt-3"
                     href="/admin/hilfe"
                     onClick={() => setIsOpen(false)}
                   >
@@ -83,7 +83,7 @@ export function AdminHelpWidget() {
                 </button>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-hidden px-5 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] md:pb-5">
+              <div className="min-h-0 flex-1 overflow-hidden px-4 pt-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:px-5 md:pt-5 md:pb-5">
                 <AdminHelpAssistant />
               </div>
             </motion.aside>

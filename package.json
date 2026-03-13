@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+    "play:check": "node scripts/check-google-play-setup.mjs",
+    "play:capture": "node scripts/play-console-capture.mjs",
     "mobile:sync": "npx cap sync",
     "mobile:copy": "npx cap copy",
     "mobile:add:android": "npx cap add android",

@@ -5,6 +5,7 @@ import { Menu, X } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 
+import { LogoutButton } from '@/components/admin/LogoutButton'
 import { BrandLogo } from '@/components/branding/BrandLogo'
 import { cn } from '@/lib/utils/cn'
 
@@ -26,6 +27,7 @@ interface HeaderProps {
   ctaHref?: string
   ctaLabel?: string
   actionLinks?: readonly HeaderActionLink[]
+  showLogoutAction?: boolean
   showBrandMark?: boolean
 }
 
@@ -36,6 +38,7 @@ export function Header({
   ctaHref,
   ctaLabel,
   actionLinks,
+  showLogoutAction = false,
   showBrandMark = false,
 }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -113,36 +116,48 @@ export function Header({
           {showBrandMark ? <BrandLogo label={brandLabel} /> : <span className="font-display text-xl">{brandLabel}</span>}
         </Link>
 
-        <nav aria-label="Hauptnavigation" className="hidden items-center gap-6 md:flex">
+        <nav aria-label="Hauptnavigation" className="hidden items-center gap-5 xl:flex">
           {navItems.map((item) => (
             <Link
               key={item.href}
-              className="text-sm font-medium text-charcoal-700 hover:text-gold-600"
+              className="whitespace-nowrap text-sm font-medium text-charcoal-700 hover:text-gold-600"
               href={item.href}
             >
               {item.label}
             </Link>
           ))}
-          {resolvedActionLinks.map((link) => (
-            <Link
-              key={`${link.href}-${link.label}`}
-              className={cn(
-                'inline-flex min-h-11 items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition',
-                link.variant === 'secondary'
-                  ? 'border border-gold-300 bg-white text-charcoal-800 hover:border-gold-500 hover:bg-cream-50'
-                  : 'bg-gold-500 text-charcoal-900 shadow-gold hover:bg-gold-400',
+          {showLogoutAction || resolvedActionLinks.length ? (
+            <div className="ml-3 flex shrink-0 items-center gap-3">
+              {showLogoutAction ? (
+                <LogoutButton
+                  className="min-h-10 whitespace-nowrap px-4 py-2.5 text-sm"
+                  label="Logout"
+                  variant="secondary"
+                />
+              ) : (
+                resolvedActionLinks.map((link) => (
+                  <Link
+                    key={`${link.href}-${link.label}`}
+                    className={cn(
+                      'inline-flex min-h-10 items-center justify-center whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition',
+                      link.variant === 'secondary'
+                        ? 'border border-gold-300 bg-white text-charcoal-800 hover:border-gold-500 hover:bg-cream-50'
+                        : 'bg-gold-500 text-charcoal-900 shadow-gold hover:bg-gold-400',
+                    )}
+                    href={link.href}
+                  >
+                    {link.label}
+                  </Link>
+                ))
               )}
-              href={link.href}
-            >
-              {link.label}
-            </Link>
-          ))}
+            </div>
+          ) : null}
         </nav>
 
         <button
           aria-expanded={isOpen}
           aria-label="Navigation umschalten"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-cream-300 bg-white text-charcoal-900 md:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-cream-300 bg-white text-charcoal-900 xl:hidden"
           type="button"
           onClick={() => setIsOpen((current) => !current)}
         >
@@ -157,7 +172,7 @@ export function Header({
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="border-t border-cream-200 bg-white px-6 py-5 shadow-elegant md:hidden"
+            className="border-t border-cream-200 bg-white px-6 py-5 shadow-elegant xl:hidden"
           >
             <nav aria-label="Mobile Hauptnavigation" className="flex flex-col gap-3">
               {navItems.map((item) => (
@@ -170,21 +185,29 @@ export function Header({
                   {item.label}
                 </Link>
               ))}
-              {resolvedActionLinks.map((link) => (
-                <Link
-                  key={`${link.href}-${link.label}-mobile`}
-                  className={cn(
-                    'inline-flex min-h-11 items-center justify-center rounded-full px-4 py-3 text-base font-semibold',
-                    link.variant === 'secondary'
-                      ? 'border border-gold-300 bg-white text-charcoal-800'
-                      : 'bg-gold-500 text-charcoal-900',
-                  )}
-                  href={link.href}
-                  onClick={() => setIsOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {showLogoutAction ? (
+                <LogoutButton
+                  className="w-full justify-center"
+                  label="Logout"
+                  variant="secondary"
+                />
+              ) : (
+                resolvedActionLinks.map((link) => (
+                  <Link
+                    key={`${link.href}-${link.label}-mobile`}
+                    className={cn(
+                      'inline-flex min-h-11 items-center justify-center rounded-full px-4 py-3 text-base font-semibold',
+                      link.variant === 'secondary'
+                        ? 'border border-gold-300 bg-white text-charcoal-800'
+                        : 'bg-gold-500 text-charcoal-900',
+                    )}
+                    href={link.href}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                ))
+              )}
             </nav>
           </motion.div>
         ) : null}

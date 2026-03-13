@@ -1,3 +1,4 @@
+import { AdminReturnBar } from '@/components/layout/AdminReturnBar'
 import { Footer } from '@/components/layout/Footer'
 import { Header } from '@/components/layout/Header'
 import { CountdownSection } from '@/components/sections/CountdownSection'
@@ -12,6 +13,7 @@ import { RsvpSection } from '@/components/sections/RsvpSection'
 import { SeatingPlanSection } from '@/components/sections/SeatingPlanSection'
 import { VendorSection } from '@/components/sections/VendorSection'
 import { WeddingThemeFrame } from '@/components/theme/WeddingThemeFrame'
+import { getServerSession } from '@/lib/auth/get-session'
 import { APP_BRAND_NAME } from '@/lib/constants'
 import type {
   FaqItem,
@@ -34,7 +36,7 @@ interface WeddingInvitationPageProps {
   seatingPlanData: SeatingPlanData
 }
 
-export function WeddingInvitationPage({
+export async function WeddingInvitationPage({
   config,
   faqItems,
   galleryPhotos,
@@ -43,12 +45,13 @@ export function WeddingInvitationPage({
   programItems,
   seatingPlanData,
 }: WeddingInvitationPageProps) {
+  const session = await getServerSession()
   const showDemoBanner = mode === 'demo'
-  const shouldShowSeatingPlan =
-    seatingPlanData.isPublished &&
-    seatingPlanData.tables.some(
-      (table) => table.kind === 'guest' && table.seatAssignments.some((guestId) => Boolean(guestId)),
-    )
+    const shouldShowSeatingPlan =
+      seatingPlanData.isPublished &&
+      seatingPlanData.tables.some(
+        (table) => table.kind !== 'service' && table.seatAssignments.some((guestId) => Boolean(guestId)),
+      )
   const navItems = [
     { href: '#programm', label: 'Programm' },
     { href: '#anfahrt', label: 'Anfahrt' },
@@ -77,8 +80,10 @@ export function WeddingInvitationPage({
           { href: '/admin/login?role=planner', label: 'Login Wedding Planner', variant: 'secondary' },
           { href: '/admin/login?role=couple', label: 'Login für Brautpaare', variant: 'primary' },
         ]}
+        showLogoutAction={Boolean(session)}
         showBrandMark
       />
+      {session ? <AdminReturnBar sessionRole={session.role} /> : null}
       {showDemoBanner ? (
         <div className="wedding-demo-banner px-6 py-3 text-sm sm:px-10">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">

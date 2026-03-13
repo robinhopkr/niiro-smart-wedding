@@ -15,6 +15,7 @@ import {
 } from '@/lib/constants'
 import { buildGalleryUploadAssets } from '@/lib/images/gallery-variants'
 import { isProgramIconName } from '@/lib/program-icons'
+import { getDefaultTableShapeForKind, isSeatingTableShape } from '@/lib/seating-plan'
 import { deleteR2Objects, isR2Configured, resolveR2ObjectUrl, uploadR2Object } from '@/lib/storage/r2'
 import {
   DEFAULT_WEDDING_FONT_PRESET_ID,
@@ -29,6 +30,7 @@ import { normalizeProgramTimeLabel, sortProgramItemsChronologically } from '@/li
 import type { Database, Json } from '@/types/database'
 import type {
   AdminSummary,
+  BuffetSong,
   ContentImageSection,
   CouplePhoto,
   DressCodeColorHint,
@@ -71,13 +73,20 @@ interface StorageResult<T> {
 interface SupabaseQuery extends PromiseLike<QueryResult<unknown>> {
   select: (columns: string) => SupabaseQuery
   insert: (values: unknown) => SupabaseQuery
-  upsert: (values: unknown) => SupabaseQuery
+  upsert: (
+    values: unknown,
+    options?: {
+      onConflict?: string
+      ignoreDuplicates?: boolean
+    },
+  ) => SupabaseQuery
   update: (values: unknown) => SupabaseQuery
   delete: () => SupabaseQuery
   eq: (column: string, value: unknown) => SupabaseQuery
   limit: (count: number) => SupabaseQuery
   order: (column: string, options?: { ascending?: boolean }) => SupabaseQuery
   single: () => Promise<QueryResult<Record<string, unknown>>>
+  maybeSingle: () => Promise<QueryResult<Record<string, unknown>>>
 }
 
 interface DbClient {
@@ -127,6 +136,7 @@ type CoupleAccountRow = Database['public']['Tables']['couple_accounts']['Row']
 type PlannerAccountRow = Database['public']['Tables']['planner_accounts']['Row']
 type PlannerWeddingAccessRow = Database['public']['Tables']['planner_wedding_access']['Row']
 type GalleryMediaRow = Database['public']['Tables']['gallery_media']['Row']
+type RsvpHouseholdDetailRow = Database['public']['Tables']['rsvp_household_details']['Row']
 export const GALLERY_BUCKET = 'hochzeitsfotos'
 const APP_SETTINGS_ID = 1
 const CONTENT_ASSET_PREFIX = 'content'
@@ -201,26 +211,47 @@ interface AppSettingsTexts extends LegacyTexts {
     imageUrl?: string | null
   }>
   billingStatus?: 'paid' | 'unpaid'
+  billingProvider?: 'stripe' | 'google_play' | 'legacy'
   billingEmail?: string | null
   billingPaidAt?: string | null
   billingStripeSessionId?: string | null
   billingStripePaymentIntentId?: string | null
+  billingGooglePlayPurchaseToken?: string | null
+  billingGooglePlayOrderId?: string | null
+  billingGooglePlayProductId?: string | null
+  billingGooglePlayPackageName?: string | null
+  billingGooglePlayAcknowledgedAt?: string | null
+  billingExpiresAt?: string | null
   plannerCustomerNumber?: string | null
   planningGuests?: Array<{
     id?: string
     name?: string
+    kind?: string
     category?: string
+    householdId?: string | null
     groupLabel?: string
+    requiresHighChair?: boolean
     notes?: string
   }>
   seatingTables?: Array<{
     id?: string
     name?: string
     kind?: string
+    shape?: string
+    buffetSongId?: string | null
     seatCount?: number
     seatAssignments?: Array<string | null>
   }>
   publishSeatingPlan?: boolean
+  buffetMode?: {
+    enabled?: boolean
+    songs?: Array<{
+      id?: string
+      title?: string
+      artist?: string | null
+      sortOrder?: number
+    }>
+  } | null
   musicRequests?: Array<{
     id?: string
     title?: string
@@ -234,11 +265,20 @@ interface AppSettingsTexts extends LegacyTexts {
 
 export interface StoredBillingRecord {
   status: 'paid' | 'unpaid'
+  provider: 'stripe' | 'google_play' | 'legacy' | null
   email: string | null
   paidAt: string | null
   stripeCheckoutSessionId: string | null
   stripePaymentIntentId: string | null
+  googlePlayPurchaseToken: string | null
+  googlePlayOrderId: string | null
+  googlePlayProductId: string | null
+  googlePlayPackageName: string | null
+  googlePlayAcknowledgedAt: string | null
+  expiresAt: string | null
 }
+
+type BillingEntitlementRow = Database['public']['Tables']['billing_entitlements']['Row']
 
 interface StoredMusicRequest {
   id: string
@@ -247,6 +287,18 @@ interface StoredMusicRequest {
   requestedBy: string | null
   createdAt: string
   voterTokens: string[]
+}
+
+interface StoredRsvpHouseholdDetail {
+  rsvpRecordId: string
+  smallChildrenCount: number
+  highChairCount: number
+}
+
+interface DerivedHouseholdDetail {
+  rsvpRecordId: string
+  smallChildrenCount: number
+  highChairCount: number
 }
 
 export interface CoupleAccount {
@@ -366,10 +418,41 @@ function parseStoredBillingRecord(row: ConfigOverlayRow | null): StoredBillingRe
 
   return {
     status: texts.billingStatus === 'paid' ? 'paid' : 'unpaid',
+    provider:
+      texts.billingProvider === 'stripe' ||
+      texts.billingProvider === 'google_play' ||
+      texts.billingProvider === 'legacy'
+        ? texts.billingProvider
+        : texts.billingStatus === 'paid'
+          ? 'legacy'
+          : null,
     email: normalizeOptionalString(texts.billingEmail)?.toLowerCase() ?? null,
     paidAt: normalizeOptionalString(texts.billingPaidAt),
     stripeCheckoutSessionId: normalizeOptionalString(texts.billingStripeSessionId),
     stripePaymentIntentId: normalizeOptionalString(texts.billingStripePaymentIntentId),
+    googlePlayPurchaseToken: normalizeOptionalString(texts.billingGooglePlayPurchaseToken),
+    googlePlayOrderId: normalizeOptionalString(texts.billingGooglePlayOrderId),
+    googlePlayProductId: normalizeOptionalString(texts.billingGooglePlayProductId),
+    googlePlayPackageName: normalizeOptionalString(texts.billingGooglePlayPackageName),
+    googlePlayAcknowledgedAt: normalizeOptionalString(texts.billingGooglePlayAcknowledgedAt),
+    expiresAt: normalizeOptionalString(texts.billingExpiresAt),
+  }
+}
+
+function parseBillingEntitlementRecord(row: BillingEntitlementRow): StoredBillingRecord {
+  return {
+    status: row.status === 'paid' ? 'paid' : 'unpaid',
+    provider: row.provider,
+    email: normalizeOptionalString(row.email)?.toLowerCase() ?? null,
+    paidAt: normalizeOptionalString(row.paid_at),
+    stripeCheckoutSessionId: normalizeOptionalString(row.stripe_checkout_session_id),
+    stripePaymentIntentId: normalizeOptionalString(row.stripe_payment_intent_id),
+    googlePlayPurchaseToken: normalizeOptionalString(row.google_play_purchase_token),
+    googlePlayOrderId: normalizeOptionalString(row.google_play_order_id),
+    googlePlayProductId: normalizeOptionalString(row.google_play_product_id),
+    googlePlayPackageName: normalizeOptionalString(row.google_play_package_name),
+    googlePlayAcknowledgedAt: normalizeOptionalString(row.google_play_acknowledged_at),
+    expiresAt: normalizeOptionalString(row.expires_at),
   }
 }
 
@@ -737,8 +820,14 @@ function isGuestCategory(
   )
 }
 
+function isPlanningGuestKind(
+  value: string | null | undefined,
+): value is PlanningGuest['kind'] {
+  return value === 'adult' || value === 'child'
+}
+
 function isSeatingTableKind(value: string | null | undefined): value is SeatingTable['kind'] {
-  return value === 'guest' || value === 'service' || value === 'couple'
+  return value === 'guest' || value === 'child' || value === 'service' || value === 'couple'
 }
 
 function parsePlanningGuests(texts: AppSettingsTexts): PlanningGuest[] {
@@ -752,11 +841,42 @@ function parsePlanningGuests(texts: AppSettingsTexts): PlanningGuest[] {
     .map((item, index) => ({
       id: item.id?.trim() || `planning-guest-${index + 1}`,
       name: item.name?.trim() ?? '',
+      kind: isPlanningGuestKind(item.kind) ? item.kind : 'adult',
       category: isGuestCategory(item.category) ? item.category : 'other',
+      householdId: item.householdId?.trim() || null,
       groupLabel: item.groupLabel?.trim() || null,
+      requiresHighChair: item.requiresHighChair === true,
       notes: item.notes?.trim() || null,
     }))
     .filter((item) => item.name)
+}
+
+function parseBuffetSongs(texts: AppSettingsTexts): BuffetSong[] {
+  const items = texts.buffetMode?.songs
+
+  if (!Array.isArray(items)) {
+    return []
+  }
+
+  return items
+    .map((item, index) => ({
+      id: item.id?.trim() || `buffet-song-${index + 1}`,
+      title: item.title?.trim() ?? '',
+      artist: item.artist?.trim() || null,
+      sortOrder:
+        typeof item.sortOrder === 'number' && Number.isFinite(item.sortOrder)
+          ? Math.max(0, Math.round(item.sortOrder))
+          : index + 1,
+    }))
+    .filter((item) => item.title)
+    .sort((left, right) => {
+      const orderDelta = left.sortOrder - right.sortOrder
+      if (orderDelta !== 0) {
+        return orderDelta
+      }
+
+      return left.title.localeCompare(right.title, 'de')
+    })
 }
 
 function parseSeatingTables(texts: AppSettingsTexts): SeatingTable[] {
@@ -772,6 +892,10 @@ function parseSeatingTables(texts: AppSettingsTexts): SeatingTable[] {
         typeof item.seatCount === 'number' && Number.isFinite(item.seatCount)
           ? Math.min(24, Math.max(1, Math.round(item.seatCount)))
           : 8
+      const tableKind =
+        isSeatingTableKind((item as { kind?: string }).kind)
+          ? (item as { kind?: SeatingTable['kind'] }).kind ?? 'guest'
+          : 'guest'
       const assignments = Array.isArray(item.seatAssignments)
         ? item.seatAssignments.slice(0, seatCount).map((entry) => (typeof entry === 'string' ? entry : null))
         : []
@@ -783,7 +907,11 @@ function parseSeatingTables(texts: AppSettingsTexts): SeatingTable[] {
       return {
         id: item.id?.trim() || `seating-table-${index + 1}`,
         name: item.name?.trim() || `Tisch ${index + 1}`,
-        kind: isSeatingTableKind((item as { kind?: string }).kind) ? (item as { kind?: SeatingTable['kind'] }).kind ?? 'guest' : 'guest',
+        kind: tableKind,
+        shape: isSeatingTableShape((item as { shape?: string }).shape)
+          ? (item as { shape?: SeatingTable['shape'] }).shape ?? getDefaultTableShapeForKind(tableKind)
+          : getDefaultTableShapeForKind(tableKind),
+        buffetSongId: normalizeOptionalString(item.buffetSongId) ?? null,
         seatCount,
         seatAssignments: assignments,
       }
@@ -1860,6 +1988,28 @@ export async function getStoredBillingRecord(
   supabase: DbClient,
   config: WeddingConfig,
 ): Promise<StoredBillingRecord> {
+  if (config.source !== 'fallback' && config.sourceId) {
+    try {
+      const { data, error } = (await query(supabase, 'billing_entitlements')
+        .select('*')
+        .eq('wedding_source', config.source)
+        .eq('wedding_source_id', config.sourceId)
+        .maybeSingle()) as QueryResult<BillingEntitlementRow>
+
+      if (error) {
+        throw error
+      }
+
+      if (data) {
+        return parseBillingEntitlementRecord(data)
+      }
+    } catch (error) {
+      if (!isMissingRelationError(error)) {
+        throw error
+      }
+    }
+  }
+
   if (config.source === 'modern' && config.sourceId) {
     const contentRow = await getWeddingContentRow(supabase, config.sourceId)
 
@@ -1887,12 +2037,58 @@ export async function saveStoredBillingRecord(
   const applyBillingFields = (existingTexts: AppSettingsTexts): Json => ({
     ...existingTexts,
     billingStatus: values.status,
+    billingProvider: values.provider,
     billingEmail: values.email,
     billingPaidAt: values.paidAt,
     billingStripeSessionId: values.stripeCheckoutSessionId,
     billingStripePaymentIntentId: values.stripePaymentIntentId,
+    billingGooglePlayPurchaseToken: values.googlePlayPurchaseToken,
+    billingGooglePlayOrderId: values.googlePlayOrderId,
+    billingGooglePlayProductId: values.googlePlayProductId,
+    billingGooglePlayPackageName: values.googlePlayPackageName,
+    billingGooglePlayAcknowledgedAt: values.googlePlayAcknowledgedAt,
+    billingExpiresAt: values.expiresAt,
     probe: undefined,
   })
+
+  if (config.source !== 'fallback' && config.sourceId) {
+    try {
+      const { data, error } = (await query(supabase, 'billing_entitlements')
+        .upsert(
+          {
+            wedding_source: config.source,
+            wedding_source_id: config.sourceId,
+            status: values.status,
+            provider: values.provider ?? (values.status === 'paid' ? 'legacy' : 'stripe'),
+            email: values.email,
+            paid_at: values.paidAt,
+            stripe_checkout_session_id: values.stripeCheckoutSessionId,
+            stripe_payment_intent_id: values.stripePaymentIntentId,
+            google_play_purchase_token: values.googlePlayPurchaseToken,
+            google_play_order_id: values.googlePlayOrderId,
+            google_play_product_id: values.googlePlayProductId,
+            google_play_package_name: values.googlePlayPackageName,
+            google_play_acknowledged_at: values.googlePlayAcknowledgedAt,
+            expires_at: values.expiresAt,
+          },
+          { onConflict: 'wedding_source,wedding_source_id' },
+        )
+        .select('*')
+        .single()) as QueryResult<BillingEntitlementRow>
+
+      if (error) {
+        throw error
+      }
+
+      if (data) {
+        values = parseBillingEntitlementRecord(data)
+      }
+    } catch (error) {
+      if (!isMissingRelationError(error)) {
+        throw error
+      }
+    }
+  }
 
   if (config.source === 'modern' && config.sourceId) {
     const currentContentRow = await getWeddingContentRow(supabase, config.sourceId)
@@ -1913,7 +2109,7 @@ export async function saveStoredBillingRecord(
         throw error
       }
 
-      return parseStoredBillingRecord(buildContentOverlayRow(data))
+      return values.provider ? values : parseStoredBillingRecord(buildContentOverlayRow(data))
   } catch (error) {
       if (!isMissingRelationError(error)) {
         throw error
@@ -1941,7 +2137,7 @@ export async function saveStoredBillingRecord(
       throw error
     }
 
-    return parseStoredBillingRecord(data)
+    return values.provider ? values : parseStoredBillingRecord(data)
   }
 
   const compatibilityRow = await getCompatibilityAppSettingsRow(supabase, config)
@@ -1955,7 +2151,7 @@ export async function saveStoredBillingRecord(
     texte: applyBillingFields(existingTexts),
   })
 
-  return parseStoredBillingRecord(data)
+  return values.provider ? values : parseStoredBillingRecord(data)
 }
 
 function buildPlanningTexts(
@@ -1965,17 +2161,31 @@ function buildPlanningTexts(
   return {
     ...existingTexts,
     publishSeatingPlan: values.isPublished,
+    buffetMode: {
+      enabled: values.buffetMode.enabled,
+      songs: values.buffetMode.songs.map((song) => ({
+        id: song.id,
+        title: song.title,
+        artist: song.artist,
+        sortOrder: song.sortOrder,
+      })),
+    },
     planningGuests: values.guests.map((guest) => ({
       id: guest.id,
       name: guest.name,
+      kind: guest.kind,
       category: guest.category,
+      householdId: guest.householdId,
       groupLabel: guest.groupLabel,
+      requiresHighChair: guest.requiresHighChair,
       notes: guest.notes,
     })),
     seatingTables: values.tables.map((table) => ({
       id: table.id,
       name: table.name,
       kind: table.kind,
+      shape: table.shape,
+      buffetSongId: table.buffetSongId,
       seatCount: table.seatCount,
       seatAssignments: table.seatAssignments,
     })),
@@ -1992,6 +2202,10 @@ export async function getSeatingPlanData(
 
   return {
     isPublished: texts.publishSeatingPlan === true,
+    buffetMode: {
+      enabled: texts.buffetMode?.enabled === true,
+      songs: parseBuffetSongs(texts),
+    },
     guests: parsePlanningGuests(texts),
     tables: parseSeatingTables(texts),
   }
@@ -2002,6 +2216,28 @@ export async function saveSeatingPlanData(
   config: WeddingConfig,
   values: SeatingPlanData,
 ): Promise<SeatingPlanData> {
+  const syncHouseholdDetails = async (): Promise<void> => {
+    const existingDetails = await listRsvpHouseholdDetailRows(supabase, config)
+    const nextDetails = buildDerivedHouseholdDetails(values.guests)
+    const nextByRecordId = new Map(nextDetails.map((detail) => [detail.rsvpRecordId, detail]))
+
+    await Promise.all(
+      nextDetails.map((detail) =>
+        upsertRsvpHouseholdDetail(supabase, config, {
+          rsvpRecordId: detail.rsvpRecordId,
+          smallChildrenCount: detail.smallChildrenCount,
+          highChairCount: detail.highChairCount,
+        }),
+      ),
+    )
+
+    await Promise.all(
+      existingDetails
+        .filter((detail) => !nextByRecordId.has(detail.rsvp_record_id))
+        .map((detail) => deleteRsvpHouseholdDetail(supabase, config, detail.rsvp_record_id)),
+    )
+  }
+
   if (config.source === 'modern' && config.sourceId) {
     const currentContentRow = await getWeddingContentRow(supabase, config.sourceId)
     const compatibilityRow = await getCompatibilityAppSettingsRow(supabase, config)
@@ -2026,9 +2262,14 @@ export async function saveSeatingPlanData(
       }
 
       const texts = parseSettingsTexts(buildContentOverlayRow(data))
+      await syncHouseholdDetails()
 
       return {
         isPublished: texts.publishSeatingPlan === true,
+        buffetMode: {
+          enabled: texts.buffetMode?.enabled === true,
+          songs: parseBuffetSongs(texts),
+        },
         guests: parsePlanningGuests(texts),
         tables: parseSeatingTables(texts),
       }
@@ -2069,8 +2310,14 @@ export async function saveSeatingPlanData(
     }
 
     const texts = parseLegacyTexts(data) as AppSettingsTexts
+    await syncHouseholdDetails()
+
     return {
       isPublished: texts.publishSeatingPlan === true,
+      buffetMode: {
+        enabled: texts.buffetMode?.enabled === true,
+        songs: parseBuffetSongs(texts),
+      },
       guests: parsePlanningGuests(texts),
       tables: parseSeatingTables(texts),
     }
@@ -2088,8 +2335,14 @@ export async function saveSeatingPlanData(
   })
 
   const texts = parseSettingsTexts(data)
+  await syncHouseholdDetails()
+
   return {
     isPublished: texts.publishSeatingPlan === true,
+    buffetMode: {
+      enabled: texts.buffetMode?.enabled === true,
+      songs: parseBuffetSongs(texts),
+    },
     guests: parsePlanningGuests(texts),
     tables: parseSeatingTables(texts),
   }
@@ -2695,40 +2948,208 @@ function formatMenuSelection(menuChoices: RsvpFormValues['menuChoices']): string
   return labels.length ? labels.join(', ') : null
 }
 
-function mapModernRsvps(rows: Database['public']['Tables']['rsvps']['Row'][]): RsvpRecord[] {
-  return rows.map((row) => ({
-    id: row.id,
-    guestName: row.guest_name,
-    guestEmail: row.guest_email,
-    isAttending: row.is_attending,
-    plusOne: row.plus_one ?? false,
-    plusOneName: row.plus_one_name,
-    totalGuests: row.total_guests ?? 1,
-    menuChoice: combineMenuSelectionLabels(row.menu_choice, row.plus_one_menu),
-    plusOneMenu: row.plus_one_menu,
-    dietaryNotes: row.dietary_notes,
-    message: row.message,
-    createdAt: row.submitted_at,
-    source: 'modern',
+function normalizeHouseholdCounts(values: Pick<RsvpFormValues, 'isAttending' | 'smallChildrenCount' | 'highChairCount'>) {
+  if (values.isAttending !== 'yes') {
+    return {
+      smallChildrenCount: 0,
+      highChairCount: 0,
+    }
+  }
+
+  const smallChildrenCount = Math.max(0, Math.min(10, Math.round(values.smallChildrenCount || 0)))
+  const highChairCount = Math.max(0, Math.min(smallChildrenCount, Math.round(values.highChairCount || 0)))
+
+  return {
+    smallChildrenCount,
+    highChairCount,
+  }
+}
+
+function buildDerivedHouseholdDetails(guests: PlanningGuest[]): DerivedHouseholdDetail[] {
+  const countsByHousehold = new Map<string, { smallChildrenCount: number; highChairCount: number }>()
+
+  guests.forEach((guest) => {
+    const householdId = normalizeOptionalString(guest.householdId)
+
+    if (!householdId || guest.kind !== 'child') {
+      return
+    }
+
+    const currentCounts = countsByHousehold.get(householdId) ?? {
+      smallChildrenCount: 0,
+      highChairCount: 0,
+    }
+
+    currentCounts.smallChildrenCount += 1
+
+    if (guest.requiresHighChair) {
+      currentCounts.highChairCount += 1
+    }
+
+    countsByHousehold.set(householdId, currentCounts)
+  })
+
+  return Array.from(countsByHousehold.entries()).map(([rsvpRecordId, counts]) => ({
+    rsvpRecordId,
+    smallChildrenCount: counts.smallChildrenCount,
+    highChairCount: counts.highChairCount,
   }))
 }
 
-function mapLegacyRsvps(rows: Database['public']['Tables']['rsvp_antworten']['Row'][]): RsvpRecord[] {
-  return rows.map((row) => ({
-    id: row.id,
-    guestName: row.name ?? 'Gast',
-    guestEmail: null,
-    isAttending: (row.teilnahme ?? '').toLowerCase().includes('ja'),
-    plusOne: (row.anzahl_personen ?? 1) > 1,
-    plusOneName: null,
-    totalGuests: row.anzahl_personen ?? 1,
-    menuChoice: row.menuwahl,
-    plusOneMenu: null,
-    dietaryNotes: row.ernaehrung,
-    message: row.liedwunsch,
-    createdAt: row.created_at,
-    source: 'legacy',
-  }))
+async function listRsvpHouseholdDetailRows(
+  supabase: DbClient,
+  config: WeddingConfig,
+): Promise<RsvpHouseholdDetailRow[]> {
+  if (config.source === 'fallback' || !config.sourceId) {
+    return []
+  }
+
+  try {
+    const { data: rowsRaw, error } = (await query(supabase, 'rsvp_household_details')
+      .select('*')
+      .eq('wedding_source', config.source)
+      .eq('wedding_source_id', config.sourceId)) as QueryResult<RsvpHouseholdDetailRow[]>
+    const rows = rowsRaw ?? []
+
+    if (error) {
+      throw error
+    }
+
+    return rows
+  } catch (error) {
+    if (!isMissingRelationError(error)) {
+      throw error
+    }
+  }
+
+  return []
+}
+
+function mapRsvpHouseholdDetailsByRecordId(
+  rows: RsvpHouseholdDetailRow[],
+): Map<string, StoredRsvpHouseholdDetail> {
+  return new Map(
+    rows.map((row) => [
+      row.rsvp_record_id,
+      {
+        rsvpRecordId: row.rsvp_record_id,
+        smallChildrenCount: Math.max(0, row.small_children_count ?? 0),
+        highChairCount: Math.max(0, row.high_chair_count ?? 0),
+      },
+    ]),
+  )
+}
+
+async function upsertRsvpHouseholdDetail(
+  supabase: DbClient,
+  config: WeddingConfig,
+  input: StoredRsvpHouseholdDetail,
+): Promise<void> {
+  if (config.source === 'fallback' || !config.sourceId) {
+    return
+  }
+
+  try {
+    const { error } = await query(supabase, 'rsvp_household_details').upsert(
+      {
+        wedding_source: config.source,
+        wedding_source_id: config.sourceId,
+        rsvp_record_id: input.rsvpRecordId,
+        small_children_count: input.smallChildrenCount,
+        high_chair_count: input.highChairCount,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'wedding_source,wedding_source_id,rsvp_record_id' },
+    )
+
+    if (error) {
+      throw error
+    }
+  } catch (error) {
+    if (!isMissingRelationError(error)) {
+      throw error
+    }
+  }
+}
+
+async function deleteRsvpHouseholdDetail(
+  supabase: DbClient,
+  config: WeddingConfig,
+  rsvpRecordId: string,
+): Promise<void> {
+  if (config.source === 'fallback' || !config.sourceId) {
+    return
+  }
+
+  try {
+    const { error } = await query(supabase, 'rsvp_household_details')
+      .delete()
+      .eq('wedding_source', config.source)
+      .eq('wedding_source_id', config.sourceId)
+      .eq('rsvp_record_id', rsvpRecordId)
+
+    if (error) {
+      throw error
+    }
+  } catch (error) {
+    if (!isMissingRelationError(error)) {
+      throw error
+    }
+  }
+}
+
+function mapModernRsvps(
+  rows: Database['public']['Tables']['rsvps']['Row'][],
+  detailMap: Map<string, StoredRsvpHouseholdDetail>,
+): RsvpRecord[] {
+  return rows.map((row) => {
+    const details = detailMap.get(row.id)
+
+    return {
+      id: row.id,
+      guestName: row.guest_name,
+      guestEmail: row.guest_email,
+      isAttending: row.is_attending,
+      plusOne: row.plus_one ?? false,
+      plusOneName: row.plus_one_name,
+      totalGuests: row.total_guests ?? 1,
+      smallChildrenCount: details?.smallChildrenCount ?? 0,
+      highChairCount: details?.highChairCount ?? 0,
+      menuChoice: combineMenuSelectionLabels(row.menu_choice, row.plus_one_menu),
+      plusOneMenu: row.plus_one_menu,
+      dietaryNotes: row.dietary_notes,
+      message: row.message,
+      createdAt: row.submitted_at,
+      source: 'modern',
+    }
+  })
+}
+
+function mapLegacyRsvps(
+  rows: Database['public']['Tables']['rsvp_antworten']['Row'][],
+  detailMap: Map<string, StoredRsvpHouseholdDetail>,
+): RsvpRecord[] {
+  return rows.map((row) => {
+    const details = detailMap.get(row.id)
+
+    return {
+      id: row.id,
+      guestName: row.name ?? 'Gast',
+      guestEmail: null,
+      isAttending: (row.teilnahme ?? '').toLowerCase().includes('ja'),
+      plusOne: (row.anzahl_personen ?? 1) > 1,
+      plusOneName: null,
+      totalGuests: row.anzahl_personen ?? 1,
+      smallChildrenCount: details?.smallChildrenCount ?? 0,
+      highChairCount: details?.highChairCount ?? 0,
+      menuChoice: row.menuwahl,
+      plusOneMenu: null,
+      dietaryNotes: row.ernaehrung,
+      message: row.liedwunsch,
+      createdAt: row.created_at,
+      source: 'legacy',
+    }
+  })
 }
 
 export async function getActiveWeddingConfig(supabase: DbClient): Promise<WeddingConfig> {
@@ -3759,6 +4180,10 @@ export async function getFaqItems(supabase: DbClient, config: WeddingConfig): Pr
 }
 
 export async function listRsvps(supabase: DbClient, config: WeddingConfig): Promise<RsvpRecord[]> {
+  const householdDetailMap = mapRsvpHouseholdDetailsByRecordId(
+    await listRsvpHouseholdDetailRows(supabase, config),
+  )
+
   if (config.source === 'modern' && config.sourceId) {
     const { data: modernRowsRaw, error } = (await query(supabase, 'rsvps')
       .select('*')
@@ -3769,7 +4194,7 @@ export async function listRsvps(supabase: DbClient, config: WeddingConfig): Prom
     const data = modernRowsRaw ?? []
 
     if (data) {
-      return mapModernRsvps(data)
+      return mapModernRsvps(data, householdDetailMap)
     }
 
     if (error && !isMissingRelation(error)) {
@@ -3787,7 +4212,7 @@ export async function listRsvps(supabase: DbClient, config: WeddingConfig): Prom
     const data = legacyRowsRaw ?? []
 
     if (data) {
-      return mapLegacyRsvps(data)
+      return mapLegacyRsvps(data, householdDetailMap)
     }
 
     if (error && !isMissingRelation(error)) {
@@ -3803,6 +4228,8 @@ export async function deleteRsvp(
   config: WeddingConfig,
   rsvpId: string,
 ): Promise<void> {
+  await deleteRsvpHouseholdDetail(supabase, config, rsvpId)
+
   if (config.source === 'modern' && config.sourceId) {
     const { error } = (await query(supabase, 'rsvps')
       .delete()
@@ -3865,6 +4292,7 @@ interface SubmitRsvpInput {
 export async function submitRsvp(supabase: DbClient, input: SubmitRsvpInput): Promise<string> {
   const { values, config, ipHash, userAgent } = input
   const menuSelection = formatMenuSelection(values.menuChoices)
+  const householdCounts = normalizeHouseholdCounts(values)
 
   if (config.source === 'modern' && config.sourceId) {
     const modernPayload: Database['public']['Tables']['rsvps']['Insert'] = {
@@ -3891,6 +4319,11 @@ export async function submitRsvp(supabase: DbClient, input: SubmitRsvpInput): Pr
       .single()) as QueryResult<{ id: string }>
 
     if (!error && data) {
+      await upsertRsvpHouseholdDetail(supabase, config, {
+        rsvpRecordId: data.id,
+        smallChildrenCount: householdCounts.smallChildrenCount,
+        highChairCount: householdCounts.highChairCount,
+      })
       return data.id
     }
 
@@ -3925,6 +4358,12 @@ export async function submitRsvp(supabase: DbClient, input: SubmitRsvpInput): Pr
     if (!data) {
       throw new Error('Die RSVP konnte nicht gespeichert werden.')
     }
+
+    await upsertRsvpHouseholdDetail(supabase, config, {
+      rsvpRecordId: data.id,
+      smallChildrenCount: householdCounts.smallChildrenCount,
+      highChairCount: householdCounts.highChairCount,
+    })
 
     return data.id
   }
